@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9dd9666a-f70a-45b5-96c8-c5444a4d1891}</ProjectGuid>
+    <ProjectGuid>{2B87FBF7-DED9-4545-8EF3-F008E81597BD}</ProjectGuid>
     <RootNamespace>DUBUMain</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>DUBUMain</ProjectName>
