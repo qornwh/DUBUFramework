@@ -18,23 +18,23 @@ DUBUFramework는 다음과 같은 서버 최적화 기능을 제공합니다:
 
 - SingleToon을 사용하려는 클래스의 재사용성과 결합도를 낮추기 위해 Template를 사용한 SingleToon구현
 - 기본적인 싱글톤 구현의 `new를 제거`하고 `static 정적변수`와 `참조`를 이용해 `heap 메모리 할당 제거`, `생성자 호출시점`을 처음 사용할때로 지정
-  ![singletoon](./images/singletoon.PNG)
+  ![singletoon](./images/singletoon.png)
 
 ### ConcurrentQueue
 
 - ConcurrentQueue는 `멀티스레드 상에서 동시성 문제없이 동기화 되도록` 구현하기 위해 lock free와 함께 사용
 - Lock Free는 `atomic`과 `CAS연산`을 통해 구현, read - read (가능), write (단일만 가능), read - write(불가) 되도록 구현했다.
 - 여기서 Socket을 통해 읽어온 데이터를 `Packet을 관리`및 `들어온 순차적으로 처리`하기 위해 사용할 예정
-  ![singletoon](./images/ConcurrentQueue.PNG)
+  ![singletoon](./images/ConcurrentQueue.png)
 
 ### Memory Pool
 
 - 객체를 생성하기 위해 매번 동적할당을 하는 성능하락을 막기 위해 구현
 - 기본 구성은 큰 메모리를 `미리 할당`하고 `잘라서 일정한 크기`(4,8,12~512)로 자르고 비율에 맞게 Map에서 관리 / 만약 원하는 크기의 공간이 없으면 `추가적으로 메모리 풀을 할당`하는 방식
-  ![momoryPool1](./images/memoryPool.PNG)
+  ![momoryPool1](./images/memoryPool.png)
 - 메모리 풀을 관리하는 객체는 `전체크기(size)`, `ptr(메모리풀 시작 주소)`, `Count(할당된 개수)`로 관리
 - 메모리가 객체에 할당 or 할당 해제될때 `Count를 체크하기 위해 ptr변수`로 순차적으로 list로 탐색해서 관리객체를 찾는다.
-  ![momoryPool2](./images/memoryPool2.PNG)
+  ![momoryPool2](./images/memoryPool2.png)
 
 ## 사용 라이브러리 (Dependencies)
 
