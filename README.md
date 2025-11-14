@@ -1,5 +1,7 @@
 # DUBUFramework
 
+<img src="./images/icon.png" height="100"/>
+
 DUBUFramework는 **C++** 기반의 서버 애플리케이션 개발에 필요한 **핵심 도구 및 고성능 기능**을 제공하는 프레임워크입니다. 이 프레임워크는 서버 환경에서 요구되는 성능, 안정성 및 테스트 용이성을 목표로 설계되었습니다.
 
 ## 주요 특징 (Features)
