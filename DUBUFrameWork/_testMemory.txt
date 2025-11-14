@@ -1,0 +1,109 @@
+﻿#include <iostream>
+#include <windows.h>
+#include <vector>
+#include <queue>
+#include <new>
+
+
+using namespace std;
+using myType = char;
+
+myType memoryArr[1'000'000];
+
+struct AAA_1
+{
+    int a;
+};
+
+struct BBB_1
+{
+    long long a;
+};
+
+struct CCC_1
+{
+    char str[10];
+};
+
+int getKey(int size)
+{
+    if (size <= 1)
+        return 0;
+    else if (size <= 4)
+        return 1;
+    else if (size <= 8)
+        return 2;
+    else if (size <= 10)
+        return 3;
+    else if (size <= 50)
+        return 4;
+    else if (size <= 100)
+        return 5;
+}
+
+int main111() 
+{
+
+    /*
+메모리
+1. 메모리 풀링 => 내부 단편화(연속된 메모리구조이기 때문에)
+2. 기본적으로 클래스(구조체) 타입별로 일정한 개수만큼 초기에 전부 할당한다. 그후 부족해지면 생성하고 다시 리턴받으면 해제
+3. new_handler 호출로 
+4. 실제로 페이지 인 아웃으로 계속할당됨.
+5. 맥스 값을 알수 있는가?
+6. malloc의 실패시
+    */
+
+    // 1 * 100,4 * 100,8 * 100,10 * 10,20  * 10,50  * 10,100  * 10 <= 일단 이렇게 나눠봄(일단 나머지 버림 
+
+    vector<pair<int, int>> _m = {
+        {1, 100},
+        {4, 100},
+        {8, 100},
+        {10, 100},
+        {50, 100},
+        {100, 100}
+    };
+
+    vector<queue<myType*>> memorypool;
+    memorypool.reserve(6);
+
+    int idx = 0;
+    for (auto p : _m)
+    {
+        int size = p.first;
+        int cnt = p.second;
+
+        queue<myType*> q;
+
+        for (int i = 0; i < cnt; ++i)
+        {
+            q.push(&memoryArr[idx]);
+            idx += size;
+        }
+
+        memorypool.push_back(q);
+    }
+
+    AAA_1* aaa_ptr = nullptr;
+    int size = sizeof(AAA_1);
+    int key = getKey(size);
+
+    if (!memorypool[key].empty())
+    {
+        auto ptr = memorypool[key].front();
+        memorypool[key].pop();
+
+        aaa_ptr = new(ptr) AAA_1{10};
+        cout << memorypool[key].size() << '\n';
+    }
+
+    if (aaa_ptr != nullptr)
+        cout << aaa_ptr->a << '\n';
+
+    // 반환
+    memorypool[key].push(reinterpret_cast<myType*>(aaa_ptr));
+
+    cout << memorypool[key].size() << '\n';
+    return 0;
+}

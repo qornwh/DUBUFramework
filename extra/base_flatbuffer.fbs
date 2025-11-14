@@ -1,0 +1,41 @@
+namespace Base.Sample;
+
+enum PacketId:byte {
+  NONE    = 0,
+  INFO    = 1,
+  MESSAGE = 2
+}
+
+struct Vec3 { 
+  x:float; 
+  y:float;
+  z:float;
+}
+
+table Info {
+  name:string;
+  pos:[Vec3];
+  rot:Vec3;
+}
+
+table Message{
+  type:int = 0;
+  str:string;
+}
+
+table Header {
+  size: short;
+  code: short;
+}
+
+union AnyPacket {
+  Info,
+  Message
+}
+
+table Packet {
+  header:Header;
+  content:AnyPacket;
+}
+
+root_type Packet;
