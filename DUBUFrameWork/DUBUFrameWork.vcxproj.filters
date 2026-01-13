@@ -16,7 +16,19 @@
     <Filter Include="pch">
       <UniqueIdentifier>{749d6a85-4f47-4575-9601-519556a66170}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Concurrent">
+    <Filter Include="Service">
+      <UniqueIdentifier>{ca90d51e-e8e9-4ff2-afa8-b45a2395a3af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Service\RUDP">
+      <UniqueIdentifier>{a20eb344-59a3-42cf-b70b-d758c7d39fba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Service\Socket">
+      <UniqueIdentifier>{ac9be315-a4ef-477d-8490-dacca40f74d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DataStruct">
+      <UniqueIdentifier>{8a413c65-5493-4ce1-8000-36945295403f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DataStruct\ConcurrentQueue">
       <UniqueIdentifier>{47e816e6-d188-4240-8911-c278a5a46b55}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -37,7 +49,22 @@
       <Filter>pch</Filter>
     </ClInclude>
     <ClInclude Include="ConcurrentQueue.h">
-      <Filter>Concurrent</Filter>
+      <Filter>DataStruct\ConcurrentQueue</Filter>
+    </ClInclude>
+    <ClInclude Include="Service.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="RUDPSerivce.h">
+      <Filter>Service\RUDP</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketConfig.h">
+      <Filter>Service\Socket</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>DataStruct</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Service</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -57,7 +84,19 @@
       <Filter>pch</Filter>
     </ClCompile>
     <ClCompile Include="ConcurrentQueue.cpp">
-      <Filter>Concurrent</Filter>
+      <Filter>DataStruct\ConcurrentQueue</Filter>
+    </ClCompile>
+    <ClCompile Include="Service.cpp">
+      <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="RUDPSerivce.cpp">
+      <Filter>Service\RUDP</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketConfig.cpp">
+      <Filter>Service\Socket</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
