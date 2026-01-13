@@ -151,7 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ConCurrentQueue.cpp" />
+    <ClCompile Include="ConcurrentQueue.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Pool.cpp" />
@@ -159,7 +159,7 @@
     <ClCompile Include="Singleton.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConCurrentQueue.h" />
+    <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pool.h" />

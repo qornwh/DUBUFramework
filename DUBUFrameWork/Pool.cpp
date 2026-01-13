@@ -5,6 +5,7 @@ namespace DUBU
 	Vector<DubuByteDataSPtr> pool_list;
 	Map<int, Vector<DubuBytePtr>> pool_chunk_list;
 	const int POOLSIZE = 3;
+	Lock pool_lock;
 }
 
 DUBU::DubuByteData::DubuByteData()

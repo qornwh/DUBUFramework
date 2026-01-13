@@ -6,12 +6,12 @@
 
 namespace DUBU 
 {
-	class ConCurrentQueue
+	class ConcurrentQueue
 	{
 	public:
-		ConCurrentQueue();
-		ConCurrentQueue(const ConCurrentQueue& other) = delete;
-		ConCurrentQueue(ConCurrentQueue&& other) noexcept;
+		ConcurrentQueue();
+		ConcurrentQueue(const ConcurrentQueue& other) = delete;
+		ConcurrentQueue(ConcurrentQueue&& other) noexcept;
 
 		void Push(FbbPtr fbbPtr);
 		FbbPtr Pop();

@@ -1,21 +1,21 @@
-#include "ConCurrentQueue.h"
+#include "ConcurrentQueue.h"
 
-DUBU::ConCurrentQueue::ConCurrentQueue()
+DUBU::ConcurrentQueue::ConcurrentQueue()
 {
 }
 
-DUBU::ConCurrentQueue::ConCurrentQueue(DUBU::ConCurrentQueue&& other) noexcept
+DUBU::ConcurrentQueue::ConcurrentQueue(DUBU::ConcurrentQueue&& other) noexcept
 {
 	q = std::move(other.q);
 }
 
-void DUBU::ConCurrentQueue::Push(FbbPtr fbbPtr)
+void DUBU::ConcurrentQueue::Push(FbbPtr fbbPtr)
 {
 	WriteLockGuard wl(lk);
 	q.push(fbbPtr);
 }
 
-FbbPtr DUBU::ConCurrentQueue::Pop()
+FbbPtr DUBU::ConcurrentQueue::Pop()
 {
 	WriteLockGuard wl(lk);
 	if (q.empty())

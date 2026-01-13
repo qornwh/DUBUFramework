@@ -6,6 +6,7 @@
 #include <map>
 #include <bit>
 #include <atomic>
+#include "RWLock.h"
 
 namespace DUBU
 {
@@ -28,6 +29,8 @@ namespace DUBU
 	extern Map<int, Vector<DubuBytePtr>> pool_chunk_list;
 	// pool_list : 기본 크기 지정
 	extern const int POOLSIZE;
+	// Lock 
+	extern Lock pool_lock;
 
 	struct DubuByteData : public std::enable_shared_from_this<DubuByteData>
 	{
@@ -52,7 +55,10 @@ namespace DUBU
 		if constexpr (std::is_pointer_v<T>)
 		{
 			DubuBytePtr ptr = reinterpret_cast<DubuBytePtr>(object);
+			// bit_ceil : 2 > 4 > 8 > 16 > 32 2의 배수중 큰값중 최소로 잡는다 
 			constexpr size_t len = std::bit_ceil(sizeof(T));
+
+			WriteLockGuard wl(pool_lock);
 			pool_chunk_list[len].push_back(ptr);
 
 			DubuByteDataSPtr pool_ptr = FindBlock(ptr);
@@ -88,6 +94,7 @@ namespace DUBU
 
 		if constexpr (std::is_pointer_v<T>)
 		{
+			WriteLockGuard wl(pool_lock);
 			constexpr size_t len = std::bit_ceil(sizeof(ElementType));
 			if (pool_chunk_list[len].empty())
 			{
