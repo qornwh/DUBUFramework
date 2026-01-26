@@ -113,7 +113,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -136,7 +136,7 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -151,11 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="ConcurrentQueue.cpp" />
+    <ClCompile Include="OverlappedObj.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Pool.cpp" />
-    <ClCompile Include="RUDPSerivce.cpp" />
+    <ClCompile Include="RUDPServer.cpp" />
     <ClCompile Include="RWLock.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="Session.cpp" />
@@ -163,11 +165,13 @@
     <ClCompile Include="SocketConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BufferManager.h" />
     <ClInclude Include="ConcurrentQueue.h" />
+    <ClInclude Include="OverlappedObj.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pool.h" />
-    <ClInclude Include="RUDPSerivce.h" />
+    <ClInclude Include="RUDPServer.h" />
     <ClInclude Include="RWLock.h" />
     <ClInclude Include="Service.h" />
     <ClInclude Include="Session.h" />

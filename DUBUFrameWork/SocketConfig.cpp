@@ -1,11 +1,11 @@
 #include "SocketConfig.h"
 
-SOCKET SocketConfig::CreateUDPSocket()
+SOCKET DUBU::SocketConfig::CreateUDPSocket()
 {
     return WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
 }
 
-void SocketConfig::SetIoCompletionPort(SOCKET socket, HANDLE iocpHd)
+void DUBU::SocketConfig::SetIoCompletionPort(SOCKET socket, HANDLE iocpHd)
 {
     HANDLE socketIocp = CreateIoCompletionPort(reinterpret_cast<HANDLE>(socket), iocpHd, (u_long)0, 0);
     if (socketIocp == nullptr)
@@ -16,7 +16,7 @@ void SocketConfig::SetIoCompletionPort(SOCKET socket, HANDLE iocpHd)
     }
 }
 
-void SocketConfig::SocketBind(SOCKET ServerSocket, Int32 port)
+void DUBU::SocketConfig::SocketBind(SOCKET ServerSocket, Int32 port)
 {
     SOCKADDR_IN socketAddr;
     socketAddr.sin_family = AF_INET;
@@ -31,7 +31,7 @@ void SocketConfig::SocketBind(SOCKET ServerSocket, Int32 port)
     }
 }
 
-void SocketConfig::SetReuseAddress(SOCKET socket, Int32 opt)
+void DUBU::SocketConfig::SetReuseAddress(SOCKET socket, Int32 opt)
 {
     // 서버소켓에서 서버 시작하고 종료할때, 포트 대기중인 경우 있음 이때, 바로 연결되도록 옵션 설정
     setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&opt), sizeof(opt));

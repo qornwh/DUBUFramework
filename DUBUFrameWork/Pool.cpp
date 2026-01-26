@@ -2,16 +2,16 @@
 
 namespace DUBU
 {
-	Vector<DubuByteDataSPtr> pool_list;
-	Map<int, Vector<DubuBytePtr>> pool_chunk_list;
-	const int POOLSIZE = 3;
-	Lock pool_lock;
+	Vector<DubuByteDataSPtr> PoolList;
+	Map<int, Vector<DubuBytePtr>> PoolChunkList;
+	const int PoolSize = 10;
+	Lock PoolLock;
 }
 
 DUBU::DubuByteData::DubuByteData()
 {
-	ptr = static_cast<DubuBytePtr>(malloc(sizeof(DubuByte) * size));
-	if (ptr == nullptr)
+	ptr_ = static_cast<DubuBytePtr>(malloc(sizeof(DubuByte) * size_));
+	if (ptr_ == nullptr)
 	{
 		// 메모리 할당 실패 처리 및 종료
 		char str[256];
@@ -24,16 +24,20 @@ DUBU::DubuByteData::DubuByteData()
 
 	// 메모리 쪼개둔다.
 	int pos = 0;
-	int len = 1;
+	int len = 4;
 
 	// 4 8 16 32 => 10000 
 	// 64 128    => 2500
 	// 258 512   => 100
-	for (size_t i = 1; i <= 10; ++i)
+	for (size_t i = 1; i < 10; ++i)
 	{
-		for (size_t j = 1; j <= 10; ++j)
+		Int32 cnt = 10000;
+		if (len > 64) cnt = 2500;
+		if (len > 512) cnt = 100;
+
+		for (size_t j = 1; j <= cnt; ++j)
 		{
-			pool_chunk_list[len].push_back(&ptr[pos]);
+			PoolChunkList[len].push_back(&ptr_[pos]);
 			pos += len;
 		}
 		len <<= 1;
@@ -42,20 +46,20 @@ DUBU::DubuByteData::DubuByteData()
 
 DUBU::DubuByteData::~DubuByteData()
 {
-	if (ptr != nullptr)
+	if (ptr_ != nullptr)
 	{
-		if (use_cnt > 0)
+		if (useCnt_ > 0)
 		{
 			// 프로그램 종료
-			fprintf(stderr, "메모리 이미 사용중 - %d !!!\n", use_cnt.load());
+			fprintf(stderr, "메모리 이미 사용중 - %d !!!\n", useCnt_.load());
 			exit(EXIT_FAILURE); 
 		}
 
-		free(ptr);
-		ptr = nullptr;
+		free(ptr_);
+		ptr_ = nullptr;
 	}
 
-	if (ptr != nullptr)
+	if (ptr_ != nullptr)
 	{
 		// 프로그램 종료 => 로그로 남겨두는것도
 		fprintf(stderr, "메모리 해제 실패 !!!\n");
@@ -65,20 +69,20 @@ DUBU::DubuByteData::~DubuByteData()
 	printf("메모리 해제 성공 !!!\n");
 }
 
-void DUBU::Init()
+void DUBU::Initialize()
 {
-	for (int i = 0; i < POOLSIZE; ++i)
+	for (int i = 0; i < PoolSize; ++i)
 	{
-		pool_list.push_back(std::make_shared<DubuByteData>());
+		PoolList.push_back(std::make_shared<DubuByteData>());
 	}
 }
 
 DUBU::DubuByteDataSPtr DUBU::FindBlock(DubuBytePtr ptr)
 {
-	for (auto& block : pool_list)
+	for (auto& block : PoolList)
 	{
 		// ptr 해당주소의 값의 pool의 주소에 포함되면 리턴
-		if (ptr >= block->ptr && ptr < block->ptr + block->size)
+		if (ptr >= block->ptr_ && ptr < block->ptr_ + block->size_)
 			return block;
 	}
 

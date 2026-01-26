@@ -33,7 +33,7 @@ PACKET_TEST(DUBUTest, PacketTest) {
 		fbb.Finish(result);
 
 		auto size = fbb.GetSize();
-		EXPECT_FALSE(size > std::numeric_limits<int16_t>::max());
+		EXPECT_TRUE(size <= (std::numeric_limits<int16_t>::max)());
 
 		auto fbb_ptr = fbb.GetBufferPointer();
 		std::vector<uint8_t> cp_arr(size);

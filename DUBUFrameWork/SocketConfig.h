@@ -1,13 +1,16 @@
 #pragma once
 #include "pch.h"
 
-class SocketConfig
+namespace DUBU
 {
-public:
-    static SOCKET CreateUDPSocket();
+    class SocketConfig
+    {
+    public:
+        static SOCKET CreateUDPSocket();
 
-    static void SetIoCompletionPort(SOCKET socket, HANDLE iocpHd);
-    static void SocketBind(SOCKET ServerSocket, Int32 port);
-    static void SetReuseAddress(SOCKET socket, Int32 opt);
-};
+        static void SetIoCompletionPort(SOCKET socket, HANDLE iocpHd);
+        static void SocketBind(SOCKET ServerSocket, Int32 port);
+        static void SetReuseAddress(SOCKET socket, Int32 opt);
+    };
+}
 

@@ -1,8 +1,6 @@
 #pragma once
 #include "pch.h"
 
-#include <atomic>
-
 namespace DUBU 
 {
     class Lock
