@@ -54,7 +54,7 @@
     <ClInclude Include="Service.h">
       <Filter>Service</Filter>
     </ClInclude>
-    <ClInclude Include="RUDPServer.h">
+    <ClInclude Include="RUDPSocket.h">
       <Filter>Service\RUDP</Filter>
     </ClInclude>
     <ClInclude Include="SocketConfig.h">
@@ -95,7 +95,7 @@
     <ClCompile Include="Service.cpp">
       <Filter>Service</Filter>
     </ClCompile>
-    <ClCompile Include="RUDPServer.cpp">
+    <ClCompile Include="RUDPSocket.cpp">
       <Filter>Service\RUDP</Filter>
     </ClCompile>
     <ClCompile Include="SocketConfig.cpp">

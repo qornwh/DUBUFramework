@@ -1,0 +1,170 @@
+#include "RUDPSocket.h"
+#include "SocketConfig.h"
+#include "BufferManager.h"
+#include "Pool.h"
+#include <iostream>
+
+DUBU::RUDPSocket::RUDPSocket()
+{
+}
+
+DUBU::RUDPSocket::~RUDPSocket()
+{
+	if (isServer_)
+	{
+		WriteLockGuard wl(lk_);
+		EndServer();
+	}
+}
+
+void DUBU::RUDPSocket::StartServer()
+{
+	WSADATA wsaData;
+	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	assert(ret == 0);
+
+	// io컴플리션 포트, 소켓 생성및 연결
+	iocpHd_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+	serverSocket_ = SocketConfig::CreateUDPSocket();
+	SocketConfig::SetIoCompletionPort(serverSocket_, iocpHd_);
+
+	// 소켓 설정
+	SocketConfig::SetReuseAddress(serverSocket_, 1);
+
+	// 바인딩
+	SocketConfig::SocketBind(serverSocket_, port_);
+
+	// 서버 소켓 체크
+	isServer_ = true;
+
+	// 50개 미리 등록
+	for (int i = 0; i < firstClientCount_; ++i)
+	{
+		RecvFrom();
+	}
+}
+
+void DUBU::RUDPSocket::EndServer()
+{
+	// 모든 연결된 iocp큐 제거
+	const Set<DUBU::OverlappedPacketBuffer*>& useList = Singleton<PacketManager>::GetInstance().GetUseList();
+	Uint64 EXIT_SIGNAL = 0xFFFFFFFFFFFFF;
+	for (auto use : useList)
+	{
+		//CancelIoEx로 하면 GQCS가 false로 나오고 overlapped포인터는 잘나와서 post로 교체
+		//Bool ret = CancelIoEx((HANDLE)serverSocket_, &use->overlapped_);
+		Bool ret = PostQueuedCompletionStatus(iocpHd_, 0, EXIT_SIGNAL, &use->overlapped_);
+		assert(ret);
+	}
+
+	DWORD dwTransferred = 0;
+	ULONG_PTR completionKey = 0;
+	LPOVERLAPPED lpOverlapped = nullptr;
+	while (GetQueuedCompletionStatus(iocpHd_, &dwTransferred, &completionKey, &lpOverlapped, 10))
+	{
+		if (lpOverlapped && completionKey != EXIT_SIGNAL)
+		{
+			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
+			Singleton<PacketManager>::GetInstance().PushPacketBuffer(ptr);
+		}
+	}
+
+	int lastErr = GetLastError();
+	if (lpOverlapped != nullptr)
+	{
+		// 일단 크래시냄
+		assert(-1);
+	}
+
+	closesocket(serverSocket_);
+	CloseHandle(iocpHd_);
+}
+
+Int32 DUBU::RUDPSocket::Dispatch(LPOVERLAPPED* ptr, DWORD timeout)
+{
+	DWORD ipNumberOfBytesTransferred = 0;
+	// 키등록 안함
+	ULONG_PTR completionKey = 0;
+	// 포인터의 포인터 => 포인터 변수도 복사다. 결국 위치 변경됨
+	bool ret = GetQueuedCompletionStatus(iocpHd_, &ipNumberOfBytesTransferred, &completionKey, ptr, timeout);
+	if (ret == false || ptr == nullptr)
+		return -1;
+	return (Int32)ipNumberOfBytesTransferred;
+}
+
+void DUBU::RUDPSocket::RecvFrom()
+{
+	WSABUF wsabuf;
+	DWORD bytesRecv = 0;
+	DWORD flags = 0;
+
+	OverlappedPacketBuffer* opbPtr = Singleton<PacketManager>::GetInstance().PopPacketBuffer();
+	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
+	wsabuf.len = opbPtr->size_;
+	opbPtr->SetType(OverlappedObjType::RECVEFROM);
+
+	Int32 ret = WSARecvFrom(serverSocket_, &wsabuf, 1, &bytesRecv, &flags, (SOCKADDR*)&opbPtr->remoteAddr_, &opbPtr->addrSize_, &opbPtr->overlapped_, nullptr);
+	if (ret == SOCKET_ERROR)
+	{
+		int errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			assert(false); // 일단 크래시냄
+		}
+	}
+}
+
+void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Byte* buffer, Int32 size)
+{
+	WSABUF wsabuf;
+	DWORD flags = 0;
+	DWORD bytesSent = size;
+
+	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
+	opbPtr->size_ = size;
+	opbPtr->pos_ = buffer;
+	opbPtr->SetType(OverlappedObjType::SENDTO);
+	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
+	wsabuf.len = opbPtr->size_;
+	Int32 ret = WSASendTo(serverSocket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
+	if (ret == SOCKET_ERROR)
+	{
+		int errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			assert(false); // 일단 크래시냄
+		}
+	}
+}
+
+void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
+{
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+
+	// 패킷 헤더 체크
+	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
+
+	// 재전송 패킷이면 바로 send
+	// 패킷 내용 deepcopy
+
+	// 반환, 다시 재등록
+	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
+	RecvFrom();
+}
+
+void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
+{
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+
+	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) == OverlappedObjType::RELIABLE)
+	{
+		// 안오면 다시 재전송 필요
+		// 코루틴 사용한다.(예정)
+
+	}
+	else
+	{
+		// 재전송 필요없는 패킷은 바로 pool에 반환한다.
+		PacketManager::GetInstance().PushPacketBuffer(opbPtr);
+	}
+}

@@ -8,6 +8,7 @@
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <mswsock.h>
+#include <coroutine>
 #pragma comment(lib, "ws2_32")
 
 #define MAX_CLIENT_COUNT 500
@@ -15,3 +16,15 @@
 #define SERVICE_PORT 12345
 #define PACKET_MAX_SIZE 500 
 #endif
+
+namespace DUBU
+{
+	static void LogAsset(const char* str, bool ret)
+	{
+		if (!ret)
+		{
+			printf("%s", str);
+			assert(ret);
+		}
+	}
+}
