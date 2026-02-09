@@ -1,22 +1,57 @@
 #pragma once
 #include "pch.h"
+// Intel/AMD SSE 4.2 (CRC32 하드웨어 가속)
+#include <nmmintrin.h>
 
 namespace DUBU
 {
-	class Packet
+	namespace Packet 
 	{
-	public:
-		template<typename T>
-		static bool PacketCheck(flatbuffers::Verifier& verifier);
-		static void PacketCopy(const uint8_t* ptr, const uint16_t len, std::vector<uint8_t>& copy_array);
-	};
+		/*
+		* NONE : 이동, 회전등 손실되면 감수하는 패킷
+		* REPEAT : 스킬, 메시지등 손실시 재전송하는 패킷
+		* CHUNK : 1개의 패킷이 나눠져서 들어오는 경우 (초기 로드시 전체 정보, 최대 2^5 까지만 가능
+		* LASTCHUNK : CHUNK로 나눠진 패킷의 마지막 패킷
+		*/
+		enum PacketHeaderFlag : Uint8
+		{
+			NONE      = 0b00000000,
+			REPEAT    = 0b00000001,
+			CHUNK     = 0b00000010,
+			LASTCHUNK = 0b00000100
+		};
 
-	template<typename T>
-	inline bool Packet::PacketCheck(flatbuffers::Verifier& verifier)
-	{
-		if (T::VerifyPacketBuffer(verifier))
-			return true;
-		return false;
+		struct PacketHeader
+		{
+			Uint16 totalSize_;
+			Uint8 packetCode_;
+			Uint8 flags_;
+			Uint32 sessionId_;
+			Uint32 sequenceNo_;
+			Uint32 timestamp_;
+			Uint32 checksum_;
+		};
+
+		class Packet
+		{
+		public:
+			static bool PacketHeaderCheck(const Uint8* ptr, const Uint16 len);
+			static void PacketHeaderCopy(const Uint16* ptr, std::vector<Uint8>& dest);
+
+			template<typename T>
+			static bool PacketCheck(flatbuffers::Verifier& verifier);
+			static void PacketCopy(const Uint8* ptr, const Uint16 len, std::vector<Uint8>& dest);
+
+			static Uint32 CRC32(const Uint8* ptr, Uint16 len);
+		};
+
+		template<typename T>
+		inline bool Packet::PacketCheck(flatbuffers::Verifier& verifier)
+		{
+			if (T::VerifyPacketBuffer(verifier))
+				return true;
+			return false;
+		}
 	}
 }
 
