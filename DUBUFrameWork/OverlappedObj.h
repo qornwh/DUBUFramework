@@ -7,9 +7,10 @@ namespace DUBU
 
 	enum OverlappedObjType : INT32
 	{
-		NONE = 0,
-		RECVEFROM = 1,
-		SENDTO = 2,
+		NONE = 0x0000'0000,
+		RECVEFROM = 0x0000'0001,
+		SENDTO = 0x0000'0002,
+		RELIABLE = 0xFFFF'0000
 	};
 
 	// GetQueuedCompletionStatut에서 OverlappedObj로 캐스팅해서 타입 알아낼려는 용도
