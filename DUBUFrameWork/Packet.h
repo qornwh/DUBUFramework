@@ -25,7 +25,7 @@ namespace DUBU
 		{
 			Uint16 totalSize_;
 			Uint8 packetCode_;
-			Uint8 flags_;
+			PacketHeaderFlag flags_;
 			Uint32 sessionId_;
 			Uint32 sequenceNo_;
 			Uint32 timestamp_;

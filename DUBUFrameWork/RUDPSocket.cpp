@@ -160,7 +160,7 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
 	{
 		// 안오면 다시 재전송 필요
 		// 코루틴 사용한다.(예정)
-
+		q.Push(opbPtr);
 	}
 	else
 	{

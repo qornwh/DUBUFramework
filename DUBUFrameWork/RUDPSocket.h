@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "RWLock.h"
+#include "ConCurrentQueue.h"
 
 namespace DUBU
 {
@@ -31,6 +32,11 @@ namespace DUBU
 		Int32 firstClientCount_ = FIRST_CLIENT_COUNT;
 		Lock lk_;
 		bool isServer_ = false;
+
+		// 재전송 메시지 큐
+
+		DS::ConcurrentQueue<OverlappedPacketBuffer*> q;
+		Uint32 sequnceNumber = 0;
 	};
 }
 
