@@ -4,20 +4,43 @@
 #include <queue>
 #include "RWLock.h"
 
-namespace DUBU 
+namespace DUBU
 {
-	class ConcurrentQueue
+	namespace DS
 	{
-	public:
-		ConcurrentQueue();
-		ConcurrentQueue(const ConcurrentQueue& other) = delete;
-		ConcurrentQueue(ConcurrentQueue&& other) noexcept;
+		template<typename T>
+		class ConcurrentQueue
+		{
+		public:
+			ConcurrentQueue()
+			{
 
-		void Push(FbbPtr fbbPtr);
-		FbbPtr Pop();
+			}
+			ConcurrentQueue(const ConcurrentQueue& other) = delete;
+			ConcurrentQueue(ConcurrentQueue&& other) noexcept
+			{
+				q = std::move(other.q);
+			}
 
-	private:
-		std::queue<FbbPtr> q;
-		Lock lk;
-	};
+			void Push(T t)
+			{
+				WriteLockGuard wl(lk);
+				q.push(t);
+			}
+
+			T Pop()
+			{
+				WriteLockGuard wl(lk);
+				if (q.empty())
+					return nullptr;
+				T t = q.front();
+				q.pop();
+				return t;
+			}
+
+		private:
+			std::queue<T> q;
+			Lock lk;
+		};
+	}
 }
