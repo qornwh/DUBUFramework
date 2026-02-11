@@ -12,14 +12,14 @@ void DUBU::Packet::Packet::PacketHeaderCopy(const Uint16* ptr, std::vector<Uint8
 	constexpr Uint16 len = sizeof(PacketHeader);
 	if (len > dest.size())
 		dest.resize(len);
-	std::copy(ptr, ptr + len, dest.data());
+	std::memcpy(dest.data(), ptr, len);
 }
 
 void DUBU::Packet::Packet::PacketCopy(const Uint8* ptr, const Uint16 len, std::vector<Uint8>& dest)
 {
 	if (len > dest.size())
 		dest.resize(len);
-	std::copy(ptr, ptr + len, dest.data());
+	std::memcpy(dest.data(), ptr, len);
 }
 
 Uint32 DUBU::Packet::Packet::CRC32(const Uint8* ptr, Uint16 len)

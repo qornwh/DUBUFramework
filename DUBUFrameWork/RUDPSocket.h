@@ -5,6 +5,8 @@
 
 namespace DUBU
 {
+	struct OverlappedPacketBuffer;
+
 	class RUDPSocket : public std::enable_shared_from_this<RUDPSocket>
 	{
 	public:

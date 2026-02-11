@@ -5,7 +5,7 @@ namespace DUBU
 {
 	struct OverlappedPacketBuffer;
 
-	enum OverlappedObjType : INT32
+	enum OverlappedObjType : Uint32
 	{
 		NONE = 0x0000'0000,
 		RECVEFROM = 0x0000'0001,
