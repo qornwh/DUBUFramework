@@ -34,7 +34,7 @@ public:
 
 int main()
 {
-	DUBU::Init();
+	DUBU::Initialize();
 	AAA& aaa = *DUBU::Pop<AAA*>();
 	// placement new
 	BBB* bbb = new (DUBU::Pop<BBB*>()) BBB();
