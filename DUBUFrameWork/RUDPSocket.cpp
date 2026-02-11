@@ -10,11 +10,7 @@ DUBU::RUDPSocket::RUDPSocket()
 
 DUBU::RUDPSocket::~RUDPSocket()
 {
-	if (isServer_)
-	{
-		WriteLockGuard wl(lk_);
-		EndServer();
-	}
+	EndServer();
 }
 
 void DUBU::RUDPSocket::StartServer()
@@ -46,6 +42,11 @@ void DUBU::RUDPSocket::StartServer()
 
 void DUBU::RUDPSocket::EndServer()
 {
+	WriteLockGuard wl(lk_);
+	if (!isServer_)
+		return;
+
+	isServer_ = false;
 	// 모든 연결된 iocp큐 제거
 	const Set<DUBU::OverlappedPacketBuffer*>& useList = Singleton<PacketManager>::GetInstance().GetUseList();
 	Uint64 EXIT_SIGNAL = 0xFFFFFFFFFFFFF;
@@ -62,7 +63,7 @@ void DUBU::RUDPSocket::EndServer()
 	LPOVERLAPPED lpOverlapped = nullptr;
 	while (GetQueuedCompletionStatus(iocpHd_, &dwTransferred, &completionKey, &lpOverlapped, 10))
 	{
-		if (lpOverlapped && completionKey != EXIT_SIGNAL)
+		if (lpOverlapped && completionKey == EXIT_SIGNAL)
 		{
 			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
 			Singleton<PacketManager>::GetInstance().PushPacketBuffer(ptr);

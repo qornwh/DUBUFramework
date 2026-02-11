@@ -10,6 +10,7 @@ DUBU::Service::Service() : isRunning_(false)
 DUBU::Service::~Service()
 {
 	rudpServer_->EndServer();
+	PacketManager::GetInstance().Release();
 }
 
 void DUBU::Service::Initialize()

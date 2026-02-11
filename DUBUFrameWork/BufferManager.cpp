@@ -3,12 +3,7 @@
 
 DUBU::PacketManager::~PacketManager()
 {
-	while (!list_.empty())
-	{
-		OverlappedPacketBuffer* ptr = list_.back();
-		DUBU::Push<OverlappedPacketBuffer*>(ptr);
-		list_.pop_back();
-	}
+	Release();
 }
 
 void DUBU::PacketManager::Initialize()
@@ -25,16 +20,39 @@ void DUBU::PacketManager::Initialize()
 	}
 }
 
+void DUBU::PacketManager::Release()
+{
+	WriteLockGuard wl(lk_);
+	while (!list_.empty())
+	{
+		OverlappedPacketBuffer* ptr = list_.back();
+		DUBU::Push<OverlappedPacketBuffer*>(ptr);
+		list_.pop_back();
+	}
+}
+
 DUBU::OverlappedPacketBuffer* DUBU::PacketManager::PopPacketBuffer()
 {
-	OverlappedPacketBuffer* ptr = list_.back();
-	list_.pop_back();
-	useList_.insert(ptr);
+	WriteLockGuard wl(lk_);
+	if (!list_.empty())
+	{
+		OverlappedPacketBuffer* ptr = list_.back();
+		list_.pop_back();
+		useList_.insert(ptr);
+		return ptr;
+	}
+
+	OverlappedPacketBuffer* ptr = DUBU::Pop<OverlappedPacketBuffer*>();
+	ptr->pos_ = ptr->buffer_;
+	ptr->size_ = sizeof(OverlappedPacketBuffer);
+	OverlappedObj* ptr2 = static_cast<OverlappedObj*>(ptr);
+	ptr2->Initialize();
 	return ptr;
 }
 
 void DUBU::PacketManager::PushPacketBuffer(OverlappedPacketBuffer* ptr)
 {
+	WriteLockGuard wl(lk_);
 	list_.push_back(ptr);
 	useList_.erase(ptr);
 }

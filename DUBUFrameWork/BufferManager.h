@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "Singleton.h"
 #include "OverlappedObj.h"
+#include "RWLock.h"
 
 // 각 패킷의 크기는 고정이고, udp이므로 recvfrome완료 될때 내가 걸어둔 세션이랑 다르기 때문에 선언
 
@@ -19,6 +20,7 @@ namespace DUBU
 	public:
 		~PacketManager();
 		void Initialize();
+		void Release();
 
 		OverlappedPacketBuffer* PopPacketBuffer();
 		void PushPacketBuffer(OverlappedPacketBuffer* ptr);
@@ -29,5 +31,6 @@ namespace DUBU
 		const Int32 baseSize_ = MAX_CLIENT_COUNT;
 		Vector<OverlappedPacketBuffer*> list_;
 		Set<OverlappedPacketBuffer*> useList_;
+		Lock lk_;
 	};
 }

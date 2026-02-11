@@ -52,7 +52,7 @@ DUBU::DubuByteData::~DubuByteData()
 		{
 			// 프로그램 종료
 			fprintf(stderr, "메모리 이미 사용중 - %d !!!\n", useCnt_.load());
-			exit(EXIT_FAILURE); 
+			//exit(EXIT_FAILURE); 
 		}
 
 		free(ptr_);

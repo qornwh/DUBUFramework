@@ -16,7 +16,7 @@ TEST(DUBUTest, Sample)
 TEST(DUBUTest, SocketTest)
 {
 	DUBU::Initialize();
-	DUBU::Singleton<DUBU::PacketManager>::GetInstance().Initialize();
+	DUBU::PacketManager::GetInstance().Initialize();
 
 	DUBU::Service service;
 	service.Initialize();
