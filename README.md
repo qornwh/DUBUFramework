@@ -50,8 +50,28 @@ DUBUFramework는 다음과 같은 검증된 외부 라이브러리에 의존합�
 ### 필수 조건 (Prerequisites)
 
 - **C++ 컴파일러:** C++20 이상을 지원하는 컴파일러 (예: GCC, Clang, MSVC)
-- **CMake:** 프로젝트 빌드를 위한 크로스 플랫폼 빌드 시스템
-- 위의 **FlatBuffers** 및 **Boost** 라이브러리 설치 또는 프로젝트 내에 통합
+- **vcpkg**: flatbuffer, asio(boost빌드 대신 standalone버전), nlohmann, spdlog 설치
+
+## vcpkg 셋팅
+
+### 빌드 순서
+
+- git submodule init
+- git submodule sync
+- git submodule update --init --recursive
+
+- 위 명령어가 안될시 직접한다
+  - mkdir externals & mkdir externals\vcpkg
+  - cd externals\vcpkg
+  - git init
+  - git remote add origin https://github.com/microsoft/vcpkg.git
+  - git fetch origin
+  - git checkout master
+  - cd ..\..
+
+- externals\vcpkg\bootstrap-vcpkg.bat : vcpkg 빌드
+- externals\vcpkg\vcpkg.exe integrate install : 비주얼 스튜디오 연동
+- sln파일 열어서 빌드하고 vcpkg_installed 폴더 생기면 성공
 
 ## 테스트 (Testing)
 
