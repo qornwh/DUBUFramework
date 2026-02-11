@@ -1,0 +1,17 @@
+{
+  "name": "dubu-framework",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "asio",
+    "flatbuffers",
+    "spdlog",
+    "nlohmann-json"
+  ],
+  "overrides": [
+    {
+      "name": "flatbuffers",
+      "version": "25.1.21"
+    }
+  ],
+  "builtin-baseline": "36fb57eb3878cc3422351a91d3e87c328388dabd"
+}
