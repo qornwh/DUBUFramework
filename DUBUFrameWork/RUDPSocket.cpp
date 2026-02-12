@@ -143,10 +143,9 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
 	// 패킷 헤더 체크
-	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
 
-	// 재전송 패킷이면 바로 send
-	// 패킷 내용 deepcopy
+	// 핸들러 통해서 처리 넘겨버린다
+	handler_->OnRecvFrom(opbPtr->remoteAddr_, opbPtr->buffer_, size);
 
 	// 반환, 다시 재등록
 	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
@@ -157,11 +156,12 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
+	handler_->OnSendTo(opbPtr->remoteAddr_, size);
 	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) == OverlappedObjType::RELIABLE)
 	{
 		// 안오면 다시 재전송 필요
 		// 코루틴 사용한다.(예정)
-		q.Push(opbPtr);
+		q_.Push(opbPtr);
 	}
 	else
 	{

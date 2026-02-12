@@ -7,6 +7,14 @@ namespace DUBU
 {
 	struct OverlappedPacketBuffer;
 
+	// OnRecvFrom OnSendTo함수를 분리해 결합도를 낮추어본다.
+	class ISocketHandler 
+	{
+	public:
+		virtual void OnRecvFrom(const SOCKADDR_IN& addr, Byte* buffer, Int32 size) = 0;
+		virtual void OnSendTo(const SOCKADDR_IN& addr, Int32 size) = 0;
+	};
+
 	class RUDPSocket : public std::enable_shared_from_this<RUDPSocket>
 	{
 	public:
@@ -14,6 +22,8 @@ namespace DUBU
 		RUDPSocket(const RUDPSocket& other) = delete;
 		RUDPSocket(RUDPSocket&& other) = delete;
 		~RUDPSocket();
+
+		void SetHandler(std::shared_ptr<ISocketHandler> handler) { handler_ = handler; }
 
 		RUDPSocket& operator=(const RUDPSocket& other) = delete;
 		RUDPSocket& operator=(RUDPSocket&& other) = delete;
@@ -35,10 +45,11 @@ namespace DUBU
 		Lock lk_;
 		bool isServer_ = false;
 
-		// 재전송 메시지 큐
+		std::shared_ptr<ISocketHandler> handler_;
 
-		DS::ConcurrentQueue<OverlappedPacketBuffer*> q;
-		Uint32 sequnceNumber = 0;
+		// 재전송 메시지 큐
+		DS::ConcurrentQueue<OverlappedPacketBuffer*> q_;
+		Uint32 sequnceNumber_ = 0;
 	};
 }
 
