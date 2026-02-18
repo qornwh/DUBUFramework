@@ -162,8 +162,9 @@
     <ClCompile Include="Pool.cpp" />
     <ClCompile Include="RUDPSocket.cpp" />
     <ClCompile Include="RWLock.cpp" />
-    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="Session.cpp" />
+    <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="Singleton.cpp" />
     <ClCompile Include="SocketConfig.cpp" />
   </ItemGroup>
@@ -176,8 +177,9 @@
     <ClInclude Include="Pool.h" />
     <ClInclude Include="RUDPSocket.h" />
     <ClInclude Include="RWLock.h" />
-    <ClInclude Include="Service.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="Session.h" />
+    <ClInclude Include="SessionManager.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="SocketConfig.h" />
     <ClInclude Include="Types.h" />

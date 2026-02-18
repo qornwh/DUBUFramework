@@ -1,24 +1,24 @@
-#include "Service.h"
+#include "Server.h"
 #include "RUDPSocket.h"
 #include "BufferManager.h"
 
-DUBU::Service::Service() : isRunning_(false)
+DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpServer_ = std::make_shared<RUDPSocket>();
 }
 
-DUBU::Service::~Service()
+DUBU::Server::~Server()
 {
 	rudpServer_->EndServer();
 	PacketManager::GetInstance().Release();
 }
 
-void DUBU::Service::Initialize()
+void DUBU::Server::Initialize()
 {
 	rudpServer_->StartServer();
 }
 
-void DUBU::Service::Run()
+void DUBU::Server::Run()
 {
 	while (isRunning_)
 	{
@@ -36,4 +36,14 @@ void DUBU::Service::Run()
 		else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
 			rudpServer_->SendToComplete(ptr, size);
 	}
+}
+
+void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+{
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+}
+
+void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+{
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 }

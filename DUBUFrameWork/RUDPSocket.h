@@ -11,8 +11,10 @@ namespace DUBU
 	class ISocketHandler 
 	{
 	public:
-		virtual void OnRecvFrom(const SOCKADDR_IN& addr, Byte* buffer, Int32 size) = 0;
-		virtual void OnSendTo(const SOCKADDR_IN& addr, Int32 size) = 0;
+		virtual ~ISocketHandler() {}
+
+		virtual void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) = 0;
+		virtual void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) = 0;
 	};
 
 	class RUDPSocket : public std::enable_shared_from_this<RUDPSocket>
@@ -23,8 +25,6 @@ namespace DUBU
 		RUDPSocket(RUDPSocket&& other) = delete;
 		~RUDPSocket();
 
-		void SetHandler(std::shared_ptr<ISocketHandler> handler) { handler_ = handler; }
-
 		RUDPSocket& operator=(const RUDPSocket& other) = delete;
 		RUDPSocket& operator=(RUDPSocket&& other) = delete;
 
@@ -32,6 +32,7 @@ namespace DUBU
 		void EndServer();
 
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
+		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
 		void RecvFrom();
 		void SendTo(const SOCKADDR_IN& targetAddr, Byte* buffer, Int32 size);
 		void RecvFromComplete(OVERLAPPED* ptr, Int32 size);
@@ -44,12 +45,7 @@ namespace DUBU
 		Int32 firstClientCount_ = FIRST_CLIENT_COUNT;
 		Lock lk_;
 		bool isServer_ = false;
-
-		std::shared_ptr<ISocketHandler> handler_;
-
-		// 재전송 메시지 큐
-		DS::ConcurrentQueue<OverlappedPacketBuffer*> q_;
-		Uint32 sequnceNumber_ = 0;
+		ISocketHandler* handler_ = nullptr;
 	};
 }
 

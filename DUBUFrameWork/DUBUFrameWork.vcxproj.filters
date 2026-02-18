@@ -51,7 +51,7 @@
     <ClInclude Include="ConcurrentQueue.h">
       <Filter>DataStruct\ConcurrentQueue</Filter>
     </ClInclude>
-    <ClInclude Include="Service.h">
+    <ClInclude Include="Server.h">
       <Filter>Service</Filter>
     </ClInclude>
     <ClInclude Include="RUDPSocket.h">
@@ -71,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="OverlappedObj.h">
       <Filter>Packet</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionManager.h">
+      <Filter>Service</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -92,7 +95,7 @@
     <ClCompile Include="ConcurrentQueue.cpp">
       <Filter>DataStruct\ConcurrentQueue</Filter>
     </ClCompile>
-    <ClCompile Include="Service.cpp">
+    <ClCompile Include="Server.cpp">
       <Filter>Service</Filter>
     </ClCompile>
     <ClCompile Include="RUDPSocket.cpp">
@@ -109,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="OverlappedObj.cpp">
       <Filter>Packet</Filter>
+    </ClCompile>
+    <ClCompile Include="SessionManager.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 #include "SocketConfig.h"
 #include "BufferManager.h"
 #include "Pool.h"
+#include "Packet.h"
 #include <iostream>
 
 DUBU::RUDPSocket::RUDPSocket()
@@ -15,6 +16,9 @@ DUBU::RUDPSocket::~RUDPSocket()
 
 void DUBU::RUDPSocket::StartServer()
 {
+	// 핸들러 등록 확인
+	assert(handler_ == nullptr);
+
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	assert(ret == 0);
@@ -30,14 +34,14 @@ void DUBU::RUDPSocket::StartServer()
 	// 바인딩
 	SocketConfig::SocketBind(serverSocket_, port_);
 
-	// 서버 소켓 체크
-	isServer_ = true;
-
 	// 50개 미리 등록
 	for (int i = 0; i < firstClientCount_; ++i)
 	{
 		RecvFrom();
 	}
+
+	// 서버 소켓 체크
+	isServer_ = true;
 }
 
 void DUBU::RUDPSocket::EndServer()
@@ -142,10 +146,26 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	// 패킷 헤더 체크
-
-	// 핸들러 통해서 처리 넘겨버린다
-	handler_->OnRecvFrom(opbPtr->remoteAddr_, opbPtr->buffer_, size);
+	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opbPtr->buffer_), size))
+	{
+		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opbPtr->buffer_);
+		if (Packet::Packet::CRC32(opbPtr->buffer_, size) == header->checksum_)
+		{
+			// 핸들러 통해서 처리 넘겨버린다
+			if (handler_)
+			{
+				handler_->OnRecvFrom(opbPtr->remoteAddr_, reinterpret_cast<Byte*>(opbPtr), size);
+			}
+		}
+		else
+		{
+			// 체크썸 깨짐
+		}
+	}
+	else
+	{
+		// 헤더 깨짐
+	}
 
 	// 반환, 다시 재등록
 	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
@@ -156,16 +176,15 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	handler_->OnSendTo(opbPtr->remoteAddr_, size);
-	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) == OverlappedObjType::RELIABLE)
+	// 핸들러 통해서 처리 넘겨버린다
+	if (handler_)
 	{
-		// 안오면 다시 재전송 필요
-		// 코루틴 사용한다.(예정)
-		q_.Push(opbPtr);
+		handler_->OnSendTo(opbPtr->remoteAddr_, reinterpret_cast<Byte*>(opbPtr), size);
 	}
-	else
+
+	// 재전송 패킷이 아니면 할당 해제 
+	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
 	{
-		// 재전송 필요없는 패킷은 바로 pool에 반환한다.
 		PacketManager::GetInstance().PushPacketBuffer(opbPtr);
 	}
 }
