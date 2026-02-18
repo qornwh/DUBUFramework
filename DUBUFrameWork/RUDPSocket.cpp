@@ -4,6 +4,7 @@
 #include "Pool.h"
 #include "Packet.h"
 #include <iostream>
+#include "spdlog/spdlog.h"
 
 DUBU::RUDPSocket::RUDPSocket()
 {
@@ -119,18 +120,42 @@ void DUBU::RUDPSocket::RecvFrom()
 	}
 }
 
-void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Byte* buffer, Int32 size)
+void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size)
 {
 	WSABUF wsabuf;
 	DWORD flags = 0;
 	DWORD bytesSent = size;
 
 	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
-	opbPtr->size_ = size;
-	opbPtr->pos_ = buffer;
 	opbPtr->SetType(OverlappedObjType::SENDTO);
+
+	// 패킷 복사
+	Packet::Packet::PacketHeaderCopy(buffer, opbPtr->buffer_);
+	Packet::Packet::PacketCopy(buffer, sizeof(Packet::PacketHeader), opbPtr->buffer_ + sizeof(Packet::PacketHeader));
+	opbPtr->size_ = size;
+	opbPtr->pos_ = opbPtr->buffer_;
+
 	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
 	wsabuf.len = opbPtr->size_;
+	Int32 ret = WSASendTo(serverSocket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
+	if (ret == SOCKET_ERROR)
+	{
+		int errCode = WSAGetLastError();
+		if (errCode != WSA_IO_PENDING)
+		{
+			assert(false); // 일단 크래시냄
+		}
+	}
+}
+
+void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size)
+{
+	// 패킷 복사는 없다 기존꺼 다시 보내는 함수
+	WSABUF wsabuf;
+	DWORD flags = 0;
+	DWORD bytesSent = size;
+
+	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
 	Int32 ret = WSASendTo(serverSocket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)
 	{
@@ -154,17 +179,19 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
 			// 핸들러 통해서 처리 넘겨버린다
 			if (handler_)
 			{
-				handler_->OnRecvFrom(opbPtr->remoteAddr_, reinterpret_cast<Byte*>(opbPtr), size);
+				handler_->OnRecvFrom(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
 			}
 		}
 		else
 		{
 			// 체크썸 깨짐
+			spdlog::warn("RecvFromComplete: checksum failed");
 		}
 	}
 	else
 	{
 		// 헤더 깨짐
+		spdlog::warn("RecvFromComplete: header failed");
 	}
 
 	// 반환, 다시 재등록
@@ -179,7 +206,7 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
 	// 핸들러 통해서 처리 넘겨버린다
 	if (handler_)
 	{
-		handler_->OnSendTo(opbPtr->remoteAddr_, reinterpret_cast<Byte*>(opbPtr), size);
+		handler_->OnSendTo(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
 	}
 
 	// 재전송 패킷이 아니면 할당 해제 

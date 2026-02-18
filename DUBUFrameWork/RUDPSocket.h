@@ -34,7 +34,8 @@ namespace DUBU
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
 		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
 		void RecvFrom();
-		void SendTo(const SOCKADDR_IN& targetAddr, Byte* buffer, Int32 size);
+		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size);
+		void SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size);
 		void RecvFromComplete(OVERLAPPED* ptr, Int32 size);
 		void SendToComplete(OVERLAPPED* ptr, Int32 size);
 

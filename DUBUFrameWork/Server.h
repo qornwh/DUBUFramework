@@ -20,10 +20,11 @@ namespace DUBU
 
 		// 技记 包府(技记 概聪历 积己)
 		//  - 犁傈价 菩哦甸 包府
-		
+		virtual void CreateSession() {};
+
 
 	private:
-		std::shared_ptr<RUDPSocket> rudpServer_;
+		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock lk_;
 		bool isRunning_ = false;
 

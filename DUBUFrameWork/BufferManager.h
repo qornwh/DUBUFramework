@@ -12,7 +12,7 @@ namespace DUBU
 	{
 		void* pos_ = nullptr;
 		Int32 size_ = 0;
-		Byte buffer_[PACKET_MAX_SIZE];
+		Uint8 buffer_[PACKET_MAX_SIZE];
 	};
 
 	class PacketManager : public Singleton<PacketManager>

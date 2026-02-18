@@ -12,13 +12,15 @@ namespace DUBU
 		* REPEAT : 스킬, 메시지등 손실시 재전송하는 패킷
 		* CHUNK : 1개의 패킷이 나눠져서 들어오는 경우 (초기 로드시 전체 정보, 최대 2^5 까지만 가능
 		* LASTCHUNK : CHUNK로 나눠진 패킷의 마지막 패킷
+		* SESSION : 연결 요청 세션이 생성됨 / sessionId 있을때는 연결 해제 세션 제거
 		*/
 		enum PacketHeaderFlag : Uint8
 		{
 			NONE      = 0b00000000,
 			REPEAT    = 0b00000001,
 			CHUNK     = 0b00000010,
-			LASTCHUNK = 0b00000100
+			LASTCHUNK = 0b00000100,
+			SESSION   = 0b11111111,
 		};
 
 		struct PacketHeader
@@ -36,11 +38,11 @@ namespace DUBU
 		{
 		public:
 			static bool PacketHeaderCheck(const Uint8* ptr, const Uint16 len);
-			static void PacketHeaderCopy(const Uint16* ptr, std::vector<Uint8>& dest);
+			static void PacketHeaderCopy(const Uint8* ptr, Uint8* dest);
 
 			template<typename T>
 			static bool PacketCheck(flatbuffers::Verifier& verifier);
-			static void PacketCopy(const Uint8* ptr, const Uint16 len, std::vector<Uint8>& dest);
+			static void PacketCopy(const Uint8* ptr, const Uint16 len, Uint8* dest);
 
 			static Uint32 CRC32(const Uint8* ptr, Uint16 len);
 		};
