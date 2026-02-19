@@ -31,6 +31,12 @@
     <Filter Include="DataStruct\ConcurrentQueue">
       <UniqueIdentifier>{47e816e6-d188-4240-8911-c278a5a46b55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Service\Server">
+      <UniqueIdentifier>{3ec447d1-2a4d-4eb5-a3d1-c7e980bcafa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Service\Client">
+      <UniqueIdentifier>{1f277855-7adf-4d12-aa34-1091b47e98eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -51,9 +57,6 @@
     <ClInclude Include="ConcurrentQueue.h">
       <Filter>DataStruct\ConcurrentQueue</Filter>
     </ClInclude>
-    <ClInclude Include="Server.h">
-      <Filter>Service</Filter>
-    </ClInclude>
     <ClInclude Include="RUDPSocket.h">
       <Filter>Service\RUDP</Filter>
     </ClInclude>
@@ -63,17 +66,23 @@
     <ClInclude Include="Types.h">
       <Filter>DataStruct</Filter>
     </ClInclude>
-    <ClInclude Include="Session.h">
-      <Filter>Service</Filter>
-    </ClInclude>
     <ClInclude Include="BufferManager.h">
       <Filter>DataStruct</Filter>
     </ClInclude>
     <ClInclude Include="OverlappedObj.h">
       <Filter>Packet</Filter>
     </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Service\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Service\Server</Filter>
+    </ClInclude>
     <ClInclude Include="SessionManager.h">
-      <Filter>Service</Filter>
+      <Filter>Service\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.h">
+      <Filter>Service\Client</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -95,17 +104,11 @@
     <ClCompile Include="ConcurrentQueue.cpp">
       <Filter>DataStruct\ConcurrentQueue</Filter>
     </ClCompile>
-    <ClCompile Include="Server.cpp">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="RUDPSocket.cpp">
       <Filter>Service\RUDP</Filter>
     </ClCompile>
     <ClCompile Include="SocketConfig.cpp">
       <Filter>Service\Socket</Filter>
-    </ClCompile>
-    <ClCompile Include="Session.cpp">
-      <Filter>Service</Filter>
     </ClCompile>
     <ClCompile Include="BufferManager.cpp">
       <Filter>DataStruct</Filter>
@@ -113,8 +116,17 @@
     <ClCompile Include="OverlappedObj.cpp">
       <Filter>Packet</Filter>
     </ClCompile>
+    <ClCompile Include="Server.cpp">
+      <Filter>Service\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>Service\Server</Filter>
+    </ClCompile>
     <ClCompile Include="SessionManager.cpp">
-      <Filter>Service</Filter>
+      <Filter>Service\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cpp">
+      <Filter>Service\Client</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

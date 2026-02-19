@@ -2,6 +2,7 @@
 #include "RUDPSocket.h"
 #include "Packet.h"
 #include "BufferManager.h"
+#include "spdlog/spdlog.h"
 
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
@@ -48,6 +49,8 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
+
+	spdlog::logger("recvfrom !!!\n");
 
 	// 세션 추가
 	if (flag == Packet::PacketHeaderFlag::SESSION)

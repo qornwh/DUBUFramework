@@ -28,8 +28,16 @@ namespace DUBU
 		RUDPSocket& operator=(const RUDPSocket& other) = delete;
 		RUDPSocket& operator=(RUDPSocket&& other) = delete;
 
+		// 서버용
 		void StartServer();
 		void EndServer();
+
+		// 클라용
+		void StartClient(const String& serverIP, Uint16 serverPort);
+		void EndClient();
+		SOCKADDR_IN& GetSockAddr();
+
+		void Closesocket();
 
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
 		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
@@ -41,12 +49,16 @@ namespace DUBU
 
 	private:
 		HANDLE iocpHd_;
-		SOCKET serverSocket_ = INVALID_SOCKET;
+		SOCKET socket_ = INVALID_SOCKET;
 		Int32 port_ = SERVICE_PORT;
 		Int32 firstClientCount_ = FIRST_CLIENT_COUNT;
 		Lock lk_;
 		bool isServer_ = false;
 		ISocketHandler* handler_ = nullptr;
+
+		SOCKADDR_IN serverAddr_;
+		String serverIP_;
+		Uint16 serverPort_;
 	};
 }
 
