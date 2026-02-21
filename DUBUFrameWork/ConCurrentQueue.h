@@ -1,7 +1,5 @@
 #pragma once
 #include "pch.h"
-
-#include <queue>
 #include "RWLock.h"
 
 namespace DUBU
@@ -19,28 +17,28 @@ namespace DUBU
 			ConcurrentQueue(const ConcurrentQueue& other) = delete;
 			ConcurrentQueue(ConcurrentQueue&& other) noexcept
 			{
-				q = std::move(other.q);
+				q_ = std::move(other.q_);
 			}
 
 			void Push(T t)
 			{
-				WriteLockGuard wl(lk);
-				q.push(t);
+				WriteLockGuard wl(lk_);
+				q_.push(t);
 			}
 
 			T Pop()
 			{
-				WriteLockGuard wl(lk);
-				if (q.empty())
+				WriteLockGuard wl(lk_);
+				if (q_.empty())
 					return nullptr;
-				T t = q.front();
-				q.pop();
+				T t = q_.front();
+				q_.pop();
 				return t;
 			}
 
 		private:
-			std::queue<T> q;
-			Lock lk;
+			Queue<T> q_;
+			Lock lk_;
 		};
 	}
 }
