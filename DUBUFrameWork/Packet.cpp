@@ -7,19 +7,15 @@ bool DUBU::Packet::Packet::PacketHeaderCheck(const Uint8* ptr, const Uint16 len)
 	return false;
 }
 
-void DUBU::Packet::Packet::PacketHeaderCopy(const Uint16* ptr, std::vector<Uint8>& dest)
+void DUBU::Packet::Packet::PacketHeaderCopy(const Uint8* ptr, Uint8* dest)
 {
-	constexpr Uint16 len = sizeof(PacketHeader);
-	if (len > dest.size())
-		dest.resize(len);
-	std::memcpy(dest.data(), ptr, len);
+	constexpr Uint8 len = sizeof(PacketHeader);
+	std::memcpy(dest, ptr, len);
 }
 
-void DUBU::Packet::Packet::PacketCopy(const Uint8* ptr, const Uint16 len, std::vector<Uint8>& dest)
+void DUBU::Packet::Packet::PacketCopy(const Uint8* ptr, const Uint16 len, Uint8* dest)
 {
-	if (len > dest.size())
-		dest.resize(len);
-	std::memcpy(dest.data(), ptr, len);
+	std::memcpy(dest, ptr, len);
 }
 
 Uint32 DUBU::Packet::Packet::CRC32(const Uint8* ptr, Uint16 len)

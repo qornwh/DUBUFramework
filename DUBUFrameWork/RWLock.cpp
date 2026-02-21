@@ -1,6 +1,5 @@
 #include "RWLock.h"
 #include <thread>
-#include <cassert>
 
 DUBU::Lock::Lock()
 {

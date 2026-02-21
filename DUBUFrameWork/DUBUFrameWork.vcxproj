@@ -122,6 +122,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <AdditionalOptions>/wd4819 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,6 +146,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <AdditionalOptions>/wd4819 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,6 +157,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BufferManager.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="ConcurrentQueue.cpp" />
     <ClCompile Include="OverlappedObj.cpp" />
     <ClCompile Include="Packet.cpp" />
@@ -162,13 +165,15 @@
     <ClCompile Include="Pool.cpp" />
     <ClCompile Include="RUDPSocket.cpp" />
     <ClCompile Include="RWLock.cpp" />
-    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="Session.cpp" />
+    <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="Singleton.cpp" />
     <ClCompile Include="SocketConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="OverlappedObj.h" />
     <ClInclude Include="Packet.h" />
@@ -176,8 +181,9 @@
     <ClInclude Include="Pool.h" />
     <ClInclude Include="RUDPSocket.h" />
     <ClInclude Include="RWLock.h" />
-    <ClInclude Include="Service.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="Session.h" />
+    <ClInclude Include="SessionManager.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="SocketConfig.h" />
     <ClInclude Include="Types.h" />
