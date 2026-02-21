@@ -4,7 +4,10 @@
   "dependencies": [
     "asio",
     "flatbuffers",
-    "spdlog",
+    {
+      "name": "spdlog",
+      "default-features": false
+    },
     "nlohmann-json"
   ],
   "overrides": [
