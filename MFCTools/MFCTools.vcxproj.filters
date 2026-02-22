@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{19a767a8-5eea-4d01-8449-5d9a6ca931dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pch">
+      <UniqueIdentifier>{0ff47329-bf70-48b9-8f44-0721a08b35fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{cd35b109-c98b-4add-a74e-522873c24837}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{b36e631c-f632-47bd-b84d-c596c322d155}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MFCTools.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="MFCToolsDlg.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Page1.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Page2.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Page3.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Page4.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Page5.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>pch</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MFCTools.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="MFCToolsDlg.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Page1.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Page2.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Page3.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Page4.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Page5.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>pch</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MFCTools.rc">
+      <Filter>Resource</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\MFCTools.rc2">
+      <Filter>Resource</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\MFCTools.ico">
+      <Filter>Resource</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
