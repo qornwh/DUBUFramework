@@ -52,14 +52,31 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 
 	spdlog::logger("recvfrom !!!\n");
 
-	// 세션 추가
+	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
-
+		// 세션 추가
+		CreateSession(addr);
+	}
+	else
+	{
+		// 세션이 있을때
+		if (sessionId > 0)
+		{
+			Session* session = sessionManager_.GetSession(sessionId);
+			if (session != nullptr)
+			{
+				result = session->RecvDispatch(buffer, size);
+			}
+			else
+			{
+				spdlog::warn("sessionId{} not found", sessionId);
+			}
+		}
 	}
 
 	// repeat 재전송
-	if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
+	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
 	{
 		auto remote = opbPtr->remoteAddr_;
 		auto addSize = opbPtr->addrSize_;
@@ -70,4 +87,10 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+}
+
+void DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
+{
+	Session* session = sessionManager_.AddSession();
+	session->SetSockAddr(addr);
 }

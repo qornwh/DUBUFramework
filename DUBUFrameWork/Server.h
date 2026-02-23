@@ -22,7 +22,7 @@ namespace DUBU
 
 		// 技记 包府(技记 概聪历 积己)
 		//  - 犁傈价 菩哦甸 包府
-		virtual void CreateSession() {};
+		virtual void CreateSession(const SOCKADDR_IN& addr);
 
 	private:
 		std::shared_ptr<RUDPSocket> rudpSocket_;
