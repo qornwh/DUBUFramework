@@ -10,11 +10,6 @@
 
 namespace DUBU
 {
-	template<typename T, typename K>
-	using Map = std::map<T, K>;
-	template<typename T>
-	using Vector = std::vector<T>;
-
 	// 1바이트 DubuByte 생성
 	using DubuByte = unsigned char;
 	using DubuBytePtr = DubuByte*;

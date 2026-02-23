@@ -37,23 +37,16 @@ namespace DUBU
 		class Packet
 		{
 		public:
+			// 헤더 체크 / 복사
 			static bool PacketHeaderCheck(const Uint8* ptr, const Uint16 len);
 			static void PacketHeaderCopy(const Uint8* ptr, Uint8* dest);
 
-			template<typename T>
-			static bool PacketCheck(flatbuffers::Verifier& verifier);
+			// 패킷 복사
 			static void PacketCopy(const Uint8* ptr, const Uint16 len, Uint8* dest);
 
+			// crc32 체크썸
 			static Uint32 CRC32(const Uint8* ptr, Uint16 len);
 		};
-
-		template<typename T>
-		inline bool Packet::PacketCheck(flatbuffers::Verifier& verifier)
-		{
-			if (T::VerifyPacketBuffer(verifier))
-				return true;
-			return false;
-		}
 	}
 }
 

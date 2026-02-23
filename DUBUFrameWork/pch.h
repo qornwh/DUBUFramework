@@ -11,10 +11,12 @@
 #include <coroutine>
 #pragma comment(lib, "ws2_32")
 
+// 상수 모아둔다.
 #define MAX_CLIENT_COUNT 500
 #define FIRST_CLIENT_COUNT 50
 #define SERVICE_PORT 12345
 #define PACKET_MAX_SIZE 500 
+#define DEFAULT_RTT_MS 500
 #endif
 
 namespace DUBU
