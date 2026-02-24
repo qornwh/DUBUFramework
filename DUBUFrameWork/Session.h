@@ -1,12 +1,13 @@
 #pragma once
 #include "pch.h"
+#include "Packet.h"
 
 namespace DUBU
 {
 	class Session
 	{
 	public:
-		Session();
+		Session(const Map<Uint8, Packet::PacketHandler>* handlers);
 		virtual ~Session();
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
@@ -15,9 +16,7 @@ namespace DUBU
 
 		// 실제 recv되면 패킷 파싱 후 Recv 호출
 		bool RecvDispatch(Uint8* buffer, Int32 size);
-
-		// 실제 패킷 처리
-		void Recv(Uint8* buffer, Int32 size);      
+		bool RecvDispatchACK(Uint8* buffer, Int32 size);
 
 		// send는 재전송 패킷용, 보내는용 나눈다.
 		void Send(Uint32 sequenceNo);
@@ -36,5 +35,8 @@ namespace DUBU
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;
+
+		// 패킷별 함수 분기대신 Map사용
+		const Map<Uint8, Packet::PacketHandler>* handlers_;
 	};
 }

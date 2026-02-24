@@ -2,7 +2,6 @@
 #include "RUDPSocket.h"
 #include "Packet.h"
 #include "BufferManager.h"
-#include "spdlog/spdlog.h"
 
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
@@ -29,7 +28,7 @@ void DUBU::Server::Run()
 		Int32 size = rudpSocket_->Dispatch(&ptr);
 
 		// 이때 다른 작업도 괞찮아 보임
-		if (ptr == nullptr) 
+		if (ptr == nullptr)
 			continue;
 
 		OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
@@ -50,8 +49,6 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
 
-	spdlog::logger("recvfrom !!!\n");
-
 	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
@@ -64,13 +61,21 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 		if (sessionId > 0)
 		{
 			Session* session = sessionManager_.GetSession(sessionId);
-			if (session != nullptr)
+			if (session == nullptr)
+			{
+				spdlog::warn("sessionId{} not found", sessionId);
+			}
+
+			// NONE or REPEAT 일때는 패킷에 대한 내용을 처리
+			if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
 			{
 				result = session->RecvDispatch(buffer, size);
 			}
-			else
+
+			// ACK 일때는 클라쪽에서 제대로 받고 다시 보내왔다는 것이다.
+			if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
 			{
-				spdlog::warn("sessionId{} not found", sessionId);
+				result = session->RecvDispatchACK(buffer, size);
 			}
 		}
 	}
@@ -82,6 +87,8 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 		auto addSize = opbPtr->addrSize_;
 		rudpSocket_->SendTo(remote, buffer, addSize);
 	}
+
+	// 일단 실패할때 코드 및 대시보드에 띄울 데이터 큐에 넣기?
 }
 
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
