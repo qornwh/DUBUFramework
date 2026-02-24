@@ -4,6 +4,7 @@
 #define FIRST
 #include <assert.h>
 #include "Types.h"
+#include "spdlog/spdlog.h"
 // 순서 지켜야됨 max함수 flatbuffer랑 겹치는 현상 발생
 #include <winsock2.h>
 #include <Ws2tcpip.h>
