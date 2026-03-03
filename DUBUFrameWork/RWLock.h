@@ -21,7 +21,7 @@ namespace DUBU
         void WriteLock();
         void WriteUnLock();
     private:
-        const uint32_t MAX_SPIN_COUNT = 5000;
+        const uint32_t MAX_SPIN_COUNT = 500;
         std::atomic<uint32_t> count;
     };
 
