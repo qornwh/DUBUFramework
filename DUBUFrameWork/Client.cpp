@@ -31,15 +31,15 @@ bool DUBU::Client::Dispatch()
 	return true;
 }
 
-void DUBU::Client::SendTo(Uint8* ptr, Int32 size)
+void DUBU::Client::SendTo(Uint8* ptr, Uint16 size)
 {
 	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), ptr, size);
 }
 
-void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 }
 
-void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 }

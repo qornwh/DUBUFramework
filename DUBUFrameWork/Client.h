@@ -13,9 +13,9 @@ namespace DUBU
 		virtual ~Client();
 
 		bool Dispatch();
-		void SendTo(Uint8* ptr, Int32 size);
-		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size);
-		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size);
+		void SendTo(Uint8* ptr, Uint16 size);
+		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
+		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
 
 	private:
 		Uint32 clientId_ = 0;

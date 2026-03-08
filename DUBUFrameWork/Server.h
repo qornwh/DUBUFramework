@@ -17,8 +17,8 @@ namespace DUBU
 		void Initialize();
 		void Run();
 
-		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) override;
-		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) override;
+		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
+		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
 		// 技记 包府(技记 概聪历 积己)
 		//  - 犁傈价 菩哦甸 包府
@@ -27,7 +27,7 @@ namespace DUBU
 	private:
 		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock lk_;
-		bool isRunning_ = false;
+		Bool isRunning_ = false;
 
 		SessionManager sessionManager_;
 	};

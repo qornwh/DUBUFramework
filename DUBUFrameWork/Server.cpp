@@ -17,6 +17,7 @@ DUBU::Server::~Server()
 void DUBU::Server::Initialize()
 {
 	rudpSocket_->StartServer();
+	isRunning_ = true;
 }
 
 void DUBU::Server::Run()
@@ -39,7 +40,7 @@ void DUBU::Server::Run()
 	}
 }
 
-void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
@@ -84,14 +85,14 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
 	{
 		auto remote = opbPtr->remoteAddr_;
-		auto addSize = opbPtr->addrSize_;
+		auto addSize = opbPtr->size_;
 		rudpSocket_->SendTo(remote, buffer, addSize);
 	}
 
 	// 일단 실패할때 코드 및 대시보드에 띄울 데이터 큐에 넣기?
 }
 
-void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 }

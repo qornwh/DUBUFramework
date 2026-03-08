@@ -31,7 +31,7 @@ void DUBU::Session::Reset()
 	rttMillisec_ = DEFAULT_RTT_MS;
 }
 
-bool DUBU::Session::RecvDispatch(Uint8* buffer, Int32 size)
+bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
@@ -65,7 +65,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Int32 size)
 	return true;
 }
 
-bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Int32 size)
+bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 

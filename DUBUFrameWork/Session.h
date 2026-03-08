@@ -15,8 +15,8 @@ namespace DUBU
 		virtual void Reset();
 
 		// 실제 recv되면 패킷 파싱 후 Recv 호출
-		bool RecvDispatch(Uint8* buffer, Int32 size);
-		bool RecvDispatchACK(Uint8* buffer, Int32 size);
+		bool RecvDispatch(Uint8* buffer, Uint16 size);
+		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 
 		// send는 재전송 패킷용, 보내는용 나눈다.
 		void Send(Uint32 sequenceNo);
