@@ -155,7 +155,7 @@ void DUBU::RUDPSocket::RecvFrom()
 	wsabuf.len = opbPtr->size_;
 	opbPtr->SetType(OverlappedObjType::RECVEFROM);
 
-	Int32 ret = WSARecvFrom(socket_, &wsabuf, 1, &bytesRecv, &flags, (SOCKADDR*)&opbPtr->remoteAddr_, &opbPtr->addrSize_, &opbPtr->overlapped_, nullptr);
+	Int32 ret = WSARecvFrom(socket_, &wsabuf, 1, &bytesRecv, &flags, (SOCKADDR*)&opbPtr->remoteAddr_, & opbPtr->addrSize_, &opbPtr->overlapped_, nullptr);
 	if (ret == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -166,7 +166,7 @@ void DUBU::RUDPSocket::RecvFrom()
 	}
 }
 
-void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size)
+void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
 	WSABUF wsabuf;
 	DWORD flags = 0;
@@ -194,14 +194,20 @@ void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int3
 	}
 }
 
-void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size)
+void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
+
+	// overlapped 재사용 전 초기화 (ZeroMemory)
+	opbPtr->Initialize();
+
 	// 패킷 복사는 없다 기존꺼 다시 보내는 함수
 	WSABUF wsabuf;
+	wsabuf.len = size;
+	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
 	DWORD flags = 0;
 	DWORD bytesSent = size;
 
-	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
 	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)
 	{
@@ -213,7 +219,7 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer
 	}
 }
 
-void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
+void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
@@ -245,7 +251,7 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
 	RecvFrom();
 }
 
-void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Int32 size)
+void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 

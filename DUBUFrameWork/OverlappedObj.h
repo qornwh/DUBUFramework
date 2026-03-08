@@ -19,7 +19,7 @@ namespace DUBU
 		WSAOVERLAPPED overlapped_;
 		OverlappedObjType type_ = OverlappedObjType::NONE;
 		struct sockaddr_in remoteAddr_;
-		int addrSize_ = sizeof(remoteAddr_);
+		Int32 addrSize_ = sizeof(remoteAddr_);
 		OverlappedPacketBuffer* ptr_ = nullptr;
 
 		void Initialize();

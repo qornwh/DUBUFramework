@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "RWLock.h"
-#include "ConCurrentQueue.h"
 
 namespace DUBU
 {
@@ -13,8 +12,8 @@ namespace DUBU
 	public:
 		virtual ~ISocketHandler() {}
 
-		virtual void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) = 0;
-		virtual void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) = 0;
+		virtual void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) = 0;
+		virtual void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) = 0;
 	};
 
 	class RUDPSocket : public std::enable_shared_from_this<RUDPSocket>
@@ -42,10 +41,10 @@ namespace DUBU
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
 		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
 		void RecvFrom();
-		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size);
-		void SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Int32 size);
-		void RecvFromComplete(OVERLAPPED* ptr, Int32 size);
-		void SendToComplete(OVERLAPPED* ptr, Int32 size);
+		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
+		void SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
+		void RecvFromComplete(OVERLAPPED* ptr, Uint16 size);
+		void SendToComplete(OVERLAPPED* ptr, Uint16 size);
 
 	private:
 		HANDLE iocpHd_;
