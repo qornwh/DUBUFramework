@@ -17,12 +17,12 @@ namespace DUBU
 	struct OverlappedObj
 	{
 		WSAOVERLAPPED overlapped_;
-		OverlappedObjType type_ = OverlappedObjType::NONE;
+		Uint32 type_ = OverlappedObjType::NONE;
 		struct sockaddr_in remoteAddr_;
 		Int32 addrSize_ = sizeof(remoteAddr_);
 		OverlappedPacketBuffer* ptr_ = nullptr;
 
 		void Initialize();
-		void SetType(OverlappedObjType type);
+		void SetType(Uint32 type);
 	};
 }

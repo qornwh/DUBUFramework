@@ -18,8 +18,6 @@ DUBU::SessionManager::~SessionManager()
 
 DUBU::Session* DUBU::SessionManager::AddSession()
 {
-    WriteLockGuard wl(lk_);
-
     Uint32 sessionId = GenerateId();
     sessionCount_.fetch_add(1);
     Session* session = Pop<Session*>();
@@ -33,8 +31,6 @@ DUBU::Session* DUBU::SessionManager::AddSession()
 
 void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
 {
-    WriteLockGuard wl(lk_);
-
     // 무조건 Session이 안쓴다는 가정 판단이 필요 그래서 장치 마련
     auto it = sessionMap_.find(sessionId);
     if (it != sessionMap_.end())
@@ -45,13 +41,16 @@ void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
 
 DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
 {
-    ReadLockGuard rl(lk_);
-
     auto it = sessionMap_.find(sessionId);
     if (it != sessionMap_.end())
     {
         return it->second;
     }
+}
+
+Map<Uint32, DUBU::Session*>& DUBU::SessionManager::GetSessions()
+{
+    return sessionMap_;
 }
 
 Uint32 DUBU::SessionManager::GenerateId()

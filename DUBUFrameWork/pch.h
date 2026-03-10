@@ -17,7 +17,7 @@
 #define FIRST_CLIENT_COUNT 50
 #define SERVICE_PORT 12345
 #define PACKET_MAX_SIZE 500 
-#define DEFAULT_RTT_MS 500
+#define DEFAULT_RTT_MS 100
 #endif
 
 namespace DUBU
@@ -29,5 +29,9 @@ namespace DUBU
 			printf("%s", str);
 			assert(ret);
 		}
+	}
+
+	static long long GetCurrentTimeMs() {
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	}
 }

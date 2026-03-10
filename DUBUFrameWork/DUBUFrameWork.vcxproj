@@ -163,6 +163,7 @@
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Pool.cpp" />
+    <ClCompile Include="RingQueue.cpp" />
     <ClCompile Include="RUDPSocket.cpp" />
     <ClCompile Include="RWLock.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pool.h" />
+    <ClInclude Include="RingQueue.h" />
     <ClInclude Include="RUDPSocket.h" />
     <ClInclude Include="RWLock.h" />
     <ClInclude Include="Server.h" />

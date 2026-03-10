@@ -1,42 +1,57 @@
 #pragma once
 #include "pch.h"
 #include "Packet.h"
+#include "RingQueue.h"
 
 namespace DUBU
 {
+	/*
+	* Session í´ë˜ìŠ¤ì—ì„œ Recv, Sendë¥¼ ì§ì ‘ ë‹´ë‹¹í•˜ì§€ëŠ” ì•ŠëŠ”ë‹¤.
+	*/
 	class Session
 	{
 	public:
 		Session(const Map<Uint8, Packet::PacketHandler>* handlers);
 		virtual ~Session();
-
-		void SetSockAddr(const SOCKADDR_IN& addr);
-		void SetSessionId(Int32 sessionId);
 		virtual void Reset();
 
-		// ½ÇÁ¦ recvµÇ¸é ÆĞÅ¶ ÆÄ½Ì ÈÄ Recv È£Ãâ
+		void SetSockAddr(const SOCKADDR_IN& addr);
+		// ì™¸ë¶€ì—ì„œ ìˆ˜ì • ë¶ˆê°€ëŠ¥ í•˜ê²Œ ë§Œë“ ë‹¤.
+		const SOCKADDR_IN& GetSockAddr() const;
+		void SetSessionId(Int32 sessionId);
+		Int32 GetSessionId() const;
+
+		// ì™¸ë¶€ ì°¸ì¡°ìš©
+		Uint32 GetRecvSequenceNo() const;
+		Uint32 GetSendSequenceNo() const;
+		Uint32 GetRetryCount() const;
+		Uint32 GetRttMillisec() const;
+		Int64 GetTimestamp() const;
+		DS::RingQueue<std::tuple<Int64, Uint32, Uint8*>>& GetPendingQueue();
+
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
-
-		// send´Â ÀçÀü¼Û ÆĞÅ¶¿ë, º¸³»´Â¿ë ³ª´«´Ù.
-		void Send(Uint32 sequenceNo);
-		void SendAck(Uint32 sequenceNo);
 
 	private:
 		Uint32 sessionId_ = 0;
 		Uint32 recvSequenceNo_ = 0;
 		Uint32 sendSequenceNo_ = 0;
+		Uint32 retryCount_ = 0;
 
-		// ÃÊ±â°ª 0.5ÃÊ
+		// ì´ˆê¸°ê°’ 0.5ì´ˆ
 		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
 
-		// °¡Àå ¸¶Áö¸· ½Ã°£
-		Uint32 timestamp_ = 0;
+		// ê°€ì¥ ë§ˆì§€ë§‰ ì‹œê°„
+		Int64 timestamp_ = 0;
 
-		// ip port¹ÙÀÎµù => ip¹Ù²¸µµ sessionID·Î ÆÇº°ÇÏ±â ¶§¹®¿¡ À¯Áö°¡´É
+		// ip portë°”ì¸ë”© => ipë°”ê»´ë„ sessionIDë¡œ íŒë³„í•˜ê¸° ë•Œë¬¸ì— ìœ ì§€ê°€ëŠ¥
 		SOCKADDR_IN addr_;
 
-		// ÆĞÅ¶º° ÇÔ¼ö ºĞ±â´ë½Å Map»ç¿ë
+		// ì¬ì „ì†¡ íŒ¨í‚· ë¦¬ìŠ¤íŠ¸
+		// ì‹œê°„, ë„˜ë²„, íŒ¨í‚· í¬ì¸í„° 
+		DS::RingQueue<std::tuple<Int64, Uint32, Uint8*>> pendingQueue_;
+
+		// íŒ¨í‚·ë³„ í•¨ìˆ˜ ë¶„ê¸°ëŒ€ì‹  Mapì‚¬ìš©
 		const Map<Uint8, Packet::PacketHandler>* handlers_;
 	};
 }

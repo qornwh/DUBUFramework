@@ -84,6 +84,9 @@
     <ClInclude Include="Client.h">
       <Filter>Service\Client</Filter>
     </ClInclude>
+    <ClInclude Include="RingQueue.h">
+      <Filter>DataStruct\DS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -127,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="Client.cpp">
       <Filter>Service\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="RingQueue.cpp">
+      <Filter>DataStruct\DS</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

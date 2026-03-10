@@ -3,8 +3,10 @@
 #include <atomic>
 #include <queue>
 #include <set>
+#include <map>
 #include <functional>
 #include <string>
+#include <chrono>
 #include <flatbuffers/flatbuffer_builder.h>
 
 #pragma region BaseTypes
@@ -51,10 +53,10 @@ struct TupleHash {
 };
 
 template <typename T, typename K>
-using Map = std::unordered_map<T, K>;
+using Map = std::map<T, K>;
 
-template <typename T1, typename T2, typename K>
-using MapTuple = std::unordered_map<Tuple<T1, T2>, K, TupleHash<T1, T2>>; // pair 커스텀 해시 적용
+template <typename T, typename K>
+using MultiMap = std::multimap<T, K>;
 
 template <typename T>
 using Function = std::function<T>;

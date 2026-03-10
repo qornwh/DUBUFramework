@@ -16,9 +16,49 @@ void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
 	addr_ = addr;
 }
 
+const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
+{
+	return addr_;
+}
+
 void DUBU::Session::SetSessionId(Int32 sessionId)
 {
 	sessionId_ = sessionId;
+}
+
+Int32 DUBU::Session::GetSessionId() const
+{
+	return sessionId_;
+}
+
+Uint32 DUBU::Session::GetRecvSequenceNo() const
+{
+	return recvSequenceNo_;
+}
+
+Uint32 DUBU::Session::GetSendSequenceNo() const
+{
+	return sendSequenceNo_;
+}
+
+Uint32 DUBU::Session::GetRetryCount() const
+{
+	return retryCount_;
+}
+
+Uint32 DUBU::Session::GetRttMillisec() const
+{
+	return rttMillisec_;
+}
+
+Int64 DUBU::Session::GetTimestamp() const
+{
+	return timestamp_;
+}
+
+DUBU::DS::RingQueue<std::tuple<Int64, Uint32, Uint8*>>& DUBU::Session::GetPendingQueue()
+{
+	return pendingQueue_;
 }
 
 void DUBU::Session::Reset()
@@ -35,32 +75,32 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-	// ¿Ã¿¸ ∆–≈∂ ¡ﬂ∫π ≥—±Ë
+	// Ïù¥Ï†Ñ Ìå®ÌÇ∑ Ï§ëÎ≥µ ÎÑòÍπÄ
 	if (header->sequenceNo_ <= recvSequenceNo_)
 	{
 		return false;
 	}
 
-	// ∆–≈∂  √º≈©
+	// Ìå®ÌÇ∑  Ï≤¥ÌÅ¨
 	flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
 	Uint8 packetCode = header->packetCode_;
 	
 	auto it = handlers_->find(packetCode);
 	if (it == handlers_->end())
 	{
-		// ∆–≈∂ƒ⁄µÂø° ¥Î«— «‘ºˆ∞° µÓ∑œµ«¡ˆ æ ¿Ω
+		// Ìå®ÌÇ∑ÏΩîÎìúÏóê ÎåÄÌïú Ìï®ÏàòÍ∞Ä Îì±Î°ùÎêòÏßÄ ÏïäÏùå
 		spdlog::error("Not Found PacketCode : {} !!!", packetCode);
 		return false;
 	}
 
 	if (!it->second.verifier_(verifier))
 	{
-		// ∆–≈∂¿Ã ¡§»Æ«œ¡ˆ æ ¿Ω
+		// Ìå®ÌÇ∑Ïù¥ Ï†ïÌôïÌïòÏßÄ ÏïäÏùå
 		spdlog::warn("Verfiy Failed !!!");
 		return false;
 	}
 
-	// ∆–≈∂∫∞ «‘ºˆ Ω««‡
+	// Ìå®ÌÇ∑Î≥Ñ Ìï®Ïàò Ïã§Ìñâ
 	it->second.handler_(buffer, size);
 	return true;
 }
@@ -69,30 +109,17 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-	// ¿Ã¿¸ ∆–≈∂ ¡ﬂ∫π ≥—±Ë
-	if (header->sequenceNo_ <= recvSequenceNo_)
+	// Ïù¥Ï†Ñ Ìå®ÌÇ∑ Ï§ëÎ≥µ ÎÑòÍπÄ
+	if (header->sequenceNo_ <= sendSequenceNo_)
 	{
 		return false;
 	}
 	
-	// πﬁæ∆ø¬ ∆–≈∂¿∏∑Œ ¥√∑¡¡ÿ¥Ÿ.
-	if (header->sequenceNo_ == recvSequenceNo_ + 1)
+	// Î∞õÏïÑÏò® Ìå®ÌÇ∑ÏúºÎ°ú ÎäòÎ†§Ï§ÄÎã§.
+	if (header->sequenceNo_ == sendSequenceNo_ + 1)
 	{
 		recvSequenceNo_ = header->sequenceNo_;
 	}
 
-	/*
-	* ø©±‚º≠ √ﬂ∞°¿˚¿∏∑Œ º≠πˆ -> ≈¨∂Û∑Œ µ•¿Ã≈Õ ¡Ÿ ∂ß (øπ∏¶µÈ∏È æ∆¿Ã≈€ ±∏∏≈)
-	* »Æ¿Œ∆–≈∂¿Ã æÓ∂≤ ∆–≈∂¿Œ¡ˆ ∫–ºÆ»ƒ √≥∏Æ∞·∞˙∏¶ ≈¨∂Û∑Œ ¥¯¡Ææﬂ µ»¥Ÿ.
-	*/
-
 	return true;
-}
-
-void DUBU::Session::Send(Uint32 sequenceNo)
-{
-}
-
-void DUBU::Session::SendAck(Uint32 sequenceNo)
-{
 }

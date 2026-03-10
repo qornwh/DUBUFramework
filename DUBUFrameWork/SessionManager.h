@@ -21,6 +21,8 @@ namespace DUBU
 		Session* AddSession();
 		void RemoveSession(Uint32 sessionId);
 		Session* GetSession(Uint32 sessionId);
+		Map<Uint32, Session*>& GetSessions();
+
 	private:
 		Uint32 GenerateId();
 
@@ -28,7 +30,6 @@ namespace DUBU
 		std::uniform_int_distribution<Uint32> distribution_{ (Uint32)1, ((Uint32)0) - 1 };
 		Map<Uint32, Session*> sessionMap_;
 		Atomic<Uint32> sessionCount_{ 0 };
-		Lock lk_;
 	};
 }
 

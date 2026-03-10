@@ -61,10 +61,12 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		// 세션이 있을때
 		if (sessionId > 0)
 		{
+			ReadLockGuard rl(lk_);
 			Session* session = sessionManager_.GetSession(sessionId);
 			if (session == nullptr)
 			{
-				spdlog::warn("sessionId{} not found", sessionId);
+				spdlog::error("sessionId{} not found", sessionId);
+				return;
 			}
 
 			// NONE or REPEAT 일때는 패킷에 대한 내용을 처리
@@ -81,7 +83,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		}
 	}
 
-	// repeat 재전송
+	// repeat ACK전송
 	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
 	{
 		auto remote = opbPtr->remoteAddr_;
@@ -99,6 +101,43 @@ void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 void DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 {
+	WriteLockGuard wl(lk_);
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
+}
+
+void DUBU::Server::CheckSession()
+{
+	// 재전송로직 실행
+	Uint64 now = GetCurrentTimeMs();
+
+	{
+		// 끊을 세션
+		Uint8 idx = 0;
+		// 읽기만 묶는다.
+		ReadLockGuard rl(lk_);
+		for (auto& [_, session] : sessionManager_.GetSessions())
+		{
+			// 끊김 감지
+			if (now - session->GetTimestamp() > SessionTimeout) 
+			{
+				removeListCache_[idx++] = session->GetSessionId();
+			}
+
+			// 재전송
+			for (auto& [time, seqNo, opb] : session->GetPendingQueue())
+			{
+				if (now - opb->sentAt_ > session->GetRttMillisec() * 2)
+				{
+					rudpSocket_->SendToRepeat(session->GetSockAddr(), opb->buffer_, opb->size_);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
+	
+
 }

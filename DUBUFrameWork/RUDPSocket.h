@@ -34,6 +34,8 @@ namespace DUBU
 		// Å¬¶ó¿ë
 		void StartClient(const String& serverIP, Uint16 serverPort);
 		void EndClient();
+		
+		void SetSocketAddr(SOCKADDR_IN& serverAddr);
 		SOCKADDR_IN& GetSockAddr();
 
 		void Closesocket();
@@ -42,6 +44,7 @@ namespace DUBU
 		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
 		void RecvFrom();
 		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
+		void SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
 		void SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
 		void RecvFromComplete(OVERLAPPED* ptr, Uint16 size);
 		void SendToComplete(OVERLAPPED* ptr, Uint16 size);
