@@ -84,7 +84,7 @@
     <ClInclude Include="Client.h">
       <Filter>Service\Client</Filter>
     </ClInclude>
-    <ClInclude Include="RingQueue.h">
+    <ClInclude Include="RingBuffer.h">
       <Filter>DataStruct\DS</Filter>
     </ClInclude>
   </ItemGroup>
@@ -131,7 +131,7 @@
     <ClCompile Include="Client.cpp">
       <Filter>Service\Client</Filter>
     </ClCompile>
-    <ClCompile Include="RingQueue.cpp">
+    <ClCompile Include="RingBuffer.cpp">
       <Filter>DataStruct\DS</Filter>
     </ClCompile>
   </ItemGroup>

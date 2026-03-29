@@ -1,5 +1,7 @@
 #include "Session.h"
 #include "Packet.h"
+#include "RUDPSocket.h"
+#include "BufferManager.h"
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) : 
@@ -56,11 +58,6 @@ Int64 DUBU::Session::GetTimestamp() const
 	return timestamp_;
 }
 
-DUBU::DS::RingQueue<std::tuple<Int64, Uint32, Uint8*>>& DUBU::Session::GetPendingQueue()
-{
-	return pendingQueue_;
-}
-
 void DUBU::Session::Reset()
 {
 	sessionId_ = 0;
@@ -108,18 +105,40 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
+	Uint32 ackSeq = header->sequenceNo_;
+	int idx = ackSeq % DEFAULT_WINDOW_COUNT;
 
-	// 이전 패킷 중복 넘김
-	if (header->sequenceNo_ <= sendSequenceNo_)
+	if (pendingPackets_[idx].sequenceNo == ackSeq && pendingPackets_[idx].buffer != nullptr)
 	{
-		return false;
-	}
-	
-	// 받아온 패킷으로 늘려준다.
-	if (header->sequenceNo_ == sendSequenceNo_ + 1)
-	{
-		recvSequenceNo_ = header->sequenceNo_;
-	}
+		// RTT 갱신 : 비율 4 : 1
+		Int64 rtt = GetCurrentTimeMs() - pendingPackets_[idx].timeStamp;
+		rttMillisec_ = (Uint32)(rttMillisec_ * 0.8f + rtt * 0.2f);
 
+		// 수신 성공 버퍼 지운다.
+		OverlappedPacketBuffer* pandingbuffer = pendingPackets_[idx].buffer;
+		PacketManager::GetInstance().PushPacketBuffer(pandingbuffer);
+		pendingPackets_[idx].buffer = nullptr;
+
+		// pandding된 버퍼가 있는곳 까지 지운다, 단 localSeqence_까지만
+		while (localWindowStart_ != localSeqence_ && pendingPackets_[localWindowStart_ % DEFAULT_WINDOW_COUNT].buffer == nullptr)
+		{
+			localWindowStart_++;
+		}
+	}
 	return true;
+}
+
+void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
+{
+	Uint64 now = GetCurrentTimeMs();
+
+	for (Uint32 i = localWindowStart_; i < localSeqence_; ++i)
+	{
+		PendingPacket& p = pendingPackets_[i % DEFAULT_WINDOW_COUNT];
+		if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
+		{
+			socket->SendToRepeat(addr_, p.buffer->buffer_, p.buffer->size_);
+			p.timeStamp = now;
+		}
+	}
 }

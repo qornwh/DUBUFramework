@@ -54,14 +54,16 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
 		// 세션 추가
-		CreateSession(addr);
+		Session* session = CreateSession(addr);
+		// 세션 추가 완료 응답
+		rudpSocket_->SendTo(addr, buffer, size);
 	}
 	else
 	{
 		// 세션이 있을때
 		if (sessionId > 0)
 		{
-			ReadLockGuard rl(lk_);
+			ReadLockGuard rl(sessionLock_);
 			Session* session = sessionManager_.GetSession(sessionId);
 			if (session == nullptr)
 			{
@@ -99,11 +101,12 @@ void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 }
 
-void DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
+DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 {
-	WriteLockGuard wl(lk_);
+	WriteLockGuard wl(sessionLock_);
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
+	return session;
 }
 
 void DUBU::Server::CheckSession()
@@ -115,7 +118,7 @@ void DUBU::Server::CheckSession()
 		// 끊을 세션
 		Uint8 idx = 0;
 		// 읽기만 묶는다.
-		ReadLockGuard rl(lk_);
+		ReadLockGuard rl(sessionLock_);
 		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
 			// 끊김 감지
@@ -124,18 +127,8 @@ void DUBU::Server::CheckSession()
 				removeListCache_[idx++] = session->GetSessionId();
 			}
 
-			// 재전송
-			for (auto& [time, seqNo, opb] : session->GetPendingQueue())
-			{
-				if (now - opb->sentAt_ > session->GetRttMillisec() * 2)
-				{
-					rudpSocket_->SendToRepeat(session->GetSockAddr(), opb->buffer_, opb->size_);
-				}
-				else
-				{
-					break;
-				}
-			}
+			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
+			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
 		}
 	}
 	

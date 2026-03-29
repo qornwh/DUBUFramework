@@ -28,13 +28,13 @@ namespace DUBU
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
-		virtual void CreateSession(const SOCKADDR_IN& addr);
+		virtual Session* CreateSession(const SOCKADDR_IN& addr);
 		void CheckSession();
 
 	private:
 		SessionManager sessionManager_;
 		std::shared_ptr<RUDPSocket> rudpSocket_;
-		Lock lk_;
+		Lock sessionLock_;
 		Bool isRunning_ = false;
 
 		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;

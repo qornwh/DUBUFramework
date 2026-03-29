@@ -3,22 +3,20 @@
 #include "Types.h"
 #include "RWLock.h"
 
-#define DEFAULT_RINGQUEUE_COUNT 200
-
 namespace DUBU::DS
 {
 	/*
 	* 일단 Lock기반 큐로 구현
 	*/
 	template<typename T>
-	struct RingQueue
+	struct RingBuffer
 	{
 		void Push(T t);
 		void Pop(T& t);
 		// 일단 매개변수 없는 타입으로만 적용
 		bool PeekProcess(Function<bool()>&& function);
 
-		T buffer[DEFAULT_RINGQUEUE_COUNT];
+		T buffer[DEFAULT_WINDOW_COUNT];
 		Int32 startPos_ = 0;
 		Int32 endPos_ = 0;
 
@@ -28,11 +26,11 @@ namespace DUBU::DS
 	};
 
 	template<typename T>
-	inline void RingQueue<T>::Push(T t)
+	inline void RingBuffer<T>::Push(T t)
 	{
 		DUBU::WriteLockGuard wl(lk_);
 		buffer[endPos_++] = t;
-		if (endPos_ >= DEFAULT_RINGQUEUE_COUNT)
+		if (endPos_ >= DEFAULT_WINDOW_COUNT)
 		{
 			endPos_ = 0;
 		}
@@ -46,7 +44,7 @@ namespace DUBU::DS
 	}
 
 	template<typename T>
-	inline void RingQueue<T>::Pop(T& t)
+	inline void RingBuffer<T>::Pop(T& t)
 	{
 		DUBU::WriteLockGuard wl(lk_);
 		if (!Check())
@@ -56,14 +54,14 @@ namespace DUBU::DS
 
 		t = buffer[startPos_];
 		++startPos_;
-		if (startPos_ >= DEFAULT_RINGQUEUE_COUNT)
+		if (startPos_ >= DEFAULT_WINDOW_COUNT)
 		{
 			startPos_ = 0;
 		}
 	}
 
 	template<typename T>
-	inline bool RingQueue<T>::PeekProcess(Function<bool()>&& function)
+	inline bool RingBuffer<T>::PeekProcess(Function<bool()>&& function)
 	{
 		WriteLockGuard wl(lk_);
 		if (!Check())
@@ -75,7 +73,7 @@ namespace DUBU::DS
 	}
 
 	template<typename T>
-	inline bool RingQueue<T>::Check()
+	inline bool RingBuffer<T>::Check()
 	{
 		if (startPos_ == endPos_)
 		{

@@ -18,6 +18,8 @@
 #define SERVICE_PORT 12345
 #define PACKET_MAX_SIZE 500 
 #define DEFAULT_RTT_MS 100
+#define DEFAULT_WINDOW_COUNT 64
+#define DEFAULT_RTT_MS_DELAY 20
 #endif
 
 namespace DUBU
