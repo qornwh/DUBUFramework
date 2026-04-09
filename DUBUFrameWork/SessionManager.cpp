@@ -1,1 +1,64 @@
 #include "SessionManager.h"
+#include "Pool.h"
+
+DUBU::SessionManager::SessionManager()
+{
+}
+
+DUBU::SessionManager::~SessionManager()
+{
+    for (auto [id, session] : sessionMap_)
+    {
+        // 전부다 할당 해제 
+        Push<Session*>(session);
+    }
+    // 비우기
+    sessionMap_.clear();
+}
+
+DUBU::Session* DUBU::SessionManager::AddSession()
+{
+    Uint32 sessionId = GenerateId();
+    sessionCount_.fetch_add(1);
+    Session* session = Pop<Session*>();
+    new(session) Session(nullptr);
+    session->Reset();
+    session->SetSessionId(sessionId);
+    sessionMap_.insert({ sessionId, session });
+
+    return session;
+}
+
+void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
+{
+    // 무조건 Session이 안쓴다는 가정 판단이 필요 그래서 장치 마련
+    auto it = sessionMap_.find(sessionId);
+    if (it != sessionMap_.end())
+    {
+        sessionMap_.erase(sessionId);
+    }
+}
+
+DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
+{
+    auto it = sessionMap_.find(sessionId);
+    if (it != sessionMap_.end())
+    {
+        return it->second;
+    }
+}
+
+Map<Uint32, DUBU::Session*>& DUBU::SessionManager::GetSessions()
+{
+    return sessionMap_;
+}
+
+Uint32 DUBU::SessionManager::GenerateId()
+{
+    Uint32 id = distribution_(rng_);
+    while (sessionMap_.count(id) > 0)
+    {
+        id = distribution_(rng_);
+    }
+    return id;
+}

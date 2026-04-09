@@ -2,7 +2,6 @@
 #include "RUDPSocket.h"
 #include "Packet.h"
 #include "BufferManager.h"
-#include "spdlog/spdlog.h"
 
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
@@ -18,6 +17,7 @@ DUBU::Server::~Server()
 void DUBU::Server::Initialize()
 {
 	rudpSocket_->StartServer();
+	isRunning_ = true;
 }
 
 void DUBU::Server::Run()
@@ -29,7 +29,7 @@ void DUBU::Server::Run()
 		Int32 size = rudpSocket_->Dispatch(&ptr);
 
 		// 이때 다른 작업도 괞찮아 보임
-		if (ptr == nullptr) 
+		if (ptr == nullptr)
 			continue;
 
 		OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
@@ -40,7 +40,7 @@ void DUBU::Server::Run()
 	}
 }
 
-void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
@@ -50,24 +50,87 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
 
-	spdlog::logger("recvfrom !!!\n");
-
-	// 세션 추가
+	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
+		// 세션 추가
+		Session* session = CreateSession(addr);
+		// 세션 추가 완료 응답
+		rudpSocket_->SendTo(addr, buffer, size);
+	}
+	else
+	{
+		// 세션이 있을때
+		if (sessionId > 0)
+		{
+			ReadLockGuard rl(sessionLock_);
+			Session* session = sessionManager_.GetSession(sessionId);
+			if (session == nullptr)
+			{
+				spdlog::error("sessionId{} not found", sessionId);
+				return;
+			}
 
+			// NONE or REPEAT 일때는 패킷에 대한 내용을 처리
+			if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
+			{
+				result = session->RecvDispatch(buffer, size);
+			}
+
+			// ACK 일때는 클라쪽에서 제대로 받고 다시 보내왔다는 것이다.
+			if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+			{
+				result = session->RecvDispatchACK(buffer, size);
+			}
+		}
 	}
 
-	// repeat 재전송
-	if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
+	// repeat ACK전송
+	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
 	{
 		auto remote = opbPtr->remoteAddr_;
-		auto addSize = opbPtr->addrSize_;
+		auto addSize = opbPtr->size_;
 		rudpSocket_->SendTo(remote, buffer, addSize);
 	}
+
+	// 일단 실패할때 코드 및 대시보드에 띄울 데이터 큐에 넣기?
 }
 
-void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size)
+void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+}
+
+DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
+{
+	WriteLockGuard wl(sessionLock_);
+	Session* session = sessionManager_.AddSession();
+	session->SetSockAddr(addr);
+	return session;
+}
+
+void DUBU::Server::CheckSession()
+{
+	// 재전송로직 실행
+	Uint64 now = GetCurrentTimeMs();
+
+	{
+		// 끊을 세션
+		Uint8 idx = 0;
+		// 읽기만 묶는다.
+		ReadLockGuard rl(sessionLock_);
+		for (auto& [_, session] : sessionManager_.GetSessions())
+		{
+			// 끊김 감지
+			if (now - session->GetTimestamp() > SessionTimeout) 
+			{
+				removeListCache_[idx++] = session->GetSessionId();
+			}
+
+			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
+			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+		}
+	}
+	
+
 }

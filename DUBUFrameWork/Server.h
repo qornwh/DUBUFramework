@@ -4,8 +4,16 @@
 #include "RUDPSocket.h"
 #include "SessionManager.h"
 
+// 디폴트 10초 타임아웃
+#define DEFAULT_DISCONNECT_TIMEOUT_MS 10000;
+
 namespace DUBU 
 {
+	/*
+	* Server 객체에서만 SessionManager관리한다.
+	* 그러므로 SessionManager에서 Lock을 제거하고 Server에서 Lock처리한다.
+	* CheckSession <= 일정 주기마다 모든 세션의 재전송 패킷 전송 및 타임아웃 체크
+	*/
 	class RUDPSocket;
 
 	class Server : public ISocketHandler
@@ -17,19 +25,22 @@ namespace DUBU
 		void Initialize();
 		void Run();
 
-		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) override;
-		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Int32 size) override;
+		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
+		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
-		// 세션 관리(세션 매니저 생성)
-		//  - 재전송 패킷들 관리
-		virtual void CreateSession() {};
+		virtual Session* CreateSession(const SOCKADDR_IN& addr);
+		void CheckSession();
 
 	private:
-		std::shared_ptr<RUDPSocket> rudpSocket_;
-		Lock lk_;
-		bool isRunning_ = false;
-
 		SessionManager sessionManager_;
+		std::shared_ptr<RUDPSocket> rudpSocket_;
+		Lock sessionLock_;
+		Bool isRunning_ = false;
+
+		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
+
+		// 끊을 세션 캐시로 저장
+		Uint32 removeListCache_[1000];
 	};
 }
 

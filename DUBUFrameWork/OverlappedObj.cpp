@@ -6,7 +6,7 @@ void DUBU::OverlappedObj::Initialize()
 	ZeroMemory(&overlapped_, sizeof(overlapped_));
 }
 
-void DUBU::OverlappedObj::SetType(OverlappedObjType type)
+void DUBU::OverlappedObj::SetType(Uint32 type)
 {
 	type_ = type;
 }

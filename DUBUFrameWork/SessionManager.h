@@ -1,7 +1,8 @@
 #pragma once
 #include "pch.h"
-#include "ConcurrentQueue.h"
+#include <random>
 #include "Session.h"
+#include "RWLock.h"
 
 namespace DUBU
 {
@@ -17,13 +18,18 @@ namespace DUBU
 		SessionManager& operator=(const SessionManager& other) = delete;
 		SessionManager& operator=(SessionManager&& other) = delete;
 
-		void AddSession();
-		void RemoveSession();
-		void GetSession();
+		Session* AddSession();
+		void RemoveSession(Uint32 sessionId);
+		Session* GetSession(Uint32 sessionId);
+		Map<Uint32, Session*>& GetSessions();
 
 	private:
-		DS::ConcurrentQueue<Session> q_;
-		Uint32 sessionCount_ = 0;
+		Uint32 GenerateId();
+
+		std::mt19937 rng_ { std::random_device{}() };
+		std::uniform_int_distribution<Uint32> distribution_{ (Uint32)1, ((Uint32)0) - 1 };
+		Map<Uint32, Session*> sessionMap_;
+		Atomic<Uint32> sessionCount_{ 0 };
 	};
 }
 

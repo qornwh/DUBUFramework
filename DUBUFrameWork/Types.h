@@ -3,13 +3,14 @@
 #include <atomic>
 #include <queue>
 #include <set>
+#include <map>
 #include <functional>
 #include <string>
+#include <chrono>
 #include <flatbuffers/flatbuffer_builder.h>
 
 #pragma region BaseTypes
 using Bool = bool;
-using Uint8 = uint8_t;
 using Int8 = int8_t;
 using Int16 = int16_t;
 using Int32 = int32_t;
@@ -20,7 +21,6 @@ using Uint32 = uint32_t;
 using Uint64 = uint64_t;
 using String = std::string;
 using WString = std::wstring;
-using Function = std::function<void()>;
 #pragma endregion
 
 #pragma region TemplateTypes
@@ -53,10 +53,13 @@ struct TupleHash {
 };
 
 template <typename T, typename K>
-using Map = std::unordered_map<T, K>;
+using Map = std::map<T, K>;
 
-template <typename T1, typename T2, typename K>
-using MapTuple = std::unordered_map<Tuple<T1, T2>, K, TupleHash<T1, T2>>; // pair 커스텀 해시 적용
+template <typename T, typename K>
+using MultiMap = std::multimap<T, K>;
+
+template <typename T>
+using Function = std::function<T>;
 #pragma endregion
 
 #pragma region CustomTypes

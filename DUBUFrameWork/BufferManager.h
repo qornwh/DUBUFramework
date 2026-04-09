@@ -11,7 +11,7 @@ namespace DUBU
 	struct OverlappedPacketBuffer : public OverlappedObj
 	{
 		void* pos_ = nullptr;
-		Int32 size_ = 0;
+		Uint16 size_ = 0;
 		Uint8 buffer_[PACKET_MAX_SIZE];
 	};
 

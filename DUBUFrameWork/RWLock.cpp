@@ -10,46 +10,60 @@ void DUBU::Lock::ReadLock()
 {
 	while (true)
 	{
-        for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
-        {
-            uint32_t expected = count.load() & READ; // 기대값
-            uint32_t desired = expected + 1;  // 변경될값
-            if (count.compare_exchange_strong(expected, desired))
-            {
-                return;
-            }
-        }
-        std::this_thread::yield();
+		for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
+		{
+			uint32_t expected = count.load(std::memory_order_relaxed);
+
+			// WRITE 비트 켜져있으면 스킵 (버그 수정 핵심!)
+			if (expected & WRITE)
+			{
+				_mm_pause();
+				continue;
+			}
+
+			uint32_t desired = expected + 1;
+			if (count.compare_exchange_weak(
+				expected, desired,
+				std::memory_order_acquire,   // 성공
+				std::memory_order_relaxed))  // 실패
+			{
+				return;
+			}
+			_mm_pause();
+		}
+		std::this_thread::yield();
 	}
 }
 
 void DUBU::Lock::ReadUnLock()
 {
-    auto cur = count.load();
-    assert(cur > 0);
-    count.fetch_sub(1);
+	// fetch_sub는 기본 seq_cst → release로 충분
+	uint32_t prev = count.fetch_sub(1, std::memory_order_release);
+	assert((prev & READ) > 0);  // 더 정확한 assert
 }
 
 void DUBU::Lock::WriteLock()
 {
-    while (true)
-    {
-        for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
-        {
-            uint32_t expected = EMPTY; // 기대값
-            uint32_t desired = WRITE;  // 변경될값
-            if (count.compare_exchange_strong(expected, desired))
-            {
-                return;
-            }
-        }
-        std::this_thread::yield();
-    }
+	while (true)
+	{
+		for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
+		{
+			uint32_t expected = EMPTY;
+			if (count.compare_exchange_weak(
+				expected, WRITE,
+				std::memory_order_acquire,
+				std::memory_order_relaxed))
+			{
+				return;
+			}
+			_mm_pause();  // 추가
+		}
+		std::this_thread::yield();
+	}
 }
 
 void DUBU::Lock::WriteUnLock()
 {
-    auto cur = count.load();
-    assert(cur == WRITE);
-    count.store(EMPTY);
+	// release로 충분 (이후 연산이 앞으로 넘어오지 않게만 보장)
+	count.store(EMPTY, std::memory_order_release);
 }
