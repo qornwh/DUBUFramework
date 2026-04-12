@@ -7,6 +7,7 @@
 #include <bit>
 #include <atomic>
 #include "RWLock.h"
+#include "ObjectPool.h"
 
 namespace DUBU
 {
@@ -26,14 +27,15 @@ namespace DUBU
 	extern const int PoolSize;
 	// Lock 
 	extern Lock PoolLock;
+	// 풀에 담긴 메모리 최대 크기
+	constexpr int MaxChunkSize = 1 << 10;
 
 	struct DubuByteData : public std::enable_shared_from_this<DubuByteData>
 	{
 		DubuByteData();
 		~DubuByteData();
 
-		// size = (4 + 8 + 16 + 32) * 10'000 + (64 + 128) * 2'500 + (256 + 512) * 100
-		const size_t size_ = 1'157'000 * 10 + 1;
+		const size_t size_ = 3'582'410;
 		// 메모리 시작 주소 <= 이거를 키 및 탐색용으로 찾음
 		DubuBytePtr ptr_;
 		size_t idx_ = 0;
@@ -45,73 +47,69 @@ namespace DUBU
 
 	// 구조체/클래스 단위
 	template<typename T>
-	void Push(T object)
+	void Push(T* object)
 	{
-		// 템플릿 이므로 constexpr를 쓰면 컴파일 타임때 T의 타입을 추론 가능하므로 T가 해당 타입이면, 거짓인 블록은 컴파일 될때 사라진다
-		if constexpr (std::is_pointer_v<T>)
+		// bit_ceil : 2 > 4 > 8 > 16 > 32 2의 배수중 큰값중 최소로 잡는다 
+		constexpr size_t len = std::bit_ceil(sizeof(T));
+
+		if (MaxChunkSize < len)
 		{
-			DubuBytePtr ptr = reinterpret_cast<DubuBytePtr>(object);
-			// bit_ceil : 2 > 4 > 8 > 16 > 32 2의 배수중 큰값중 최소로 잡는다 
-			constexpr size_t len = std::bit_ceil(sizeof(T));
+			// 오브젝트 풀링으로 대체한다
+			return ObjectPool<T>::GetInstance().Push(object);
+		}
 
-			WriteLockGuard wl(PoolLock);
-			PoolChunkList[len].push_back(ptr);
+		DubuBytePtr ptr = reinterpret_cast<DubuBytePtr>(object);
 
-			DubuByteDataSPtr pool_ptr = FindBlock(ptr);
-			pool_ptr->useCnt_.fetch_sub(1);
+		WriteLockGuard wl(PoolLock);
+		PoolChunkList[len].push_back(ptr);
 
-			if (pool_ptr->useCnt_.load() == 0 && PoolList.size() > PoolSize)
+		DubuByteDataSPtr pool_ptr = FindBlock(ptr);
+		pool_ptr->useCnt_.fetch_sub(1);
+
+		if (pool_ptr->useCnt_.load() == 0 && PoolList.size() > PoolSize)
+		{
+			auto it = PoolList.begin() + PoolSize;
+			for (; it != PoolList.end(); ++it)
 			{
-				auto it = PoolList.begin() + PoolSize;
-				for (; it != PoolList.end(); ++it)
+				if (it->get()->ptr_ == pool_ptr->ptr_)
 				{
-					if (it->get()->ptr_ == pool_ptr->ptr_)
-					{
-						PoolList.erase(it);
-						pool_ptr.reset();
-						break;
-					}
+					PoolList.erase(it);
+					pool_ptr.reset();
+					break;
 				}
 			}
-		}
-		else
-		{
-			// 프로그램 종료
-			fprintf(stderr, "해당 타입은 포인터가 아님 !!!\n");
-			exit(EXIT_FAILURE);
 		}
 	}
 
 	// 구조체/클래스 단위
-	template<typename T>
-	T Pop()
+	template<typename T, typename... Args>
+	T* Pop(Args&& ...args)
 	{
 		using ElementType = std::remove_pointer_t<T>;
 		DubuBytePtr ptr = nullptr;
 
-		if constexpr (std::is_pointer_v<T>)
-		{
-			WriteLockGuard wl(PoolLock);
-			constexpr size_t len = std::bit_ceil(sizeof(ElementType));
-			if (PoolChunkList[len].empty())
-			{
-				// 만약 모든 풀링에 있는 데이터를 사용할 경우 다시 생성
-				PoolList.push_back(std::make_shared<DubuByteData>());
-			}
+		constexpr size_t len = std::bit_ceil(sizeof(ElementType));
 
-			ptr = PoolChunkList[len].back();
-			PoolChunkList[len].pop_back();
-
-			DubuByteDataSPtr pool_ptr = FindBlock(ptr);
-			pool_ptr->useCnt_.fetch_add(1);
-		}
-		else
+		if (MaxChunkSize < len)
 		{
-			// 프로그램 종료
-			fprintf(stderr, "해당 타입은 포인터가 아님 !!!\n");
-			exit(EXIT_FAILURE);
+			// 오브젝트 풀링으로 대체한다
+			return ObjectPool<T>::GetInstance().Pop(std::forward<Args>(args)...);
 		}
 
-		return reinterpret_cast<T>(ptr);
+		WriteLockGuard wl(PoolLock);
+
+		if (PoolChunkList[len].empty())
+		{
+			// 만약 모든 풀링에 있는 데이터를 사용할 경우 다시 생성
+			PoolList.push_back(std::make_shared<DubuByteData>());
+		}
+
+		ptr = PoolChunkList[len].back();
+		PoolChunkList[len].pop_back();
+
+		DubuByteDataSPtr pool_ptr = FindBlock(ptr);
+		pool_ptr->useCnt_.fetch_add(1);
+
+		return reinterpret_cast<T*>(ptr);
 	}
 }

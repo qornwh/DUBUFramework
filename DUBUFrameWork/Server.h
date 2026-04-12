@@ -30,6 +30,7 @@ namespace DUBU
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
+		void ConnectMessage(Session* session);
 		void CheckSession();
 
 	private:

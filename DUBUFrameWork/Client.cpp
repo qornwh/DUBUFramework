@@ -54,15 +54,18 @@ bool DUBU::Client::Dispatch()
 	return true;
 }
 
-void DUBU::Client::SendTo(Uint8* buffer, Uint16 size)
+void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
-	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), buffer, size);
-}
+	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* buffer, Uint16 size)
-{
+	auto buffer = opbPtr->buffer_;
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
-	if (header->flags_ == Packet::PacketHeaderFlag::SESSION)
+
+	auto sessionId = header->sessionId_;
+	auto flag = header->flags_;
+
+	bool result = false;
+	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
 		clientId_ = header->sessionId_;   // 서버가 발급한 ID 저장
 	}
@@ -72,7 +75,7 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* buffer, Uint16 siz
 	}
 }
 
-void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* buffer, Uint16 size)
+void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 }
 
@@ -96,7 +99,7 @@ void DUBU::Client::ConnectMessage()
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
-	SendTo(opb->buffer_, opb->size_);
+	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
 }
 
 Uint32 DUBU::Client::GetClientId() const
