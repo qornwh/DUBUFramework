@@ -12,7 +12,6 @@ DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 DUBU::Server::~Server()
 {
 	rudpSocket_->EndServer();
-	PacketManager::GetInstance().Release();
 }
 
 void DUBU::Server::Initialize()

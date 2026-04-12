@@ -21,7 +21,6 @@ DUBU::Session* DUBU::SessionManager::AddSession()
     Uint32 sessionId = GenerateId();
     sessionCount_.fetch_add(1);
     Session* session = Pop<Session>(nullptr);
-    //new(session) Session(nullptr);
     session->Reset();
     session->SetSessionId(sessionId);
     sessionMap_.insert({ sessionId, session });
@@ -31,11 +30,11 @@ DUBU::Session* DUBU::SessionManager::AddSession()
 
 void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
 {
-    // 무조건 Session이 안쓴다는 가정 판단이 필요 그래서 장치 마련
     auto it = sessionMap_.find(sessionId);
     if (it != sessionMap_.end())
     {
         sessionMap_.erase(sessionId);
+        Push<Session>(it->second);
     }
 }
 
