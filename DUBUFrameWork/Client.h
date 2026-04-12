@@ -19,6 +19,9 @@ namespace DUBU
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* buffer, Uint16 size);
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* buffer, Uint16 size);
 
+		void ConnectMessage();
+		Uint32 GetClientId() const;
+
 	private:
 		Uint32 clientId_ = 0;
 		Uint16 recvSequenceNo_ = 0;

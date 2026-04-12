@@ -46,6 +46,7 @@ DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
     {
         return it->second;
     }
+    return nullptr;
 }
 
 Map<Uint32, DUBU::Session*>& DUBU::SessionManager::GetSessions()

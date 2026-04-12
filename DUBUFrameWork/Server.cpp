@@ -6,6 +6,7 @@
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
+	rudpSocket_->SetHandler(this);
 }
 
 DUBU::Server::~Server()
@@ -40,6 +41,11 @@ void DUBU::Server::Run()
 	}
 }
 
+void DUBU::Server::Stop()
+{
+	isRunning_ = false;
+}
+
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
@@ -55,6 +61,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	{
 		// 세션 추가
 		Session* session = CreateSession(addr);
+		header->sessionId_ = session->GetSessionId();   // ← 추가
 		// 세션 추가 완료 응답
 		rudpSocket_->SendTo(addr, buffer, size);
 	}

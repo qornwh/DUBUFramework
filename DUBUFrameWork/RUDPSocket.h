@@ -41,7 +41,7 @@ namespace DUBU
 		void Closesocket();
 
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
-		void SetHandler(ISocketHandler* handler) { handler_ = handler; }
+		void SetHandler(ISocketHandler* handler);
 		void RecvFrom();
 		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
 		void SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
