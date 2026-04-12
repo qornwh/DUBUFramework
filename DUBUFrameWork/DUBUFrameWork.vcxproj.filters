@@ -37,6 +37,9 @@
     <Filter Include="DataStruct\DS">
       <UniqueIdentifier>{47e816e6-d188-4240-8911-c278a5a46b55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ObjectPool">
+      <UniqueIdentifier>{e89fddcb-67e9-4d84-b639-e83631f65915}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -87,6 +90,9 @@
     <ClInclude Include="RingBuffer.h">
       <Filter>DataStruct\DS</Filter>
     </ClInclude>
+    <ClInclude Include="ObjectPool.h">
+      <Filter>ObjectPool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -133,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="RingBuffer.cpp">
       <Filter>DataStruct\DS</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectPool.cpp">
+      <Filter>ObjectPool</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

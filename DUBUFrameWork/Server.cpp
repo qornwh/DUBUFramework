@@ -6,6 +6,7 @@
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
+	rudpSocket_->SetHandler(this);
 }
 
 DUBU::Server::~Server()
@@ -40,6 +41,11 @@ void DUBU::Server::Run()
 	}
 }
 
+void DUBU::Server::Stop()
+{
+	isRunning_ = false;
+}
+
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
@@ -55,8 +61,9 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	{
 		// 세션 추가
 		Session* session = CreateSession(addr);
+		header->sessionId_ = session->GetSessionId();   // ← 추가
 		// 세션 추가 완료 응답
-		rudpSocket_->SendTo(addr, buffer, size);
+		ConnectMessage(session);
 	}
 	else
 	{
@@ -109,6 +116,29 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 	return session;
 }
 
+void DUBU::Server::ConnectMessage(Session* session)
+{
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	opb->SetType(Packet::PacketHeaderFlag::SESSION);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// 헤더 작성
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::SESSION;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	header->sequenceNo_ = 0;
+	header->timestamp_ = 0;
+
+	// 전체 패킷 사이즈 설정
+	opb->size_ = header->totalSize_;
+
+	// crc32 암호화
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+}
+
 void DUBU::Server::CheckSession()
 {
 	// 재전송로직 실행
@@ -131,6 +161,4 @@ void DUBU::Server::CheckSession()
 			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
 		}
 	}
-	
-
 }

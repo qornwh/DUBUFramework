@@ -34,5 +34,6 @@ Uint32 DUBU::Packet::Packet::CRC32(const Uint8* ptr, Uint16 len)
 		crc = _mm_crc32_u8(crc, ptr[i]);
 	}
 
-	return crc ^ 0xFFFFFFFF; // 弥辆 XOR 贸府
+	// 弥辆 XOR 贸府
+	return crc ^ 0xFFFFFFFF;
 }

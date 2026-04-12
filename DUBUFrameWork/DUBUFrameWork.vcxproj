@@ -159,6 +159,7 @@
     <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="ConcurrentQueue.cpp" />
+    <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="OverlappedObj.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="pch.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="ConcurrentQueue.h" />
+    <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="OverlappedObj.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />

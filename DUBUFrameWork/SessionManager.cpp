@@ -10,7 +10,7 @@ DUBU::SessionManager::~SessionManager()
     for (auto [id, session] : sessionMap_)
     {
         // 전부다 할당 해제 
-        Push<Session*>(session);
+        Push<Session>(session);
     }
     // 비우기
     sessionMap_.clear();
@@ -20,8 +20,8 @@ DUBU::Session* DUBU::SessionManager::AddSession()
 {
     Uint32 sessionId = GenerateId();
     sessionCount_.fetch_add(1);
-    Session* session = Pop<Session*>();
-    new(session) Session(nullptr);
+    Session* session = Pop<Session>(nullptr);
+    //new(session) Session(nullptr);
     session->Reset();
     session->SetSessionId(sessionId);
     sessionMap_.insert({ sessionId, session });
@@ -46,6 +46,7 @@ DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
     {
         return it->second;
     }
+    return nullptr;
 }
 
 Map<Uint32, DUBU::Session*>& DUBU::SessionManager::GetSessions()

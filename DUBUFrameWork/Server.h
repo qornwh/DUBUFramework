@@ -24,11 +24,13 @@ namespace DUBU
 
 		void Initialize();
 		void Run();
+		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
+		void ConnectMessage(Session* session);
 		void CheckSession();
 
 	private:

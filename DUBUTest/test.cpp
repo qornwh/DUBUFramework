@@ -47,19 +47,19 @@ TEST(DUBUTest, SocketTest)
 	DUBU::Server service;
 	service.Initialize();
 
-	AAA& aaa = *DUBU::Pop<AAA*>();
+	AAA& aaa = *DUBU::Pop<AAA>();
 	// placement new
-	BBB* bbb = new (DUBU::Pop<BBB*>()) BBB();
-	CCC* ccc = DUBU::Pop<CCC*>();
-	DDD* ddd = DUBU::Pop<DDD*>();
+	BBB* bbb = new (DUBU::Pop<BBB>()) BBB();
+	CCC* ccc = DUBU::Pop<CCC>();
+	DDD* ddd = DUBU::Pop<DDD>();
 
 	aaa.a = 12;
 	ddd->a = 12;
 
-	DUBU::Push<AAA*>(&aaa);
-	DUBU::Push<BBB*>(bbb);
-	DUBU::Push<CCC*>(ccc);
-	DUBU::Push<DDD*>(ddd);
+	DUBU::Push<AAA>(&aaa);
+	DUBU::Push<BBB>(bbb);
+	DUBU::Push<CCC>(ccc);
+	DUBU::Push<DDD>(ddd);
 
 	DUBU::Singleton<AAA> obj_AAA;
 	auto& ref_AAA = obj_AAA.GetInstance();

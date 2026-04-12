@@ -18,7 +18,7 @@ DUBU::RUDPSocket::~RUDPSocket()
 void DUBU::RUDPSocket::StartServer()
 {
 	// 핸들러 등록 확인
-	assert(handler_ == nullptr);
+	assert(handler_ != nullptr);
 
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -89,15 +89,19 @@ void DUBU::RUDPSocket::EndServer()
 void DUBU::RUDPSocket::StartClient(const String& serverIP, Uint16 serverPort)
 {
 	// 핸들러 등록 확인
-	assert(handler_ == nullptr);
+	assert(handler_ != nullptr);
 
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	assert(ret == 0);
 
+	// 핸들설정
 	iocpHd_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	socket_ = SocketConfig::CreateUDPSocket();
 	SocketConfig::SetIoCompletionPort(socket_, iocpHd_);
+
+	// 클라이언트 바인드
+	SocketConfig::SocketBind(socket_, 0);
 	
 	// 서버 ip, port 설정
 	serverIP_ = serverIP;
@@ -139,14 +143,17 @@ void DUBU::RUDPSocket::Closesocket()
 
 Int32 DUBU::RUDPSocket::Dispatch(LPOVERLAPPED* ptr, DWORD timeout)
 {
-	DWORD ipNumberOfBytesTransferred = 0;
-	// 키등록 안함
+	DWORD bytesTransferred = 0;
 	ULONG_PTR completionKey = 0;
-	// 포인터의 포인터 => 포인터 변수도 복사다. 결국 위치 변경됨
-	bool ret = GetQueuedCompletionStatus(iocpHd_, &ipNumberOfBytesTransferred, &completionKey, ptr, timeout);
+	bool ret = GetQueuedCompletionStatus(iocpHd_, &bytesTransferred, &completionKey, ptr, timeout);
 	if (ret == false || ptr == nullptr)
 		return -1;
-	return (Int32)ipNumberOfBytesTransferred;
+	return (Int32)bytesTransferred;
+}
+
+void DUBU::RUDPSocket::SetHandler(ISocketHandler* handler)
+{
+	handler_ = handler;
 }
 
 void DUBU::RUDPSocket::RecvFrom()
@@ -196,6 +203,7 @@ void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint
 		int errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			spdlog::error("WSASendTo SendTo Error : {}", errCode);
 			assert(false); // 일단 크래시냄
 		}
 	}
@@ -225,6 +233,7 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buff
 		int errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			spdlog::error("WSASendTo SendToReliable Error : {}", errCode);
 			assert(false); // 일단 크래시냄
 		}
 	}
@@ -251,6 +260,7 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer
 		int errCode = WSAGetLastError();
 		if (errCode != WSA_IO_PENDING)
 		{
+			spdlog::error("WSASendTo SendToRepeat Error : {}", errCode);
 			assert(false); // 일단 크래시냄
 		}
 	}
@@ -263,7 +273,11 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opbPtr->buffer_), size))
 	{
 		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opbPtr->buffer_);
-		if (Packet::Packet::CRC32(opbPtr->buffer_, size) == header->checksum_)
+		Uint32 checksum = header->checksum_;
+
+		// 보낼때 체크썸은 0으로 초기화 된 상태라 롤백
+		header->checksum_ = 0;
+		if (checksum == Packet::Packet::CRC32(opbPtr->buffer_, size))
 		{
 			// 핸들러 통해서 처리 넘겨버린다
 			if (handler_)
