@@ -58,11 +58,25 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
-		// 세션 추가
-		Session* session = CreateSession(addr);
-		header->sessionId_ = session->GetSessionId();   // ← 추가
-		// 세션 추가 완료 응답
-		ConnectMessage(session);
+		// Peer생성
+		Uint64 key = PeerKey(addr);
+		auto it = peerMap_.find(key);
+		if (it == peerMap_.end())
+		{
+			// 세션 추가
+			Session* session = CreateSession(addr);
+			header->sessionId_ = session->GetSessionId();   // ← 추가
+			// 세션 추가 완료 응답
+			ConnectMessage(session);
+			// Peer 생성
+			peerMap_.emplace(key, Peer{key, addr, session});
+		}
+		else
+		{
+			// 중복으로 오는경우 재전송
+			Session* session = it->second.session_;
+			ConnectMessage(session);
+		}
 	}
 	else
 	{
@@ -160,4 +174,10 @@ void DUBU::Server::CheckSession()
 			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
 		}
 	}
+}
+
+Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
+{
+	// ip를 16비트 시프트후 port와 or연산으로 key관리
+	return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
 }

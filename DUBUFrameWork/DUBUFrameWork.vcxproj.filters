@@ -93,6 +93,9 @@
     <ClInclude Include="ObjectPool.h">
       <Filter>ObjectPool</Filter>
     </ClInclude>
+    <ClInclude Include="Peer.h">
+      <Filter>Service\Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -142,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="ObjectPool.cpp">
       <Filter>ObjectPool</Filter>
+    </ClCompile>
+    <ClCompile Include="Peer.cpp">
+      <Filter>Service\Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

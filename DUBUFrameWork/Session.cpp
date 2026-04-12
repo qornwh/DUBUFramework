@@ -142,3 +142,8 @@ void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
 		}
 	}
 }
+
+void DUBU::Session::SetPeer(Peer& peer)
+{
+	peer_ = peer;
+}

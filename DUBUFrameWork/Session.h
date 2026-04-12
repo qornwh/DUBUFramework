@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Packet.h"
+#include "Peer.h"
 
 namespace DUBU
 {
@@ -9,6 +10,7 @@ namespace DUBU
 	*/
 	class Session
 	{
+
 		/*
 		* 재전송 패킷 정보
 		*/
@@ -41,6 +43,7 @@ namespace DUBU
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 
 		void RepeatACK(class RUDPSocket* socket, Int64 resendDelay);
+		void SetPeer(Peer& peer);
 
 	private:
 		// 세션 id
@@ -59,6 +62,9 @@ namespace DUBU
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;
+
+		// Peer 관리
+		Peer peer_;
 
 		// 재전송 패킷 관리
 		PendingPacket pendingPackets_[DEFAULT_WINDOW_COUNT];

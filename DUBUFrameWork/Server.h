@@ -34,11 +34,18 @@ namespace DUBU
 		void CheckSession();
 
 	private:
+		Uint64 PeerKey(const SOCKADDR_IN& addr);
+
+	private:
 		SessionManager sessionManager_;
 		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock sessionLock_;
 		Bool isRunning_ = false;
 
+		// Peer 리스트 관리
+		Map<Uint64, Peer> peerMap_;
+
+		// 세션 타임아웃 설정
 		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
 
 		// 끊을 세션 캐시로 저장
