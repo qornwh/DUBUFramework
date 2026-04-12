@@ -52,36 +52,45 @@ void DUBU::RUDPSocket::EndServer()
 		return;
 
 	isServer_ = false;
-	// 모든 연결된 iocp큐 제거
+
+	// 패킷매니저의 모든 패킷 버퍼에 연결된 iocp큐 제거
 	const Set<DUBU::OverlappedPacketBuffer*>& useList = Singleton<PacketManager>::GetInstance().GetUseList();
 	Uint64 EXIT_SIGNAL = 0xFFFFFFFFFFFFF;
 	for (auto use : useList)
 	{
-		//CancelIoEx로 하면 GQCS가 false로 나오고 overlapped포인터는 잘나와서 post로 교체
-		//Bool ret = CancelIoEx((HANDLE)serverSocket_, &use->overlapped_);
+		// 할당만 되고 현재 사용중이것들 PostQueuedCompletionStatus로 처리
 		Bool ret = PostQueuedCompletionStatus(iocpHd_, 0, EXIT_SIGNAL, &use->overlapped_);
 		assert(ret);
 	}
 
-	DWORD dwTransferred = 0;
-	ULONG_PTR completionKey = 0;
-	LPOVERLAPPED lpOverlapped = nullptr;
-	while (GetQueuedCompletionStatus(iocpHd_, &dwTransferred, &completionKey, &lpOverlapped, 10))
+	// 소켓에 걸린 모든 비동기 I/O 취소
+	CancelIoEx((HANDLE)socket_, NULL);
+
+	// 모든 비동기 I/O 취소 
+	while (true)
 	{
-		if (lpOverlapped && completionKey == EXIT_SIGNAL)
+		DWORD dwTransferred = 0;
+		ULONG_PTR completionKey = 0;
+		LPOVERLAPPED lpOverlapped = nullptr;
+		BOOL ret = GetQueuedCompletionStatus(iocpHd_, &dwTransferred, &completionKey, &lpOverlapped, 10);
+
+		if (ret == FALSE && lpOverlapped == nullptr)
+		{
+			// 더 이상 없음
+			break;
+		}
+
+		// ret가 false로 나와도 허용해야 된다(취소, 소켓 닫힘 등) 
+		// 즉 현재 사용되고 있었는데, 소켓이 닫힘으로써 false가 나올수 있다.
+		// 정상동작 완료
+		if (lpOverlapped != nullptr)
 		{
 			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
-			Singleton<PacketManager>::GetInstance().PushPacketBuffer(ptr);
+			PacketManager::GetInstance().PushPacketBuffer(ptr);
 		}
 	}
 
-	int lastErr = GetLastError();
-	if (lpOverlapped != nullptr)
-	{
-		// 일단 크래시냄
-		assert(-1);
-	}
-
+	// 소켓 반환
 	Closesocket();
 	CloseHandle(iocpHd_);
 }
@@ -119,7 +128,38 @@ void DUBU::RUDPSocket::StartClient(const String& serverIP, Uint16 serverPort)
 
 void DUBU::RUDPSocket::EndClient()
 {
+	WriteLockGuard wl(lk_);
+
+	// 소켓에 걸린 모든 비동기 I/O 취소
+	CancelIoEx((HANDLE)socket_, NULL);
+
+	// 모든 비동기 I/O 취소 
+	while (true)
+	{
+		DWORD dwTransferred = 0;
+		ULONG_PTR completionKey = 0;
+		LPOVERLAPPED lpOverlapped = nullptr;
+		BOOL ret = GetQueuedCompletionStatus(iocpHd_, &dwTransferred, &completionKey, &lpOverlapped, 10);
+
+		if (ret == FALSE && lpOverlapped == nullptr)
+		{
+			// 더 이상 없음
+			break;
+		}
+
+		// ret가 false로 나와도 허용해야 된다(취소, 소켓 닫힘 등) 
+		// 즉 현재 사용되고 있었는데, 소켓이 닫힘으로써 false가 나올수 있다.
+		// 정상동작 완료
+		if (lpOverlapped != nullptr)
+		{
+			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
+			PacketManager::GetInstance().PushPacketBuffer(ptr);
+		}
+	}
+
+	// 소켓 반환
 	Closesocket();
+	CloseHandle(iocpHd_);
 }
 
 void DUBU::RUDPSocket::SetSocketAddr(SOCKADDR_IN& serverAddr)
