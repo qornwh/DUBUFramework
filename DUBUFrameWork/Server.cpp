@@ -62,6 +62,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		if (it == peerMap_.end())
 		{
 			// 세션 추가
+			WriteLockGuard wl(sessionLock_);
 			Session* session = CreateSession(addr);
 			header->sessionId_ = session->GetSessionId();   // ← 추가
 			// 세션 추가 완료 응답
@@ -72,6 +73,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		else
 		{
 			// 중복으로 오는경우 재전송
+			ReadLockGuard rl(sessionLock_);
 			Session* session = it->second.session_;
 			ConnectMessage(session);
 		}
@@ -154,36 +156,43 @@ void DUBU::Server::CheckSession()
 {
 	// 시간체크
 	Uint64 now = GetCurrentTimeMs();
-
-	// 일단 여기에 한 스레드만 통과되도록 처리가 필요
-	// ex) CAS or lock(mutex) write만 할거라 mutex가 나음
-
 	// 끊을 세션
 	Uint8 idx = 0;
 
-	// 재전송로직 실행
-	for (auto& [_, session] : sessionManager_.GetSessions())
+	// 일단 여기에 한 스레드만 통과되도록 처리가 필요
+	// ex) CAS or lock(mutex) write만 할거라 mutex가 나음
 	{
-		Uint64 delayTime = now - session->GetTimestamp();
-		if (delayTime > SessionTimeout)
+		// 재전송로직 실행
+		ReadLockGuard rw(sessionLock_);
+		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
-			// 끊김 감지
-			removeListCache_[idx++] = session->GetSessionId();
-		}
-		else if (delayTime > PingTimeout)
-		{
-			// Ping으로 연결 감지 체크
-		}
+			Uint64 delayTime = now - session->GetTimestamp();
+			if (delayTime > SessionTimeout)
+			{
+				// 끊김 감지
+				removeListCache_[idx++] = session->GetSessionId();
+			}
+			else if (delayTime > PingTimeout)
+			{
+				// Ping으로 연결 감지 체크
+			}
 
-		// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-		session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
+			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+		}
 	}
 
-	// 연결 해제 구간
-	for (Int32 i = 0; i < idx; ++i) 
 	{
-		Int32 sessionId = removeListCache_[i];
-
+		// 연결 해제 구간
+		for (Int32 i = 0; i < idx; ++i)
+		{
+			Int32 sessionId = removeListCache_[i];
+			Session* session = sessionManager_.GetSession(sessionId);
+			if (session != nullptr)
+			{
+				// 세션 연결 해제
+			}
+		}
 	}
 }
 
