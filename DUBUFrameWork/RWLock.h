@@ -20,41 +20,41 @@ namespace DUBU
         void WriteLock();
         void WriteUnLock();
     private:
-        const uint32_t MAX_SPIN_COUNT = 500;
-        std::atomic<uint32_t> count;
+        const Uint32 MAX_SPIN_COUNT = 500;
+        Atomic<Uint32> count_;
     };
 
     class ReadLockGuard
     {
     public:
-        ReadLockGuard(Lock& lock) : _lock(lock)
+        ReadLockGuard(Lock& lock) : lock_(lock)
         {
-            _lock.ReadLock();
+            lock_.ReadLock();
         }
 
         ~ReadLockGuard()
         {
-            _lock.ReadUnLock();
+            lock_.ReadUnLock();
         }
 
     private:
-        Lock& _lock;
+        Lock& lock_;
     };
 
     class WriteLockGuard
     {
     public:
-        WriteLockGuard(Lock& lock) : _lock(lock)
+        WriteLockGuard(Lock& lock) : lock_(lock)
         {
-            _lock.WriteLock();
+            lock_.WriteLock();
         }
 
         ~WriteLockGuard()
         {
-            _lock.WriteUnLock();
+            lock_.WriteUnLock();
         }
 
     private:
-        Lock& _lock;
+        Lock& lock_;
     };
 }
