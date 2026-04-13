@@ -90,11 +90,11 @@
     <ClInclude Include="RingBuffer.h">
       <Filter>DataStruct\DS</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectPool.h">
-      <Filter>ObjectPool</Filter>
-    </ClInclude>
     <ClInclude Include="Peer.h">
       <Filter>Service\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPool.h">
+      <Filter>ObjectPool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

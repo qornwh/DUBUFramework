@@ -4,9 +4,6 @@
 #include "RUDPSocket.h"
 #include "SessionManager.h"
 
-// 디폴트 10초 타임아웃
-#define DEFAULT_DISCONNECT_TIMEOUT_MS 10000;
-
 namespace DUBU 
 {
 	/*
@@ -44,6 +41,9 @@ namespace DUBU
 
 		// Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;
+
+		// Ping전달 시간 체크
+		const Int32 PingTimeout = DEFAULT_PING_TIMEOUT_MS;
 
 		// 세션 타임아웃 설정
 		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;

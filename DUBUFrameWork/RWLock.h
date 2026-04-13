@@ -12,7 +12,6 @@ namespace DUBU
             WRITE = 0xFFF0000,
         };
     public:
-        // 복사 생성자 막기, 이동 생성자 막기
         Lock();
         Lock(const Lock& lock) = delete;
         Lock(Lock&& lock) = delete;

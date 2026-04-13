@@ -53,7 +53,7 @@ Uint32 DUBU::Session::GetRttMillisec() const
 	return rttMillisec_;
 }
 
-Int64 DUBU::Session::GetTimestamp() const
+Uint64 DUBU::Session::GetTimestamp() const
 {
 	return timestamp_;
 }

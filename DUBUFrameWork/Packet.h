@@ -22,6 +22,8 @@ namespace DUBU
 			CHUNK     = 0b00000010,
 			LASTCHUNK = 0b10000000,
 			ACK		  = 0b11000000,
+			PING	  = 0b11100000,
+			PONG      = 0b11110000,
 			SESSION   = 0b11111111,
 		};
 

@@ -10,7 +10,6 @@ namespace DUBU
 	*/
 	class Session
 	{
-
 		/*
 		* 재전송 패킷 정보
 		*/
@@ -37,7 +36,7 @@ namespace DUBU
 		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
-		Int64 GetTimestamp() const;
+		Uint64 GetTimestamp() const;
 
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
@@ -58,7 +57,7 @@ namespace DUBU
 		// 초기값 0.5초
 		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
 		// 가장 마지막 시간
-		Int64 timestamp_ = 0;
+		Uint64 timestamp_ = 0;
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;

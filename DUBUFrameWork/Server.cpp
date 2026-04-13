@@ -28,7 +28,6 @@ void DUBU::Server::Run()
 		LPOVERLAPPED ptr = nullptr;
 		Int32 size = rudpSocket_->Dispatch(&ptr);
 
-		// 이때 다른 작업도 괞찮아 보임
 		if (ptr == nullptr)
 			continue;
 
@@ -54,13 +53,12 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
+	Uint64 key = PeerKey(addr);
+	auto it = peerMap_.find(key);
+	Bool result = false;
 
-	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
-		// Peer생성
-		Uint64 key = PeerKey(addr);
-		auto it = peerMap_.find(key);
 		if (it == peerMap_.end())
 		{
 			// 세션 추가
@@ -154,25 +152,38 @@ void DUBU::Server::ConnectMessage(Session* session)
 
 void DUBU::Server::CheckSession()
 {
-	// 재전송로직 실행
+	// 시간체크
 	Uint64 now = GetCurrentTimeMs();
 
+	// 일단 여기에 한 스레드만 통과되도록 처리가 필요
+	// ex) CAS or lock(mutex) write만 할거라 mutex가 나음
+
+	// 끊을 세션
+	Uint8 idx = 0;
+
+	// 재전송로직 실행
+	for (auto& [_, session] : sessionManager_.GetSessions())
 	{
-		// 끊을 세션
-		Uint8 idx = 0;
-		// 읽기만 묶는다.
-		ReadLockGuard rl(sessionLock_);
-		for (auto& [_, session] : sessionManager_.GetSessions())
+		Uint64 delayTime = now - session->GetTimestamp();
+		if (delayTime > SessionTimeout)
 		{
 			// 끊김 감지
-			if (now - session->GetTimestamp() > SessionTimeout) 
-			{
-				removeListCache_[idx++] = session->GetSessionId();
-			}
-
-			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			removeListCache_[idx++] = session->GetSessionId();
 		}
+		else if (delayTime > PingTimeout)
+		{
+			// Ping으로 연결 감지 체크
+		}
+
+		// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
+		session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+	}
+
+	// 연결 해제 구간
+	for (Int32 i = 0; i < idx; ++i) 
+	{
+		Int32 sessionId = removeListCache_[i];
+
 	}
 }
 
