@@ -16,6 +16,7 @@ DUBU::Session::~Session()
 void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
 {
 	addr_ = addr;
+	isConnect_ = true;
 }
 
 const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
@@ -26,6 +27,11 @@ const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
 void DUBU::Session::SetSessionId(Int32 sessionId)
 {
 	sessionId_ = sessionId;
+}
+
+Int32 DUBU::Session::UpdateSendSequenceNo()
+{
+	return ++sendSequenceNo_;
 }
 
 Int32 DUBU::Session::GetSessionId() const
@@ -56,6 +62,11 @@ Uint32 DUBU::Session::GetRttMillisec() const
 Uint64 DUBU::Session::GetTimestamp() const
 {
 	return timestamp_;
+}
+
+Bool DUBU::Session::IsConnection() const
+{
+	return isConnect_;
 }
 
 void DUBU::Session::Reset()
@@ -146,4 +157,13 @@ void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
 void DUBU::Session::SetPeer(Peer& peer)
 {
 	peer_ = peer;
+}
+
+void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
+{
+}
+
+void DUBU::Session::Disconnect()
+{
+	isConnect_ = false;
 }

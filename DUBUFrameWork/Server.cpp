@@ -3,7 +3,7 @@
 #include "Packet.h"
 #include "BufferManager.h"
 
-DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
+DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
@@ -80,7 +80,10 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	}
 	else
 	{
-		// 세션이 있을때
+		/*
+		* 세션이 있을때
+		* - discconect ACK는 연결 해제를 확인.
+		*/ 
 		if (sessionId > 0)
 		{
 			ReadLockGuard rl(sessionLock_);
@@ -152,6 +155,32 @@ void DUBU::Server::ConnectMessage(Session* session)
 	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
 }
 
+void DUBU::Server::DisconnectMessage(Session* session)
+{
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	opb->SetType(Packet::PacketHeaderFlag::DISCONNECT);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// 헤더 작성
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	header->sequenceNo_ = session->UpdateSendSequenceNo();
+	header->timestamp_ = GetCurrentTimeMs();
+
+	// 전체 패킷 사이즈 설정
+	opb->size_ = header->totalSize_;
+
+	// crc32 암호화
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+
+	// 일단 pending에 둔다.
+	session->AddPendingPacket(opb->buffer_, opb->size_);
+}
+
 void DUBU::Server::CheckSession()
 {
 	// 시간체크
@@ -159,8 +188,14 @@ void DUBU::Server::CheckSession()
 	// 끊을 세션
 	Uint8 idx = 0;
 
-	// 일단 여기에 한 스레드만 통과되도록 처리가 필요
-	// ex) CAS or lock(mutex) write만 할거라 mutex가 나음
+	// 1스레드만 통과
+	Bool expected = sessionCAS_.load();
+	// false, 연산 실패시 통과
+	if (expected || !sessionCAS_.compare_exchange_weak(expected, true, std::memory_order_acquire, std::memory_order_relaxed))
+	{
+		return;
+	}
+
 	{
 		// 재전송로직 실행
 		ReadLockGuard rw(sessionLock_);
@@ -184,6 +219,7 @@ void DUBU::Server::CheckSession()
 
 	{
 		// 연결 해제 구간
+		WriteLockGuard rw(sessionLock_);
 		for (Int32 i = 0; i < idx; ++i)
 		{
 			Int32 sessionId = removeListCache_[i];
@@ -191,9 +227,13 @@ void DUBU::Server::CheckSession()
 			if (session != nullptr)
 			{
 				// 세션 연결 해제
+				session->Disconnect();
 			}
+			sessionManager_.RemoveSession(sessionId);
 		}
 	}
+
+	sessionCAS_.store(false);
 }
 
 Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)

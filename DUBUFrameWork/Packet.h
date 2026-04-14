@@ -24,7 +24,8 @@ namespace DUBU
 			ACK		  = 0b11000000,
 			PING	  = 0b11100000,
 			PONG      = 0b11110000,
-			SESSION   = 0b11111111,
+			SESSION   = 0b11111110,
+			DISCONNECT= 0b11111111
 		};
 
 		struct PacketHeader

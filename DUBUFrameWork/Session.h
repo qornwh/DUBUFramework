@@ -26,23 +26,25 @@ namespace DUBU
 		virtual void Reset();
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
-		// 외부에서 수정 불가능 하게 만든다.
-		const SOCKADDR_IN& GetSockAddr() const;
 		void SetSessionId(Int32 sessionId);
-		Int32 GetSessionId() const;
+		Int32 UpdateSendSequenceNo();
 
-		// 외부 참조용
+		const SOCKADDR_IN& GetSockAddr() const;
+		Int32 GetSessionId() const;
 		Uint32 GetRecvSequenceNo() const;
 		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
 		Uint64 GetTimestamp() const;
+		Bool IsConnection() const;
 
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
-
 		void RepeatACK(class RUDPSocket* socket, Int64 resendDelay);
 		void SetPeer(Peer& peer);
+		void AddPendingPacket(Uint8* buffer, Uint16 size);
+
+		void Disconnect();
 
 	private:
 		// 세션 id
@@ -72,5 +74,8 @@ namespace DUBU
 
 		// 패킷별 함수 분기대신 Map사용
 		const Map<Uint8, Packet::PacketHandler>* handlers_;
+
+		// 연결 해제됨
+		Bool isConnect_;
 	};
 }

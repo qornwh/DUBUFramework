@@ -28,6 +28,7 @@ namespace DUBU
 
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
 		void ConnectMessage(Session* session);
+		void DisconnectMessage(Session* session);
 		void CheckSession();
 
 	private:
@@ -42,6 +43,9 @@ namespace DUBU
 		// Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;
 
+		// CheckSession 1스레드만 작동되도록 CAS연산
+		Atomic<Bool> sessionCAS_;
+
 		// Ping전달 시간 체크
 		const Int32 PingTimeout = DEFAULT_PING_TIMEOUT_MS;
 
@@ -49,7 +53,7 @@ namespace DUBU
 		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
 
 		// 끊을 세션 캐시로 저장
-		Uint32 removeListCache_[1000];
+		Uint32 removeListCache_[MAX_CLIENT_COUNT];
 	};
 }
 
