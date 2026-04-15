@@ -135,7 +135,7 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 void DUBU::Server::ConnectMessage(Session* session)
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(Packet::PacketHeaderFlag::SESSION);
+	opb->SetType(OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성
@@ -158,7 +158,7 @@ void DUBU::Server::ConnectMessage(Session* session)
 void DUBU::Server::DisconnectMessage(Session* session)
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(Packet::PacketHeaderFlag::DISCONNECT);
+	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성

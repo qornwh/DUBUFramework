@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "Packet.h"
 #include "Peer.h"
+#include "PendingPacket.h"
 
 namespace DUBU
 {
@@ -10,16 +11,6 @@ namespace DUBU
 	*/
 	class Session
 	{
-		/*
-		* 재전송 패킷 정보
-		*/
-		struct PendingPacket {
-			struct OverlappedPacketBuffer* buffer = nullptr;
-			Int64   timeStamp = 0;
-			Uint32  sequenceNo = 0;
-			bool    isSent = false;
-		};
-
 	public:
 		Session(const Map<Uint8, Packet::PacketHandler>* handlers);
 		virtual ~Session();

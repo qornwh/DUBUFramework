@@ -89,6 +89,18 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 		return false;
 	}
 
+	// 에코 테스트
+	if (header->packetCode_ == 0)
+	{
+		Uint32 id = header->sessionId_;
+		Uint32 seq = header->sequenceNo_;
+		Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
+		char* ptr = reinterpret_cast<char*>(buffer[sizeof(Packet::PacketHeader)]);
+		std::string_view sv(ptr, size);
+		spdlog::debug("ECHO Recv : {}-{}-{}", id, seq, sv);
+		return true;
+	}
+
 	// 패킷  체크
 	flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
 	Uint8 packetCode = header->packetCode_;
@@ -161,6 +173,14 @@ void DUBU::Session::SetPeer(Peer& peer)
 
 void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
 {
+	OverlappedPacketBuffer* pandingbuffer = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(pandingbuffer->buffer_);
+	Int64   timeStamp = header->timestamp_;
+	Uint32  sequenceNo = header->sequenceNo_;
+	bool    isSent = false;
+
+	// ACK가져올때 까지 킵
+	pendingPackets_[sequenceNo] = { pandingbuffer, timeStamp, sequenceNo, isSent };
 }
 
 void DUBU::Session::Disconnect()

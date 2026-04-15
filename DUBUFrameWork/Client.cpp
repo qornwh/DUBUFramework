@@ -82,7 +82,6 @@ void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 void DUBU::Client::ConnectMessage()
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(Packet::PacketHeaderFlag::SESSION);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성
@@ -95,6 +94,37 @@ void DUBU::Client::ConnectMessage()
 
 	// 전체 패킷 사이즈 설정
 	opb->size_ = header->totalSize_;
+	// 타입 설정
+	opb->SetType(OverlappedObjType::SENDTO);
+
+	// crc32 암호화
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+}
+
+void DUBU::Client::SendEchoMessage()
+{
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// ECHO 메시지
+	String str = "ECHO TEST !!!";
+
+	// 헤더 작성
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::REPEAT;
+	header->totalSize_ = sizeof(Packet::PacketHeader) + str.size();
+	header->sessionId_ = 0;
+	header->sequenceNo_ = 0;
+	header->timestamp_ = 0;
+	// ECHO 패킷 코드
+	header->packetCode_ = 0;
+
+	// 전체 패킷 사이즈 설정
+	opb->size_ = header->totalSize_;
+	// 타입 설정
+	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
 
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);

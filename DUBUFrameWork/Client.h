@@ -19,6 +19,7 @@ namespace DUBU
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
 
 		void ConnectMessage();
+		void SendEchoMessage();
 		Uint32 GetClientId() const;
 
 	private:
