@@ -115,12 +115,12 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 				// 서버는 PING을 받지 않는 설계 — 무시
 				spdlog::debug("Server received PING (ignored) from session {}", sessionId);
 			}
-            else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
+            else if (flag == Packet::PacketHeaderFlag::NONE)
             {
                 // NONE or REPEAT 일때는 패킷을 정상 수신하여 처리
                 result = session->RecvDispatch(buffer, size);
             }
-            else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+            else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
             {
                 // ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
                 result = session->RecvDispatchACK(buffer, size);
@@ -129,6 +129,11 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
                     // ACK 전달
                     SendAck(seqNo, session);
                 }
+            }
+            else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+            {
+                // ACK 수신 pendingpacket 지움
+                session->RecvDispatchACK(buffer, size);
             }
 		}
 	}
