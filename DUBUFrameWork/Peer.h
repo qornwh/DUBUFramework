@@ -3,7 +3,7 @@
 
 namespace DUBU
 {
-    // Session Àü¹æ¼±¾ð
+    // Session ì „ë°©ì„ ì–¸
     class Session;
 
     struct Peer

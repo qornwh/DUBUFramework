@@ -20,20 +20,20 @@ void DUBU::Packet::Packet::PacketCopy(const Uint8* ptr, const Uint16 len, Uint8*
 
 Uint32 DUBU::Packet::Packet::CRC32(const Uint8* ptr, Uint16 len)
 {
-	// ÇÏµå¿ş¾î °¡¼ÓÀ» ÀÌ¿ëÇÑ CRC32 °è»ê
-	Uint32 crc = 0xFFFFFFFF; // ÃÊ±â°ª
+	// í•˜ë“œì›¨ì–´ ê°€ì†ì„ ì´ìš©í•œ CRC32 ê³„ì‚°
+	Uint32 crc = 0xFFFFFFFF; // ì´ˆê¸°ê°’
 	Uint32 i = 0;
 
-	// 4¹ÙÀÌÆ®¾¿ ¹­¾î¼­ ºü¸£°Ô °è»ê
+	// 4ë°”ì´íŠ¸ì”© ë¬¶ì–´ì„œ ë¹ ë¥´ê²Œ ê³„ì‚°
 	for (; i + 4 <= len; i += 4) {
 		crc = _mm_crc32_u32(crc, *(Uint32*)(ptr + i));
 	}
 
-	// ³²Àº ¹ÙÀÌÆ® Ã³¸® (1~3¹ÙÀÌÆ®)
+	// ë‚¨ì€ ë°”ì´íŠ¸ ì²˜ë¦¬ (1~3ë°”ì´íŠ¸)
 	for (; i < len; ++i) {
 		crc = _mm_crc32_u8(crc, ptr[i]);
 	}
 
-	// ÃÖÁ¾ XOR Ã³¸®
+	// ìµœì¢… XOR ì²˜ë¦¬
 	return crc ^ 0xFFFFFFFF;
 }

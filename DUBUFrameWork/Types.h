@@ -48,7 +48,7 @@ using Tuple = std::pair<T, K>;
 template <typename T, typename K>
 struct TupleHash {
     std::size_t operator()(const Tuple<T, K>& p) const {
-        return std::hash<T>()(p.first) ^ std::hash<K>()(p.second); // ºñÆ® ¿¬»êÀ» »ç¿ëÇÏ¿© µÎ ÇØ½Ã¸¦ °áÇÕ
+        return std::hash<T>()(p.first) ^ std::hash<K>()(p.second); // ë¹„íŠ¸ ì—°ì‚°ì„ ì‚¬ìš©í•˜ì—¬ ë‘ í•´ì‹œë¥¼ ê²°í•©
     }
 };
 

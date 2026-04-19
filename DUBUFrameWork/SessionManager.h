@@ -8,7 +8,7 @@ namespace DUBU
 {
 	class SessionManager
 	{
-		// ¿©±â¼­¸¸ ¼¼¼Ç »ı¼º, µî·Ï, »èÁ¦¸¦ °ü¸® / ´Ù¸¥°÷¿¡¼­ ±İÁö
+		// ì—¬ê¸°ì„œë§Œ ì„¸ì…˜ ìƒì„±, ë“±ë¡, ì‚­ì œë¥¼ ê´€ë¦¬ / ë‹¤ë¥¸ê³³ì—ì„œ ê¸ˆì§€
 	public:
 		SessionManager();
 		SessionManager(const SessionManager& other) = delete;

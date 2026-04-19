@@ -23,7 +23,7 @@ namespace DUBU
     template<typename T>
     inline void ObjectPool<T>::Initialize(Int32 count)
     {
-        // ÃÊ±â ÇÒ´ç °³¼ö. ´Ü ÆÄ¶ó¹ÌÅÍ´Â ¾ø¾î¾ßµÈ´Ù.
+        // ì´ˆê¸° í• ë‹¹ ê°œìˆ˜. ë‹¨ íŒŒë¼ë¯¸í„°ëŠ” ì—†ì–´ì•¼ëœë‹¤.
         freeList_.reserve(count);
         for (int i = 0; i < count; ++i)
         {
