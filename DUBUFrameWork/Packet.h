@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-// Intel/AMD SSE 4.2 (CRC32 ÇÏµå¿ş¾î °¡¼Ó)
+// Intel/AMD SSE 4.2 (CRC32 í•˜ë“œì›¨ì–´ ê°€ì†)
 #include <nmmintrin.h>
 
 namespace DUBU
@@ -8,12 +8,12 @@ namespace DUBU
 	namespace Packet 
 	{
 		/*
-		* NONE : ÀÌµ¿, È¸Àüµî ¼Õ½ÇµÇ¸é °¨¼öÇÏ´Â ÆĞÅ¶
-		* REPEAT : ½ºÅ³, ¸Ş½ÃÁöµî ¼Õ½Ç½Ã ÀçÀü¼ÛÇÏ´Â ÆĞÅ¶
-		* CHUNK : 1°³ÀÇ ÆĞÅ¶ÀÌ ³ª´²Á®¼­ µé¾î¿À´Â °æ¿ì (ÃÊ±â ·Îµå½Ã ÀüÃ¼ Á¤º¸, ÃÖ´ë 2^5 ±îÁö¸¸ °¡´É
-		* LASTCHUNK : CHUNK·Î ³ª´²Áø ÆĞÅ¶ÀÇ ¸¶Áö¸· ÆĞÅ¶
-		* ACK : ÀçÀü¼Û È®ÀÎ¿ë ÆĞÅ¶ (a -> b ÆĞÅ¶Àü¼Û, b -> a ¹Ş¾Ò´Ù´Â È®ÀÎ)
-		* SESSION : ¿¬°á ¿äÃ» ¼¼¼ÇÀÌ »ı¼ºµÊ / sessionId ÀÖÀ»¶§´Â ¿¬°á ÇØÁ¦ ¼¼¼Ç Á¦°Å
+		* NONE : ì´ë™, íšŒì „ë“± ì†ì‹¤ë˜ë©´ ê°ìˆ˜í•˜ëŠ” íŒ¨í‚·
+		* REPEAT : ìŠ¤í‚¬, ë©”ì‹œì§€ë“± ì†ì‹¤ì‹œ ì¬ì „ì†¡í•˜ëŠ” íŒ¨í‚·
+		* CHUNK : 1ê°œì˜ íŒ¨í‚·ì´ ë‚˜ëˆ ì ¸ì„œ ë“¤ì–´ì˜¤ëŠ” ê²½ìš° (ì´ˆê¸° ë¡œë“œì‹œ ì „ì²´ ì •ë³´, ìµœëŒ€ 2^5 ê¹Œì§€ë§Œ ê°€ëŠ¥
+		* LASTCHUNK : CHUNKë¡œ ë‚˜ëˆ ì§„ íŒ¨í‚·ì˜ ë§ˆì§€ë§‰ íŒ¨í‚·
+		* ACK : ì¬ì „ì†¡ í™•ì¸ìš© íŒ¨í‚· (a -> b íŒ¨í‚·ì „ì†¡, b -> a ë°›ì•˜ë‹¤ëŠ” í™•ì¸)
+		* SESSION : ì—°ê²° ìš”ì²­ ì„¸ì…˜ì´ ìƒì„±ë¨ / sessionId ìˆì„ë•ŒëŠ” ì—°ê²° í•´ì œ ì„¸ì…˜ ì œê±°
 		*/
 		enum PacketHeaderFlag : Uint8
 		{
@@ -22,7 +22,10 @@ namespace DUBU
 			CHUNK     = 0b00000010,
 			LASTCHUNK = 0b10000000,
 			ACK		  = 0b11000000,
-			SESSION   = 0b11111111,
+			PING	  = 0b11100000,
+			PONG      = 0b11110000,
+			SESSION   = 0b11111110,
+			DISCONNECT= 0b11111111
 		};
 
 		struct PacketHeader
@@ -32,21 +35,21 @@ namespace DUBU
 			PacketHeaderFlag flags_;
 			Uint32 sessionId_;
 			Uint32 sequenceNo_;
-			Uint32 timestamp_;
+			Uint64 timestamp_;
 			Uint32 checksum_;
 		};
 
 		class Packet
 		{
 		public:
-			// Çì´õ Ã¼Å© / º¹»ç
+			// í—¤ë” ì²´í¬ / ë³µì‚¬
 			static bool PacketHeaderCheck(const Uint8* ptr, const Uint16 len);
 			static void PacketHeaderCopy(const Uint8* ptr, Uint8* dest);
 
-			// ÆĞÅ¶ º¹»ç
+			// íŒ¨í‚· ë³µì‚¬
 			static void PacketCopy(const Uint8* ptr, const Uint16 len, Uint8* dest);
 
-			// crc32 Ã¼Å©½æ
+			// crc32 ì²´í¬ì¸
 			static Uint32 CRC32(const Uint8* ptr, Uint16 len);
 		};
 

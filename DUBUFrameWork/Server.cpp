@@ -3,7 +3,7 @@
 #include "Packet.h"
 #include "BufferManager.h"
 
-DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
+DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
@@ -28,9 +28,12 @@ void DUBU::Server::Run()
 		LPOVERLAPPED ptr = nullptr;
 		Int32 size = rudpSocket_->Dispatch(&ptr);
 
-		// ÀÌ¶§ ´Ù¸¥ ÀÛ¾÷µµ ‚IÂú¾Æ º¸ÀÓ
-		if (ptr == nullptr)
+        if (ptr == nullptr)
+        {
+            // ë§ˆì§€ë§‰ ì„¸ì…˜ ì²´í¬
+            CheckSession();
 			continue;
+        }
 
 		OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
 		if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
@@ -54,44 +57,88 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
+    auto seqNo = header->sequenceNo_;
+	Uint64 key = PeerKey(addr);
+	auto it = peerMap_.find(key);
+	Bool result = false;
 
-	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
-		// ¼¼¼Ç Ãß°¡
-		Session* session = CreateSession(addr);
-		header->sessionId_ = session->GetSessionId();   // ¡ç Ãß°¡
-		// ¼¼¼Ç Ãß°¡ ¿Ï·á ÀÀ´ä
-		ConnectMessage(session);
+		if (it == peerMap_.end())
+		{
+			// ì„¸ì…˜ ì¶”ê°€
+			WriteLockGuard wl(sessionLock_);
+			Session* session = CreateSession(addr);
+			header->sessionId_ = session->GetSessionId();
+			// ì„¸ì…˜ ì¶”ê°€ ì™„ë£Œ ì‘ë‹µ
+			ConnectMessage(session);
+			// Peer ìƒì„±
+			peerMap_.emplace(key, Peer{key, addr, session});
+		}
+		else
+		{
+			// ì¤‘ë³µìœ¼ë¡œ ì˜¤ëŠ”ê²½ìš° ì¬ì „ì†¡
+			ReadLockGuard rl(sessionLock_);
+			Session* session = it->second.session_;
+			ConnectMessage(session);
+		}
 	}
 	else
 	{
-		// ¼¼¼ÇÀÌ ÀÖÀ»¶§
+		/*
+		* ì„¸ì…˜ì´ ìˆì„ë•Œ
+		* - discconect ACKëŠ” ì—°ê²° í•´ì œë¥¼ í™•ì¸.
+		*/ 
 		if (sessionId > 0)
 		{
 			ReadLockGuard rl(sessionLock_);
 			Session* session = sessionManager_.GetSession(sessionId);
 			if (session == nullptr)
 			{
-				spdlog::error("sessionId{} not found", sessionId);
+                if (flag == Packet::PacketHeaderFlag::DISCONNECT)
+                {
+                    // ì´ë¯¸ ì„œë²„ì—ì„œ ì—°ê²° ëŠìŒ
+                    spdlog::info("Already Disconnect Session");
+                    return;
+                }
+				spdlog::error("SessionId{} not found", sessionId);
 				return;
 			}
 
-			// NONE or REPEAT ÀÏ¶§´Â ÆĞÅ¶¿¡ ´ëÇÑ ³»¿ëÀ» Ã³¸®
-			if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
+			// PING/PONG ë¹„íŠ¸ëŠ” ACK ë¹„íŠ¸ë¥¼ í¬í•¨í•˜ë¯€ë¡œ equalityë¡œ ë¨¼ì € ë¶„ê¸°í•´ì•¼ í•¨
+			if (flag == Packet::PacketHeaderFlag::PONG)
 			{
-				result = session->RecvDispatch(buffer, size);
+				result = session->RecvDispatchPong(buffer, size);
 			}
-
-			// ACK ÀÏ¶§´Â Å¬¶óÂÊ¿¡¼­ Á¦´ë·Î ¹Ş°í ´Ù½Ã º¸³»¿Ô´Ù´Â °ÍÀÌ´Ù.
-			if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+			else if (flag == Packet::PacketHeaderFlag::PING)
 			{
-				result = session->RecvDispatchACK(buffer, size);
+				// ì„œë²„ëŠ” PINGì„ ë°›ì§€ ì•ŠëŠ” ì„¤ê³„ â€” ë¬´ì‹œ
+				spdlog::debug("Server received PING (ignored) from session {}", sessionId);
 			}
+            else if (flag == Packet::PacketHeaderFlag::NONE)
+            {
+                // NONE or REPEAT ì¼ë•ŒëŠ” íŒ¨í‚·ì„ ì •ìƒ ìˆ˜ì‹ í•˜ì—¬ ì²˜ë¦¬
+                result = session->RecvDispatch(buffer, size);
+            }
+            else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
+            {
+                // ACK ì¼ë•ŒëŠ” í´ë¼ìª½ì—ì„œ ê²°ê³¼ë¥¼ ë°›ê³  ë‹¤ì‹œ ë³´ë‚´ì™”ë‹¤ëŠ” ëœ»ì´ë‹¤.
+                result = session->RecvDispatchACK(buffer, size);
+                if (result)
+                {
+                    // ACK ì „ë‹¬
+                    SendAck(seqNo, session);
+                }
+            }
+            else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+            {
+                // ACK ìˆ˜ì‹  pendingpacket ì§€ì›€
+                session->RecvDispatchACK(buffer, size);
+            }
 		}
 	}
 
-	// repeat ACKÀü¼Û
+	// repeat ACKì „ì†¡
 	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
 	{
 		auto remote = opbPtr->remoteAddr_;
@@ -99,7 +146,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		rudpSocket_->SendTo(remote, buffer, addSize);
 	}
 
-	// ÀÏ´Ü ½ÇÆĞÇÒ¶§ ÄÚµå ¹× ´ë½Ãº¸µå¿¡ ¶ç¿ï µ¥ÀÌÅÍ Å¥¿¡ ³Ö±â?
+	// ì¼ë‹¨ ì‹¤íŒ¨í• ë•Œ ì½”ë“œ ë° ëŒ€ì‹œë³´ë“œì— ë„ìš¸ ë°ì´í„° íì— ë„£ê¸°?
 }
 
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
@@ -109,19 +156,18 @@ void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 {
-	WriteLockGuard wl(sessionLock_);
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
+	session->SetTimestamp(DUBU::GetCurrentTimeMs());
 	return session;
 }
 
 void DUBU::Server::ConnectMessage(Session* session)
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(Packet::PacketHeaderFlag::SESSION);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
-	// Çì´õ ÀÛ¼º
+	// í—¤ë” ì‘ì„±
 	header->checksum_ = 0;
 	header->flags_ = Packet::PacketHeaderFlag::SESSION;
 	header->totalSize_ = sizeof(Packet::PacketHeader);
@@ -129,35 +175,160 @@ void DUBU::Server::ConnectMessage(Session* session)
 	header->sequenceNo_ = 0;
 	header->timestamp_ = 0;
 
-	// ÀüÃ¼ ÆĞÅ¶ »çÀÌÁî ¼³Á¤
+	// ì „ì²´ íŒ¨í‚· ì‚¬ì´ì¦ˆ ì„¤ì •
 	opb->size_ = header->totalSize_;
 
-	// crc32 ¾ÏÈ£È­
+	// crc32 ì•”í˜¸í™”
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
 	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
 }
 
+void DUBU::Server::DisconnectMessage(Session* session)
+{
+    // ê·¸ë˜ë„ í´ë¼í•œí…Œ í•œë²ˆ ë„˜ê²¨ì¤Œ 
+
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// í—¤ë” ì‘ì„±
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	header->sequenceNo_ = session->UpdateSendSequenceNo();
+	header->timestamp_ = GetCurrentTimeMs();
+
+	// ì „ì²´ íŒ¨í‚· ì‚¬ì´ì¦ˆ ì„¤ì •
+	opb->size_ = header->totalSize_;
+
+	// crc32 ì•”í˜¸í™”
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+
+	// ì¼ë‹¨ pendingì— ë‘”ë‹¤.
+	session->AddPendingPacket(opb->buffer_, opb->size_);
+}
+
+void DUBU::Server::SendPing(Session* session)
+{
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	// RELIABLE í”Œë˜ê·¸ ì—†ìŒ â€” SendToCompleteì—ì„œ ìë™ ë°˜í™˜
+	opb->SetType(OverlappedObjType::SENDTO);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// í—¤ë” ì‘ì„± (header-only, ë¹„ì‹ ë¢°)
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::PING;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	// ë¹„ì‹ ë¢° â€” í•‘í ì „ìš© ì‹œí€€ìŠ¤Noì‚¬ìš©
+	header->sequenceNo_ = session->AccSequnceNo();
+	header->timestamp_ = GetCurrentTimeMs();
+	header->packetCode_ = 0;
+
+	opb->size_ = header->totalSize_;
+
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+
+	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+	// AddPendingPacket í˜¸ì¶œí•˜ì§€ ì•ŠìŒ â€” ì¬ì „ì†¡/ACK ì¶”ì  ì—†ìŒ
+    session->AddPingCount();
+}
+
 void DUBU::Server::CheckSession()
 {
-	// ÀçÀü¼Û·ÎÁ÷ ½ÇÇà
+	// ì‹œê°„ì²´í¬
 	Uint64 now = GetCurrentTimeMs();
+	// ëŠì„ ì„¸ì…˜
+	Uint8 idx = 0;
+
+	// 1ìŠ¤ë ˆë“œë§Œ í†µê³¼
+	Bool expected = sessionCAS_.load();
+	// false, ì—°ì‚° ì‹¤íŒ¨ì‹œ í†µê³¼
+	if (expected || !sessionCAS_.compare_exchange_weak(expected, true, std::memory_order_acquire, std::memory_order_relaxed))
+	{
+		return;
+	}
 
 	{
-		// ²÷À» ¼¼¼Ç
-		Uint8 idx = 0;
-		// ÀĞ±â¸¸ ¹­´Â´Ù.
-		ReadLockGuard rl(sessionLock_);
+		// ì¬ì „ì†¡ë¡œì§ ì‹¤í–‰
+		ReadLockGuard rw(sessionLock_);
 		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
-			// ²÷±è °¨Áö
-			if (now - session->GetTimestamp() > SessionTimeout) 
+            if (!session->IsConnection())
+            {
+                continue;
+            }
+
+			Uint64 delayTime = now - session->GetTimestamp();
+			if (delayTime > SessionTimeout)
 			{
+				// ëŠê¹€ ê°ì§€
 				removeListCache_[idx++] = session->GetSessionId();
 			}
+			else if (delayTime > PingTimeout)
+			{
+				// PingTimeout ê°„ê²©ìœ¼ë¡œ throttle â€” 3s ì‹œì ë¶€í„° 3së§ˆë‹¤ ìµœëŒ€ ~3íšŒ
+				if (now - session->GetLastPingSentTime() >= (Uint64)PingTimeout)
+				{
+					SendPing(session);
+					session->SetLastPingSentTime(now);
+				}
+			}
 
-			// ÀçÀü¼Û, ¿Õº¹½Ã°£Àº * 2 + DEFAULT_RTT_MS_DELAY
-			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			// ì¬ì „ì†¡, ì™•ë³µì‹œê°„ì€ * 2 + DEFAULT_RTT_MS_DELAY
+			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
 		}
 	}
+
+	{
+		// ì—°ê²° í•´ì œ êµ¬ê°„
+		WriteLockGuard rw(sessionLock_);
+		for (Int32 i = 0; i < idx; ++i)
+		{
+			Int32 sessionId = removeListCache_[i];
+			Session* session = sessionManager_.GetSession(sessionId);
+			if (session != nullptr)
+			{
+				// ì„¸ì…˜ ì—°ê²° í•´ì œ
+                DisconnectMessage(session);
+				session->Disconnect();
+			}
+            sessionManager_.RemoveSession(sessionId);
+		}
+	}
+
+	sessionCAS_.store(false);
+}
+
+void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
+{
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // í—¤ë” ì‘ì„± (header-only, ë¹„ì‹ ë¢°)
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::ACK;
+    header->totalSize_ = sizeof(Packet::PacketHeader);
+    header->sessionId_ = session->GetSessionId();
+    header->sequenceNo_ = seqNo;
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = 0;
+
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+}
+
+Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
+{
+	// ipë¥¼ 16ë¹„íŠ¸ ì‹œí”„íŠ¸í›„ portì™€ orì—°ì‚°ìœ¼ë¡œ keyê´€ë¦¬
+	return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
 }

@@ -4,8 +4,8 @@
 #include "BufferManager.h"
 #include "../extra/base_flatbuffer_generated.h"
 
-DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) : 
-	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), addr_(), rttMillisec_(DEFAULT_RTT_MS)
+DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
+	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(DEFAULT_RTT_MS), isConnect_(false)
 {
 }
 
@@ -16,6 +16,8 @@ DUBU::Session::~Session()
 void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
 {
 	addr_ = addr;
+	isConnect_ = true;
+	timestamp_ = DUBU::GetCurrentTimeMs();
 }
 
 const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
@@ -26,6 +28,16 @@ const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
 void DUBU::Session::SetSessionId(Int32 sessionId)
 {
 	sessionId_ = sessionId;
+}
+
+void DUBU::Session::SetTimestamp(const Uint64 time)
+{
+	timestamp_ = time;
+}
+
+Int32 DUBU::Session::UpdateSendSequenceNo()
+{
+	return ++sendSequenceNo_;
 }
 
 Int32 DUBU::Session::GetSessionId() const
@@ -53,29 +65,55 @@ Uint32 DUBU::Session::GetRttMillisec() const
 	return rttMillisec_;
 }
 
-Int64 DUBU::Session::GetTimestamp() const
+Uint64 DUBU::Session::GetTimestamp() const
 {
 	return timestamp_;
 }
 
+Bool DUBU::Session::IsConnection() const
+{
+	return isConnect_;
+}
+
 void DUBU::Session::Reset()
 {
+	// 세션 초기화
 	sessionId_ = 0;
 	recvSequenceNo_ = 0;
 	sendSequenceNo_ = 0;
-	timestamp_ = 0;
-
+	timestamp_ = DUBU::GetCurrentTimeMs();
+	lastPingSentTime_ = 0;
 	rttMillisec_ = DEFAULT_RTT_MS;
+
+    for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
+    {
+        pendingPackets_[i] = { nullptr, 0, 0, false };
+    }
 }
 
 bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-	// 이전 패킷 중복 넘김
-	if (header->sequenceNo_ <= recvSequenceNo_)
+	// 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
+	timestamp_ = DUBU::GetCurrentTimeMs();
+
+    // 이전 패킷 중복 넘김
+    if (header->sequenceNo_ <= recvSequenceNo_)
+    {
+        return false;
+    }
+
+	// 에코 테스트
+	if (header->packetCode_ == 0)
 	{
-		return false;
+		Uint32 id = header->sessionId_;
+		Uint32 seq = header->sequenceNo_;
+		Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
+		char* ptr = reinterpret_cast<char*>(buffer[sizeof(Packet::PacketHeader)]);
+		std::string_view sv(ptr, size);
+		spdlog::debug("ECHO Recv : {}-{}-{}", id, seq, sv);
+		return true;
 	}
 
 	// 패킷  체크
@@ -107,6 +145,12 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 	Uint32 ackSeq = header->sequenceNo_;
 	int idx = ackSeq % DEFAULT_WINDOW_COUNT;
+    
+    if (!isConnect_)
+    {
+        // 이미 연결 끊음
+        return false;
+    }
 
 	if (pendingPackets_[idx].sequenceNo == ackSeq && pendingPackets_[idx].buffer != nullptr)
 	{
@@ -125,10 +169,40 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 			localWindowStart_++;
 		}
 	}
+
 	return true;
 }
 
-void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
+bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
+{
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
+
+	// PONG은 liveness 신호로만 사용, timestamp_만 갱신 (RTT 갱신 없음, 핸들러 실행 없음)
+	timestamp_ = DUBU::GetCurrentTimeMs();
+
+    // 카운트 갱신
+    if (lastPongSeq_ <= header->sequenceNo_)
+    {
+        AddPongCount();
+    }
+	return true;
+}
+
+void DUBU::Session::SendACK(Uint32 seqNo)
+{
+}
+
+Uint64 DUBU::Session::GetLastPingSentTime() const
+{
+	return lastPingSentTime_;
+}
+
+void DUBU::Session::SetLastPingSentTime(Uint64 time)
+{
+	lastPingSentTime_ = time;
+}
+
+void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
 {
 	Uint64 now = GetCurrentTimeMs();
 
@@ -141,4 +215,27 @@ void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
 			p.timeStamp = now;
 		}
 	}
+}
+
+void DUBU::Session::SetPeer(Peer& peer)
+{
+	peer_ = peer;
+}
+
+void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
+{
+	OverlappedPacketBuffer* pandingbuffer = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(pandingbuffer->buffer_);
+	Uint64 timeStamp = header->timestamp_;
+	Uint32 sequenceNo = header->sequenceNo_;
+	bool isSent = false;
+
+	// ACK가져올때 까지 킵
+	pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { pandingbuffer, timeStamp, sequenceNo, isSent };
+}
+
+void DUBU::Session::Disconnect()
+{
+    isConnect_ = true;
+    spdlog::info("Disconnect : result ping {} / {}", pongCount_, pingCount_);
 }

@@ -3,7 +3,7 @@
 
 DUBU::Lock::Lock()
 {
-	count.store(0);
+	count_.store(0);
 }
 
 void DUBU::Lock::ReadLock()
@@ -12,9 +12,8 @@ void DUBU::Lock::ReadLock()
 	{
 		for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
 		{
-			uint32_t expected = count.load(std::memory_order_relaxed);
+			uint32_t expected = count_.load(std::memory_order_relaxed);
 
-			// WRITE 비트 켜져있으면 스킵 (버그 수정 핵심!)
 			if (expected & WRITE)
 			{
 				_mm_pause();
@@ -22,10 +21,7 @@ void DUBU::Lock::ReadLock()
 			}
 
 			uint32_t desired = expected + 1;
-			if (count.compare_exchange_weak(
-				expected, desired,
-				std::memory_order_acquire,   // 성공
-				std::memory_order_relaxed))  // 실패
+			if (count_.compare_exchange_weak(expected, desired, std::memory_order_acquire,std::memory_order_relaxed))
 			{
 				return;
 			}
@@ -37,9 +33,8 @@ void DUBU::Lock::ReadLock()
 
 void DUBU::Lock::ReadUnLock()
 {
-	// fetch_sub는 기본 seq_cst → release로 충분
-	uint32_t prev = count.fetch_sub(1, std::memory_order_release);
-	assert((prev & READ) > 0);  // 더 정확한 assert
+	uint32_t prev = count_.fetch_sub(1, std::memory_order_release);
+	assert((prev & READ) > 0);
 }
 
 void DUBU::Lock::WriteLock()
@@ -49,14 +44,11 @@ void DUBU::Lock::WriteLock()
 		for (uint32_t i = 0; i < MAX_SPIN_COUNT; i++)
 		{
 			uint32_t expected = EMPTY;
-			if (count.compare_exchange_weak(
-				expected, WRITE,
-				std::memory_order_acquire,
-				std::memory_order_relaxed))
+			if (count_.compare_exchange_weak(expected, WRITE, std::memory_order_acquire, std::memory_order_relaxed))
 			{
 				return;
 			}
-			_mm_pause();  // 추가
+			_mm_pause();
 		}
 		std::this_thread::yield();
 	}
@@ -64,6 +56,5 @@ void DUBU::Lock::WriteLock()
 
 void DUBU::Lock::WriteUnLock()
 {
-	// release로 충분 (이후 연산이 앞으로 넘어오지 않게만 보장)
-	count.store(EMPTY, std::memory_order_release);
+	count_.store(EMPTY, std::memory_order_release);
 }

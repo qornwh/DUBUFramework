@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.h"
 #include "Packet.h"
+#include "Peer.h"
+#include "PendingPacket.h"
 
 namespace DUBU
 {
@@ -9,38 +11,46 @@ namespace DUBU
 	*/
 	class Session
 	{
-		/*
-		* 재전송 패킷 정보
-		*/
-		struct PendingPacket {
-			struct OverlappedPacketBuffer* buffer = nullptr;
-			Int64   timeStamp = 0;
-			Uint32  sequenceNo = 0;
-			bool    isSent = false;
-		};
-
 	public:
 		Session(const Map<Uint8, Packet::PacketHandler>* handlers);
 		virtual ~Session();
 		virtual void Reset();
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
-		// 외부에서 수정 불가능 하게 만든다.
-		const SOCKADDR_IN& GetSockAddr() const;
 		void SetSessionId(Int32 sessionId);
-		Int32 GetSessionId() const;
+		void SetTimestamp(const Uint64 time);
+		Int32 UpdateSendSequenceNo();
 
-		// 외부 참조용
+		const SOCKADDR_IN& GetSockAddr() const;
+		Int32 GetSessionId() const;
 		Uint32 GetRecvSequenceNo() const;
 		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
-		Int64 GetTimestamp() const;
+		Uint64 GetTimestamp() const;
+		Bool IsConnection() const;
 
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
+		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
+		void RepeatMessage(class RUDPSocket* socket, Uint64 resendDelay);
 
-		void RepeatACK(class RUDPSocket* socket, Int64 resendDelay);
+        // ACK 리턴
+        void SendACK(Uint32 seqNo);
+
+		Uint64 GetLastPingSentTime() const;
+		void SetLastPingSentTime(Uint64 time);
+		void SetPeer(Peer& peer);
+		void AddPendingPacket(Uint8* buffer, Uint16 size);
+
+		void Disconnect();
+
+        // 핑 카운트 기록
+        void AddPingCount() { ++pingCount_; };
+        Uint32 GetPingCount() const { return pingCount_; };
+        void AddPongCount() { ++pongCount_; };
+        Uint32 GetPongCount() const { return pongCount_; };
+        Uint32 AccSequnceNo() { return lastPongSeq_++; }
 
 	private:
 		// 세션 id
@@ -55,10 +65,16 @@ namespace DUBU
 		// 초기값 0.5초
 		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
 		// 가장 마지막 시간
-		Int64 timestamp_ = 0;
+		Uint64 timestamp_ = 0;
+
+		// 마지막으로 Ping을 보낸 시간 (throttle용)
+		Uint64 lastPingSentTime_ = 0;
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;
+
+		// Peer 관리
+		Peer peer_;
 
 		// 재전송 패킷 관리
 		PendingPacket pendingPackets_[DEFAULT_WINDOW_COUNT];
@@ -67,5 +83,13 @@ namespace DUBU
 
 		// 패킷별 함수 분기대신 Map사용
 		const Map<Uint8, Packet::PacketHandler>* handlers_;
+
+		// 연결 관리
+		Bool isConnect_;
+
+        // 핑 카운트 기록
+        Uint32 pingCount_ = 0;
+        Uint32 pongCount_ = 0;
+        Uint32 lastPongSeq_ = 0;
 	};
 }

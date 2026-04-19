@@ -13,16 +13,16 @@ DUBU::DubuByteData::DubuByteData()
 	ptr_ = static_cast<DubuBytePtr>(malloc(sizeof(DubuByte) * size_));
 	if (ptr_ == nullptr)
 	{
-		// ¸Ş¸ğ¸® ÇÒ´ç ½ÇÆĞ Ã³¸® ¹× Á¾·á
+		// ë©”ëª¨ë¦¬ í• ë‹¹ ì‹¤íŒ¨ ì²˜ë¦¬ ë° ì¢…ë£Œ
 		char str[256];
 		if (strerror_s(str, sizeof(str), errno) != 0) 
-			snprintf(str, sizeof(str), "¾Ë ¼ö ¾ø´Â ¿À·ù(%d)", errno);
-		// ¿î¿µÃ¼Á¦ ¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
-		fprintf(stderr, "¸Ş¸ğ¸® ÇÒ´ç ½ÇÆĞ: %s\n", str); 
+			snprintf(str, sizeof(str), "ì•Œ ìˆ˜ ì—†ëŠ” ì˜¤ë¥˜(%d)", errno);
+		// ìš´ì˜ì²´ì œ ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
+		fprintf(stderr, "ë©”ëª¨ë¦¬ í• ë‹¹ ì‹¤íŒ¨: %s\n", str); 
 		exit(EXIT_FAILURE);
 	}
 
-	// ¸Ş¸ğ¸® ÂÉ°³µĞ´Ù.
+	// ë©”ëª¨ë¦¬ ìª¼ê°œë‘”ë‹¤.
 	int pos = 0;
 	int len = 4;
 
@@ -50,8 +50,8 @@ DUBU::DubuByteData::~DubuByteData()
 	{
 		if (useCnt_ > 0)
 		{
-			// ÇÁ·Î±×·¥ Á¾·á
-			fprintf(stderr, "¸Ş¸ğ¸® ÀÌ¹Ì »ç¿ëÁß - %d !!!\n", useCnt_.load());
+			// í”„ë¡œê·¸ë¨ ì¢…ë£Œ
+			fprintf(stderr, "ë©”ëª¨ë¦¬ ì´ë¯¸ ì‚¬ìš©ì¤‘ - %d !!!\n", useCnt_.load());
 			//exit(EXIT_FAILURE); 
 		}
 
@@ -61,12 +61,12 @@ DUBU::DubuByteData::~DubuByteData()
 
 	if (ptr_ != nullptr)
 	{
-		// ÇÁ·Î±×·¥ Á¾·á => ·Î±×·Î ³²°ÜµÎ´Â°Íµµ
-		fprintf(stderr, "¸Ş¸ğ¸® ÇØÁ¦ ½ÇÆĞ !!!\n");
+		// í”„ë¡œê·¸ë¨ ì¢…ë£Œ => ë¡œê·¸ë¡œ ë‚¨ê²¨ë‘ëŠ”ê²ƒë„
+		fprintf(stderr, "ë©”ëª¨ë¦¬ í•´ì œ ì‹¤íŒ¨ !!!\n");
 		exit(EXIT_FAILURE); 
 	}
 
-	printf("¸Ş¸ğ¸® ÇØÁ¦ ¼º°ø !!!\n");
+	printf("ë©”ëª¨ë¦¬ í•´ì œ ì„±ê³µ !!!\n");
 }
 
 void DUBU::Initialize()
@@ -81,13 +81,13 @@ DUBU::DubuByteDataSPtr DUBU::FindBlock(DubuBytePtr ptr)
 {
 	for (auto& block : PoolList)
 	{
-		// ptr ÇØ´çÁÖ¼ÒÀÇ °ªÀÇ poolÀÇ ÁÖ¼Ò¿¡ Æ÷ÇÔµÇ¸é ¸®ÅÏ
+		// ptr í•´ë‹¹ì£¼ì†Œì˜ ê°’ì˜ poolì˜ ì£¼ì†Œì— í¬í•¨ë˜ë©´ ë¦¬í„´
 		if (ptr >= block->ptr_ && ptr < block->ptr_ + block->size_)
 			return block;
 	}
 
-	// poolÁÖ¼Ò°¡ ¾È¸Â´Ù´Â ¶æÀÓ, ÇÁ·Î±×·¥ Á¾·á
-	fprintf(stderr, "ÇØ´çÇÏ´Â °ø°£ÀÌ ¾øÀ½ !!!\n");
+	// poolì£¼ì†Œê°€ ì•ˆë§ë‹¤ëŠ” ëœ»ì„, í”„ë¡œê·¸ë¨ ì¢…ë£Œ
+	fprintf(stderr, "í•´ë‹¹í•˜ëŠ” ê³µê°„ì´ ì—†ìŒ !!!\n");
 	exit(EXIT_FAILURE);
 	return nullptr;
 }

@@ -90,8 +90,14 @@
     <ClInclude Include="RingBuffer.h">
       <Filter>DataStruct\DS</Filter>
     </ClInclude>
+    <ClInclude Include="Peer.h">
+      <Filter>Service\Server</Filter>
+    </ClInclude>
     <ClInclude Include="ObjectPool.h">
       <Filter>ObjectPool</Filter>
+    </ClInclude>
+    <ClInclude Include="PendingPacket.h">
+      <Filter>Service</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -142,6 +148,12 @@
     </ClCompile>
     <ClCompile Include="ObjectPool.cpp">
       <Filter>ObjectPool</Filter>
+    </ClCompile>
+    <ClCompile Include="Peer.cpp">
+      <Filter>Service\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="PendingPacket.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

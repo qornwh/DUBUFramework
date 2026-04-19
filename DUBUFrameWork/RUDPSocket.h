@@ -6,7 +6,7 @@ namespace DUBU
 {
 	struct OverlappedPacketBuffer;
 
-	// OnRecvFrom OnSendToÇÔ¼ö¸¦ ºĞ¸®ÇØ °áÇÕµµ¸¦ ³·Ãß¾îº»´Ù.
+	// OnRecvFrom OnSendToí•¨ìˆ˜ë¥¼ ë¶„ë¦¬í•´ ê²°í•©ë„ë¥¼ ë‚®ì¶”ì–´ë³¸ë‹¤.
 	class ISocketHandler 
 	{
 	public:
@@ -27,11 +27,11 @@ namespace DUBU
 		RUDPSocket& operator=(const RUDPSocket& other) = delete;
 		RUDPSocket& operator=(RUDPSocket&& other) = delete;
 
-		// ¼­¹ö¿ë
+		// ì„œë²„ìš©
 		void StartServer();
 		void EndServer();
 
-		// Å¬¶ó¿ë
+		// í´ë¼ìš©
 		void StartClient(const String& serverIP, Uint16 serverPort);
 		void EndClient();
 		

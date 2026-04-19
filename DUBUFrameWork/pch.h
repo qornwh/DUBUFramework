@@ -5,14 +5,14 @@
 #include <assert.h>
 #include "Types.h"
 #include "spdlog/spdlog.h"
-// ¼ø¼­ ÁöÄÑ¾ßµÊ maxÇÔ¼ö flatbuffer¶û °ãÄ¡´Â Çö»ó ¹ß»ı
+// ìˆœì„œ ì§€ì¼œì•¼ë¨ maxí•¨ìˆ˜ flatbufferë‘ ê²¹ì¹˜ëŠ” í˜„ìƒ ë°œìƒ
 #include <winsock2.h>
 #include <Ws2tcpip.h>
 #include <mswsock.h>
 #include <coroutine>
 #pragma comment(lib, "ws2_32")
 
-// »ó¼ö ¸ğ¾ÆµĞ´Ù.
+// ìƒìˆ˜ ëª¨ì•„ë‘”ë‹¤.
 #define MAX_CLIENT_COUNT 500
 #define FIRST_CLIENT_COUNT 50
 #define SERVICE_PORT 12345
@@ -20,6 +20,8 @@
 #define DEFAULT_RTT_MS 100
 #define DEFAULT_WINDOW_COUNT 64
 #define DEFAULT_RTT_MS_DELAY 20
+#define DEFAULT_DISCONNECT_TIMEOUT_MS 30000;
+#define DEFAULT_PING_TIMEOUT_MS 3000;
 #endif
 
 namespace DUBU
@@ -33,7 +35,7 @@ namespace DUBU
 		}
 	}
 
-	static long long GetCurrentTimeMs() {
+	static Uint64 GetCurrentTimeMs() {
 		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	}
 }

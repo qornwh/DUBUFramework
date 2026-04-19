@@ -6,14 +6,14 @@
 namespace DUBU::DS
 {
 	/*
-	* ÀÏ´Ü Lock±â¹İ Å¥·Î ±¸Çö
+	* ì¼ë‹¨ Lockê¸°ë°˜ íë¡œ êµ¬í˜„
 	*/
 	template<typename T>
 	struct RingBuffer
 	{
 		void Push(T t);
 		void Pop(T& t);
-		// ÀÏ´Ü ¸Å°³º¯¼ö ¾ø´Â Å¸ÀÔÀ¸·Î¸¸ Àû¿ë
+		// ì¼ë‹¨ ë§¤ê°œë³€ìˆ˜ ì—†ëŠ” íƒ€ì…ìœ¼ë¡œë§Œ ì ìš©
 		bool PeekProcess(Function<bool()>&& function);
 
 		T buffer[DEFAULT_WINDOW_COUNT];
@@ -37,8 +37,8 @@ namespace DUBU::DS
 
 		if (endPos_ == startPos_)
 		{
-			// Ãß°¡Çß´Âµ¥ ¸¸¾à ³ÑÃ³¹ö·È´Ù
-			// ÀÏ´Ü ÇÁ·Î±×·¥ ´Ù¿î½ÃÅ²´Ù.
+			// ì¶”ê°€í–ˆëŠ”ë° ë§Œì•½ ë„˜ì²˜ë²„ë ¸ë‹¤
+			// ì¼ë‹¨ í”„ë¡œê·¸ë¨ ë‹¤ìš´ì‹œí‚¨ë‹¤.
 			assert(false);
 		}
 	}

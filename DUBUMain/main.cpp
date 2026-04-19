@@ -22,19 +22,29 @@ int main()
 		DUBU::Client client{ "127.0.0.1", SERVICE_PORT };
 		client.Connect();
 
-		while (true)
-		{
-			bool ret = client.Dispatch();
-			if (ret && client.GetClientId() > 0)
-			{
-				spdlog::info("ClientID : {}", client.GetClientId());
-				break;
-			}
-			else
-			{
-				client.ConnectMessage();
-			}
-		}
+        Uint64 time = 0;
+
+        Uint64 cur = DUBU::GetCurrentTimeMs();
+
+        while (true)
+        {
+            bool ret = client.Dispatch();
+            if (ret && client.GetClientId() > 0)
+            {
+                spdlog::info("ClientID : {}", client.GetClientId());
+                break;
+            }
+            else
+            {
+                Sleep(500);
+                client.ConnectMessage();
+            }
+        }
+
+        while (client.GetClientId())
+        {
+            bool ret = client.Dispatch();
+        }
 
 		server->Stop();
 		th.join();

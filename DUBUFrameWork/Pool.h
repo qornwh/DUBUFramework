@@ -11,23 +11,23 @@
 
 namespace DUBU
 {
-	// 1¹ÙÀÌÆ® DubuByte »ı¼º
+	// 1ë°”ì´íŠ¸ DubuByte ìƒì„±
 	using DubuByte = unsigned char;
 	using DubuBytePtr = DubuByte*;
 	using DubuByteDataSPtr = std::shared_ptr<struct DubuByteData>;
 
 	/* 
-	Àü¿ª º¯¼ö ¼±¾ğ
+	ì „ì—­ ë³€ìˆ˜ ì„ ì–¸
 	*/
-	// pool_list : 1°³·Î Å« µ¥ÀÌÅÍ·Î Ç®¸µ ÇÒ ¿¹Á¤ÀÌ¾úÀ¸³ª n°³·Î ³ª´©¾î µĞ°Í
+	// pool_list : 1ê°œë¡œ í° ë°ì´í„°ë¡œ í’€ë§ í•  ì˜ˆì •ì´ì—ˆìœ¼ë‚˜ nê°œë¡œ ë‚˜ëˆ„ì–´ ë‘”ê²ƒ
 	extern Vector<DubuByteDataSPtr> PoolList;
-	// pool_chunk_list : ½ÇÁ¦ Å©±âº°·Î ÇÒ´çÇÒ µ¥ÀÌÅÍ°¡ ÀÖÀ½
+	// pool_chunk_list : ì‹¤ì œ í¬ê¸°ë³„ë¡œ í• ë‹¹í•  ë°ì´í„°ê°€ ìˆìŒ
 	extern Map<int, Vector<DubuBytePtr>> PoolChunkList;
-	// pool_list : ±âº» Å©±â ÁöÁ¤
+	// pool_list : ê¸°ë³¸ í¬ê¸° ì§€ì •
 	extern const int PoolSize;
 	// Lock 
 	extern Lock PoolLock;
-	// Ç®¿¡ ´ã±ä ¸Ş¸ğ¸® ÃÖ´ë Å©±â
+	// í’€ì— ë‹´ê¸´ ë©”ëª¨ë¦¬ ìµœëŒ€ í¬ê¸°
 	constexpr int MaxChunkSize = 1 << 10;
 
 	struct DubuByteData : public std::enable_shared_from_this<DubuByteData>
@@ -36,7 +36,7 @@ namespace DUBU
 		~DubuByteData();
 
 		const size_t size_ = 3'582'410;
-		// ¸Ş¸ğ¸® ½ÃÀÛ ÁÖ¼Ò <= ÀÌ°Å¸¦ Å° ¹× Å½»ö¿ëÀ¸·Î Ã£À½
+		// ë©”ëª¨ë¦¬ ì‹œì‘ ì£¼ì†Œ <= ì´ê±°ë¥¼ í‚¤ ë° íƒìƒ‰ìš©ìœ¼ë¡œ ì°¾ìŒ
 		DubuBytePtr ptr_;
 		size_t idx_ = 0;
 		std::atomic<int> useCnt_ = 0;
@@ -45,16 +45,16 @@ namespace DUBU
 	void Initialize();
 	DubuByteDataSPtr FindBlock(DubuBytePtr ptr);
 
-	// ±¸Á¶Ã¼/Å¬·¡½º ´ÜÀ§
+	// êµ¬ì¡°ì²´/í´ë˜ìŠ¤ ë‹¨ìœ„
 	template<typename T>
 	void Push(T* object)
 	{
-		// bit_ceil : 2 > 4 > 8 > 16 > 32 2ÀÇ ¹è¼öÁß Å«°ªÁß ÃÖ¼Ò·Î Àâ´Â´Ù 
+		// bit_ceil : 2 > 4 > 8 > 16 > 32 2ì˜ ë°°ìˆ˜ì¤‘ í°ê°’ì¤‘ ìµœì†Œë¡œ ì¡ëŠ”ë‹¤ 
 		constexpr size_t len = std::bit_ceil(sizeof(T));
 
 		if (MaxChunkSize < len)
 		{
-			// ¿ÀºêÁ§Æ® Ç®¸µÀ¸·Î ´ëÃ¼ÇÑ´Ù
+			// ì˜¤ë¸Œì íŠ¸ í’€ë§ìœ¼ë¡œ ëŒ€ì²´í•œë‹¤
 			return ObjectPool<T>::GetInstance().Push(object);
 		}
 
@@ -81,7 +81,7 @@ namespace DUBU
 		}
 	}
 
-	// ±¸Á¶Ã¼/Å¬·¡½º ´ÜÀ§
+	// êµ¬ì¡°ì²´/í´ë˜ìŠ¤ ë‹¨ìœ„
 	template<typename T, typename... Args>
 	T* Pop(Args&& ...args)
 	{
@@ -92,7 +92,7 @@ namespace DUBU
 
 		if (MaxChunkSize < len)
 		{
-			// ¿ÀºêÁ§Æ® Ç®¸µÀ¸·Î ´ëÃ¼ÇÑ´Ù
+			// ì˜¤ë¸Œì íŠ¸ í’€ë§ìœ¼ë¡œ ëŒ€ì²´í•œë‹¤
 			return ObjectPool<T>::GetInstance().Pop(std::forward<Args>(args)...);
 		}
 
@@ -100,7 +100,7 @@ namespace DUBU
 
 		if (PoolChunkList[len].empty())
 		{
-			// ¸¸¾à ¸ğµç Ç®¸µ¿¡ ÀÖ´Â µ¥ÀÌÅÍ¸¦ »ç¿ëÇÒ °æ¿ì ´Ù½Ã »ı¼º
+			// ë§Œì•½ ëª¨ë“  í’€ë§ì— ìˆëŠ” ë°ì´í„°ë¥¼ ì‚¬ìš©í•  ê²½ìš° ë‹¤ì‹œ ìƒì„±
 			PoolList.push_back(std::make_shared<DubuByteData>());
 		}
 

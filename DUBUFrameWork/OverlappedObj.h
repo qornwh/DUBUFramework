@@ -13,7 +13,7 @@ namespace DUBU
 		RELIABLE = 0xFFFF'0000
 	};
 
-	// GetQueuedCompletionStatut¿¡¼­ OverlappedObj·Î Ä³½ºÆÃÇØ¼­ Å¸ÀÔ ¾Ë¾Æ³¾·Á´Â ¿ëµµ
+	// GetQueuedCompletionStatutì—ì„œ OverlappedObjë¡œ ìºìŠ¤íŒ…í•´ì„œ íƒ€ì… ì•Œì•„ë‚¼ë ¤ëŠ” ìš©ë„
 	struct OverlappedObj
 	{
 		WSAOVERLAPPED overlapped_;
