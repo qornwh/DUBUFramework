@@ -57,6 +57,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 	auto sessionId = header->sessionId_;
 	auto flag = header->flags_;
+    auto seqNo = header->sequenceNo_;
 	Uint64 key = PeerKey(addr);
 	auto it = peerMap_.find(key);
 	Bool result = false;
@@ -123,6 +124,11 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
             {
                 // ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
                 result = session->RecvDispatchACK(buffer, size);
+                if (result)
+                {
+                    // ACK 전달
+                    SendAck(seqNo, session);
+                }
             }
 		}
 	}
@@ -293,6 +299,27 @@ void DUBU::Server::CheckSession()
 	}
 
 	sessionCAS_.store(false);
+}
+
+void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
+{
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // 헤더 작성 (header-only, 비신뢰)
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::ACK;
+    header->totalSize_ = sizeof(Packet::PacketHeader);
+    header->sessionId_ = session->GetSessionId();
+    header->sequenceNo_ = seqNo;
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = 0;
+
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
 }
 
 Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)

@@ -32,6 +32,8 @@ namespace DUBU
 		void SendPing(Session* session);
 		void CheckSession();
 
+        void SendAck(Uint32 seqNo, Session* session);
+
 	private:
 		Uint64 PeerKey(const SOCKADDR_IN& addr);
 
