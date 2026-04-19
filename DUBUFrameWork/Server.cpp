@@ -28,17 +28,18 @@ void DUBU::Server::Run()
 		LPOVERLAPPED ptr = nullptr;
 		Int32 size = rudpSocket_->Dispatch(&ptr);
 
-		if (ptr == nullptr)
+        if (ptr == nullptr)
+        {
+            // 마지막 세션 체크
+            CheckSession();
 			continue;
+        }
 
 		OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
 		if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
 			rudpSocket_->RecvFromComplete(ptr, size);
 		else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
 			rudpSocket_->SendToComplete(ptr, size);
-
-        // 마지막 세션 체크
-        CheckSession();
 	}
 }
 
@@ -93,7 +94,13 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			Session* session = sessionManager_.GetSession(sessionId);
 			if (session == nullptr)
 			{
-				spdlog::error("sessionId{} not found", sessionId);
+                if (flag == Packet::PacketHeaderFlag::DISCONNECT)
+                {
+                    // 이미 서버에서 연결 끊음
+                    spdlog::info("Already Disconnect Session");
+                    return;
+                }
+				spdlog::error("SessionId{} not found", sessionId);
 				return;
 			}
 
@@ -107,16 +114,16 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 				// 서버는 PING을 받지 않는 설계 — 무시
 				spdlog::debug("Server received PING (ignored) from session {}", sessionId);
 			}
-			// NONE or REPEAT 일때는 패킷을 정상 수신하여 처리
-			else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
-			{
-				result = session->RecvDispatch(buffer, size);
-			}
-			// ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
-			else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
-			{
-				result = session->RecvDispatchACK(buffer, size);
-			}
+            else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT || flag == Packet::PacketHeaderFlag::NONE)
+            {
+                // NONE or REPEAT 일때는 패킷을 정상 수신하여 처리
+                result = session->RecvDispatch(buffer, size);
+            }
+            else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
+            {
+                // ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
+                result = session->RecvDispatchACK(buffer, size);
+            }
 		}
 	}
 
@@ -138,7 +145,6 @@ void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 {
-	WriteLockGuard wl(sessionLock_);
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
 	session->SetTimestamp(DUBU::GetCurrentTimeMs());
@@ -148,7 +154,6 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 void DUBU::Server::ConnectMessage(Session* session)
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성
@@ -170,6 +175,8 @@ void DUBU::Server::ConnectMessage(Session* session)
 
 void DUBU::Server::DisconnectMessage(Session* session)
 {
+    // 그래도 클라한테 한번 넘겨줌 
+
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
 	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -242,6 +249,11 @@ void DUBU::Server::CheckSession()
 		ReadLockGuard rw(sessionLock_);
 		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
+            if (!session->IsConnection())
+            {
+                continue;
+            }
+
 			Uint64 delayTime = now - session->GetTimestamp();
 			if (delayTime > SessionTimeout)
 			{
@@ -259,7 +271,7 @@ void DUBU::Server::CheckSession()
 			}
 
 			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-			session->RepeatACK(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
 		}
 	}
 
@@ -273,9 +285,10 @@ void DUBU::Server::CheckSession()
 			if (session != nullptr)
 			{
 				// 세션 연결 해제
+                DisconnectMessage(session);
 				session->Disconnect();
 			}
-			sessionManager_.RemoveSession(sessionId);
+            sessionManager_.RemoveSession(sessionId);
 		}
 	}
 

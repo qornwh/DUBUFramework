@@ -33,7 +33,10 @@ namespace DUBU
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
-		void RepeatACK(class RUDPSocket* socket, Int64 resendDelay);
+		void RepeatMessage(class RUDPSocket* socket, Int64 resendDelay);
+
+        // ACK 리턴
+        void SendACK(Uint32 seqNo);
 
 		Uint64 GetLastPingSentTime() const;
 		void SetLastPingSentTime(Uint64 t);
@@ -81,7 +84,7 @@ namespace DUBU
 		// 패킷별 함수 분기대신 Map사용
 		const Map<Uint8, Packet::PacketHandler>* handlers_;
 
-		// 연결 해제됨
+		// 연결 관리
 		Bool isConnect_;
 
         // 핑 카운트 기록

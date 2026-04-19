@@ -2,7 +2,12 @@
 
 SOCKET DUBU::SocketConfig::CreateUDPSocket()
 {
-    return WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    // SIO_UDP_CONNRESET ì˜µì…˜ ì¶”ê°€, í´ë¼ì´ì–¸íŠ¸ê°€ ë°”ì¸ë”© ì•ˆëœ ìƒíƒœì—ì„œ iocp recv ë“±ë¡ì‹œ ë¬¸ì œê°€ ìˆì—‡ìŒ
+    SOCKET socket = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    BOOL bNewBehavior = FALSE;
+    DWORD dwBytesReturned = 0;
+    WSAIoctl(socket, SIO_UDP_CONNRESET, &bNewBehavior, sizeof(bNewBehavior), NULL, 0, &dwBytesReturned, NULL, NULL);
+    return socket;
 }
 
 void DUBU::SocketConfig::SetIoCompletionPort(SOCKET socket, HANDLE iocpHd)
@@ -33,6 +38,6 @@ void DUBU::SocketConfig::SocketBind(SOCKET ServerSocket, Int32 port)
 
 void DUBU::SocketConfig::SetReuseAddress(SOCKET socket, Int32 opt)
 {
-    // ¼­¹ö¼ÒÄÏ¿¡¼­ ¼­¹ö ½ÃÀÛÇÏ°í Á¾·áÇÒ¶§, Æ÷Æ® ´ë±âÁßÀÎ °æ¿ì ÀÖÀ½ ÀÌ¶§, ¹Ù·Î ¿¬°áµÇµµ·Ï ¿É¼Ç ¼³Á¤
+    // ì„œë²„ì†Œì¼“ì—ì„œ ì„œë²„ ì‹œì‘í•˜ê³  ì¢…ë£Œí• ë•Œ, í¬íŠ¸ ëŒ€ê¸°ì¤‘ì¸ ê²½ìš° ìˆìŒ ì´ë•Œ, ë°”ë¡œ ì—°ê²°ë˜ë„ë¡ ì˜µì…˜ ì„¤ì •
     setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&opt), sizeof(opt));
 }

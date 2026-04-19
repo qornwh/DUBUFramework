@@ -9,10 +9,10 @@ DUBU::SessionManager::~SessionManager()
 {
     for (auto [id, session] : sessionMap_)
     {
-        // ÀüºÎ´Ù ÇÒ´ç ÇØÁ¦ 
+        // ì „ë¶€ë‹¤ í• ë‹¹ í•´ì œ 
         Push<Session>(session);
     }
-    // ºñ¿ì±â
+    // ë¹„ìš°ê¸°
     sessionMap_.clear();
 }
 
@@ -33,8 +33,8 @@ void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
     auto it = sessionMap_.find(sessionId);
     if (it != sessionMap_.end())
     {
-        sessionMap_.erase(sessionId);
         Push<Session>(it->second);
+        sessionMap_.erase(sessionId);
     }
 }
 

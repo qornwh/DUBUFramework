@@ -18,8 +18,8 @@ DUBU::Client::~Client()
 
 void DUBU::Client::Connect()
 {
-	// sessionId = 0, flag = SESSION ¿Œ ∆–≈∂ ¿¸º€
-	// √ﬂ∞°∑Œ 5~10π¯ ƒø≥ÿº« ø‰√ª«ÿµµ æ»ø¿∏È ø¨∞·Ω«∆– √ﬂ∞°
+	// sessionId = 0, flag = SESSION Ïù∏ Ìå®ÌÇ∑ Ï†ÑÏÜ°
+	// Ï∂îÍ∞ÄÎ°ú 5~10Î≤à Ïª§ÎÑ•ÏÖò ÏöîÏ≤≠Ìï¥ÎèÑ ÏïàÏò§Î©¥ Ïó∞Í≤∞Ïã§Ìå® Ï∂îÍ∞Ä
 	if (rudpSocket_.get() != nullptr)
 	{
 		ConnectMessage();
@@ -67,12 +67,20 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	bool result = false;
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
-		clientId_ = header->sessionId_;   // º≠πˆ∞° πﬂ±ﬁ«— ID ¿˙¿Â
+        // ÏÑúÎ≤ÑÍ∞Ä Î∞úÍ∏âÌïú ID Ï†ÄÏû•
+		clientId_ = header->sessionId_;
 	}
-	else
+	else if (flag == Packet::PacketHeaderFlag::PING)
 	{
-
+        // PONG Î©îÏãúÏßÄ Ï†ÑÎã¨
+        RepeatPongMessage();
 	}
+    else if (flag == Packet::PacketHeaderFlag::DISCONNECT)
+    {
+        // Ïó∞Í≤∞ Ìï¥Ï†ú
+        Uint32 disconnectSeq = header->sequenceNo_;
+        DisconnectMessage(disconnectSeq);
+    }
 }
 
 void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
@@ -81,10 +89,18 @@ void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
 void DUBU::Client::ConnectMessage()
 {
+    if (connNo_ >= DEFAULT_REQUEST_CONNECT_NO)
+    {
+        // Ïó∞Í≤∞ Ïã§Ìå®
+        spdlog::error("Server Not Connect, Request Count : {}", connNo_);
+        return;
+    }
+    connNo_++;
+
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
-	// «Ï¥ı ¿€º∫
+	// Ìó§Îçî ÏûëÏÑ±
 	header->checksum_ = 0;
 	header->flags_ = Packet::PacketHeaderFlag::SESSION;
 	header->totalSize_ = sizeof(Packet::PacketHeader);
@@ -92,15 +108,35 @@ void DUBU::Client::ConnectMessage()
 	header->sequenceNo_ = 0;
 	header->timestamp_ = 0;
 
-	// ¿¸√º ∆–≈∂ ªÁ¿Ã¡Ó º≥¡§
+	// Ï†ÑÏ≤¥ Ìå®ÌÇ∑ ÏÇ¨Ïù¥Ï¶à ÏÑ§Ï†ï
 	opb->size_ = header->totalSize_;
-	// ≈∏¿‘ º≥¡§
-	opb->SetType(OverlappedObjType::SENDTO);
 
-	// crc32 æœ»£»≠
+	// crc32 ÏïîÌò∏Ìôî
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
 	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+}
+
+void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
+{
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // Ìó§Îçî ÏûëÏÑ±
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
+    header->totalSize_ = sizeof(Packet::PacketHeader);
+    header->sessionId_ = clientId_;
+    header->sequenceNo_ = disconnectSeq;
+    header->timestamp_ = 0;
+
+    // Ï†ÑÏ≤¥ Ìå®ÌÇ∑ ÏÇ¨Ïù¥Ï¶à ÏÑ§Ï†ï
+    opb->size_ = header->totalSize_;
+
+    // crc32 ÏïîÌò∏Ìôî
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
 }
 
 void DUBU::Client::SendEchoMessage()
@@ -108,25 +144,25 @@ void DUBU::Client::SendEchoMessage()
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
-	// ECHO ∏ﬁΩ√¡ˆ
+	// ECHO Î©îÏãúÏßÄ
 	String str = "ECHO TEST !!!";
 
-	// «Ï¥ı ¿€º∫
+	// Ìó§Îçî ÏûëÏÑ±
 	header->checksum_ = 0;
 	header->flags_ = Packet::PacketHeaderFlag::REPEAT;
 	header->totalSize_ = sizeof(Packet::PacketHeader) + str.size();
-	header->sessionId_ = 0;
+	header->sessionId_ = clientId_;
 	header->sequenceNo_ = 0;
 	header->timestamp_ = 0;
-	// ECHO ∆–≈∂ ƒ⁄µÂ
+	// ECHO Ìå®ÌÇ∑ ÏΩîÎìú
 	header->packetCode_ = 0;
 
-	// ¿¸√º ∆–≈∂ ªÁ¿Ã¡Ó º≥¡§
+	// Ï†ÑÏ≤¥ Ìå®ÌÇ∑ ÏÇ¨Ïù¥Ï¶à ÏÑ§Ï†ï
 	opb->size_ = header->totalSize_;
-	// ≈∏¿‘ º≥¡§
+	// ÌÉÄÏûÖ ÏÑ§Ï†ï
 	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
 
-	// crc32 æœ»£»≠
+	// crc32 ÏïîÌò∏Ìôî
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
 	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
@@ -135,4 +171,37 @@ void DUBU::Client::SendEchoMessage()
 Uint32 DUBU::Client::GetClientId() const
 {
 	return clientId_;
+}
+
+void DUBU::Client::RepeatPongMessage()
+{
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+    auto sequenceNo = header->sequenceNo_;
+
+    // ÏµúÍ∑º pingÎ©îÏãúÏßÄ ÏàòÏã†ÌôïÏù∏
+    if (sequenceNo >= lastPongSeq_)
+    {
+        lastPongSeq_ = sequenceNo;
+
+        // Ìó§Îçî ÏûëÏÑ±
+        header->checksum_ = 0;
+        header->flags_ = Packet::PacketHeaderFlag::PONG;
+        header->totalSize_ = sizeof(Packet::PacketHeader);
+        header->sessionId_ = clientId_;
+        header->sequenceNo_ = sequenceNo;
+        header->timestamp_ = 0;
+
+        // Ï†ÑÏ≤¥ Ìå®ÌÇ∑ ÏÇ¨Ïù¥Ï¶à ÏÑ§Ï†ï
+        opb->size_ = header->totalSize_;
+        // ÌÉÄÏûÖ ÏÑ§Ï†ï
+        opb->SetType(OverlappedObjType::SENDTO);
+
+        // crc32 ÏïîÌò∏Ìôî
+        Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+        header->checksum_ = checksum;
+        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+
+        spdlog::info("Ping Ï≤¥ÌÅ¨ {}", lastPongSeq_);
+    }
 }

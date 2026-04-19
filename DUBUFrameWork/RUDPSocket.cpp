@@ -17,31 +17,31 @@ DUBU::RUDPSocket::~RUDPSocket()
 
 void DUBU::RUDPSocket::StartServer()
 {
-	// ÇÚµé·¯ µî·Ï È®ÀÎ
+	// í•¸ë“¤ëŸ¬ ë“±ë¡ í™•ì¸
 	assert(handler_ != nullptr);
 
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	assert(ret == 0);
 
-	// ioÄÄÇÃ¸®¼Ç Æ÷Æ®, ¼ÒÄÏ »ı¼º¹× ¿¬°á
+	// ioì»´í”Œë¦¬ì…˜ í¬íŠ¸, ì†Œì¼“ ìƒì„±ë° ì—°ê²°
 	iocpHd_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	socket_ = SocketConfig::CreateUDPSocket();
 	SocketConfig::SetIoCompletionPort(socket_, iocpHd_);
 
-	// ¼ÒÄÏ ¼³Á¤
+	// ì†Œì¼“ ì„¤ì •
 	SocketConfig::SetReuseAddress(socket_, 1);
 
-	// ¹ÙÀÎµù
+	// ë°”ì¸ë”©
 	SocketConfig::SocketBind(socket_, port_);
 
-	// 50°³ ¹Ì¸® µî·Ï
+	// 50ê°œ ë¯¸ë¦¬ ë“±ë¡
 	for (int i = 0; i < firstClientCount_; ++i)
 	{
 		RecvFrom();
 	}
 
-	// ¼­¹ö ¼ÒÄÏ Ã¼Å©
+	// ì„œë²„ ì†Œì¼“ ì²´í¬
 	isServer_ = true;
 }
 
@@ -53,20 +53,20 @@ void DUBU::RUDPSocket::EndServer()
 
 	isServer_ = false;
 
-	// ÆĞÅ¶¸Å´ÏÀúÀÇ ¸ğµç ÆĞÅ¶ ¹öÆÛ¿¡ ¿¬°áµÈ iocpÅ¥ Á¦°Å
+	// íŒ¨í‚·ë§¤ë‹ˆì €ì˜ ëª¨ë“  íŒ¨í‚· ë²„í¼ì— ì—°ê²°ëœ iocpí ì œê±°
 	const Set<DUBU::OverlappedPacketBuffer*>& useList = Singleton<PacketManager>::GetInstance().GetUseList();
 	Uint64 EXIT_SIGNAL = 0xFFFFFFFFFFFFF;
 	for (auto use : useList)
 	{
-		// ÇÒ´ç¸¸ µÇ°í ÇöÀç »ç¿ëÁßÀÌ°Íµé PostQueuedCompletionStatus·Î Ã³¸®
+		// í• ë‹¹ë§Œ ë˜ê³  í˜„ì¬ ì‚¬ìš©ì¤‘ì´ê²ƒë“¤ PostQueuedCompletionStatusë¡œ ì²˜ë¦¬
 		Bool ret = PostQueuedCompletionStatus(iocpHd_, 0, EXIT_SIGNAL, &use->overlapped_);
 		assert(ret);
 	}
 
-	// ¼ÒÄÏ¿¡ °É¸° ¸ğµç ºñµ¿±â I/O Ãë¼Ò
+	// ì†Œì¼“ì— ê±¸ë¦° ëª¨ë“  ë¹„ë™ê¸° I/O ì·¨ì†Œ
 	CancelIoEx((HANDLE)socket_, NULL);
 
-	// ¸ğµç ºñµ¿±â I/O Ãë¼Ò 
+	// ëª¨ë“  ë¹„ë™ê¸° I/O ì·¨ì†Œ 
 	while (true)
 	{
 		DWORD dwTransferred = 0;
@@ -76,13 +76,13 @@ void DUBU::RUDPSocket::EndServer()
 
 		if (ret == FALSE && lpOverlapped == nullptr)
 		{
-			// ´õ ÀÌ»ó ¾øÀ½
+			// ë” ì´ìƒ ì—†ìŒ
 			break;
 		}
 
-		// ret°¡ false·Î ³ª¿Íµµ Çã¿ëÇØ¾ß µÈ´Ù(Ãë¼Ò, ¼ÒÄÏ ´İÈû µî) 
-		// Áï ÇöÀç »ç¿ëµÇ°í ÀÖ¾ú´Âµ¥, ¼ÒÄÏÀÌ ´İÈûÀ¸·Î½á false°¡ ³ª¿Ã¼ö ÀÖ´Ù.
-		// Á¤»óµ¿ÀÛ ¿Ï·á
+		// retê°€ falseë¡œ ë‚˜ì™€ë„ í—ˆìš©í•´ì•¼ ëœë‹¤(ì·¨ì†Œ, ì†Œì¼“ ë‹«í˜ ë“±) 
+		// ì¦‰ í˜„ì¬ ì‚¬ìš©ë˜ê³  ìˆì—ˆëŠ”ë°, ì†Œì¼“ì´ ë‹«í˜ìœ¼ë¡œì¨ falseê°€ ë‚˜ì˜¬ìˆ˜ ìˆë‹¤.
+		// ì •ìƒë™ì‘ ì™„ë£Œ
 		if (lpOverlapped != nullptr)
 		{
 			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
@@ -90,33 +90,33 @@ void DUBU::RUDPSocket::EndServer()
 		}
 	}
 
-	// ¼ÒÄÏ ¹İÈ¯
+	// ì†Œì¼“ ë°˜í™˜
 	Closesocket();
 	CloseHandle(iocpHd_);
 }
 
 void DUBU::RUDPSocket::StartClient(const String& serverIP, Uint16 serverPort)
 {
-	// ÇÚµé·¯ µî·Ï È®ÀÎ
+	// í•¸ë“¤ëŸ¬ ë“±ë¡ í™•ì¸
 	assert(handler_ != nullptr);
 
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	assert(ret == 0);
 
-	// ÇÚµé¼³Á¤
+	// í•¸ë“¤ì„¤ì •
 	iocpHd_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	socket_ = SocketConfig::CreateUDPSocket();
 	SocketConfig::SetIoCompletionPort(socket_, iocpHd_);
 
-	// Å¬¶óÀÌ¾ğÆ® ¹ÙÀÎµå
+	// í´ë¼ì´ì–¸íŠ¸ ë°”ì¸ë“œ
 	SocketConfig::SocketBind(socket_, 0);
 	
-	// ¼­¹ö ip, port ¼³Á¤
+	// ì„œë²„ ip, port ì„¤ì •
 	serverIP_ = serverIP;
 	serverPort_ = serverPort;
  
-	// ¼­¹ö ÁÖ¼Ò¼³Á¤
+	// ì„œë²„ ì£¼ì†Œì„¤ì •
 	memset(&serverAddr_, 0, sizeof(serverAddr_));
 	serverAddr_.sin_family = AF_INET;
 	serverAddr_.sin_port = htons(serverPort_);
@@ -130,10 +130,10 @@ void DUBU::RUDPSocket::EndClient()
 {
 	WriteLockGuard wl(lk_);
 
-	// ¼ÒÄÏ¿¡ °É¸° ¸ğµç ºñµ¿±â I/O Ãë¼Ò
+	// ì†Œì¼“ì— ê±¸ë¦° ëª¨ë“  ë¹„ë™ê¸° I/O ì·¨ì†Œ
 	CancelIoEx((HANDLE)socket_, NULL);
 
-	// ¸ğµç ºñµ¿±â I/O Ãë¼Ò 
+	// ëª¨ë“  ë¹„ë™ê¸° I/O ì·¨ì†Œ 
 	while (true)
 	{
 		DWORD dwTransferred = 0;
@@ -143,13 +143,13 @@ void DUBU::RUDPSocket::EndClient()
 
 		if (ret == FALSE && lpOverlapped == nullptr)
 		{
-			// ´õ ÀÌ»ó ¾øÀ½
+			// ë” ì´ìƒ ì—†ìŒ
 			break;
 		}
 
-		// ret°¡ false·Î ³ª¿Íµµ Çã¿ëÇØ¾ß µÈ´Ù(Ãë¼Ò, ¼ÒÄÏ ´İÈû µî) 
-		// Áï ÇöÀç »ç¿ëµÇ°í ÀÖ¾ú´Âµ¥, ¼ÒÄÏÀÌ ´İÈûÀ¸·Î½á false°¡ ³ª¿Ã¼ö ÀÖ´Ù.
-		// Á¤»óµ¿ÀÛ ¿Ï·á
+		// retê°€ falseë¡œ ë‚˜ì™€ë„ í—ˆìš©í•´ì•¼ ëœë‹¤(ì·¨ì†Œ, ì†Œì¼“ ë‹«í˜ ë“±) 
+		// ì¦‰ í˜„ì¬ ì‚¬ìš©ë˜ê³  ìˆì—ˆëŠ”ë°, ì†Œì¼“ì´ ë‹«í˜ìœ¼ë¡œì¨ falseê°€ ë‚˜ì˜¬ìˆ˜ ìˆë‹¤.
+		// ì •ìƒë™ì‘ ì™„ë£Œ
 		if (lpOverlapped != nullptr)
 		{
 			OverlappedPacketBuffer* ptr = reinterpret_cast<OverlappedPacketBuffer*>(lpOverlapped);
@@ -157,7 +157,7 @@ void DUBU::RUDPSocket::EndClient()
 		}
 	}
 
-	// ¼ÒÄÏ ¹İÈ¯
+	// ì†Œì¼“ ë°˜í™˜
 	Closesocket();
 	CloseHandle(iocpHd_);
 }
@@ -221,7 +221,7 @@ void DUBU::RUDPSocket::RecvFrom()
 
 void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
-	// ÀÏ¹İ ÆĞÅ¶
+	// ì¼ë°˜ íŒ¨í‚·
 	WSABUF wsabuf;
 	DWORD flags = 0;
 	DWORD bytesSent = size;
@@ -229,7 +229,7 @@ void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint
 	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
 	opbPtr->SetType(OverlappedObjType::SENDTO);
 
-	// ÆĞÅ¶ º¹»ç
+	// íŒ¨í‚· ë³µì‚¬
 	Packet::Packet::PacketHeaderCopy(buffer, opbPtr->buffer_);
 	Packet::Packet::PacketCopy(buffer, sizeof(Packet::PacketHeader), opbPtr->buffer_ + sizeof(Packet::PacketHeader));
 	opbPtr->size_ = size;
@@ -244,14 +244,14 @@ void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint
 		if (errCode != WSA_IO_PENDING)
 		{
 			spdlog::error("WSASendTo SendTo Error : {}", errCode);
-			assert(false); // ÀÏ´Ü Å©·¡½Ã³¿
+			assert(false); // ì¼ë‹¨ í¬ë˜ì‹œëƒ„
 		}
 	}
 }
 
 void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
-	// ½Å·Ú¼º ÆĞÅ¶ Àü¼Û
+	// ì‹ ë¢°ì„± íŒ¨í‚· ì „ì†¡
 	WSABUF wsabuf;
 	DWORD flags = 0;
 	DWORD bytesSent = size;
@@ -259,7 +259,7 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buff
 	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
 	opbPtr->SetType(OverlappedObjType::SENDTO | OverlappedObjType::RELIABLE);
 
-	// ÆĞÅ¶ º¹»ç
+	// íŒ¨í‚· ë³µì‚¬
 	Packet::Packet::PacketHeaderCopy(buffer, opbPtr->buffer_);
 	Packet::Packet::PacketCopy(buffer, sizeof(Packet::PacketHeader), opbPtr->buffer_ + sizeof(Packet::PacketHeader));
 	opbPtr->size_ = size;
@@ -274,20 +274,20 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buff
 		if (errCode != WSA_IO_PENDING)
 		{
 			spdlog::error("WSASendTo SendToReliable Error : {}", errCode);
-			assert(false); // ÀÏ´Ü Å©·¡½Ã³¿
+			assert(false); // ì¼ë‹¨ í¬ë˜ì‹œëƒ„
 		}
 	}
 }
 
 void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
-	// ÀçÀü¼Û ÆĞÅ¶
+	// ì¬ì „ì†¡ íŒ¨í‚·
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
 
-	// overlapped Àç»ç¿ë Àü ÃÊ±âÈ­ (ZeroMemory)
+	// overlapped ì¬ì‚¬ìš© ì „ ì´ˆê¸°í™” (ZeroMemory)
 	opbPtr->Initialize();
 
-	// ÆĞÅ¶ º¹»ç´Â ¾ø´Ù ±âÁ¸²¨ ´Ù½Ã º¸³»´Â ÇÔ¼ö
+	// íŒ¨í‚· ë³µì‚¬ëŠ” ì—†ë‹¤ ê¸°ì¡´êº¼ ë‹¤ì‹œ ë³´ë‚´ëŠ” í•¨ìˆ˜
 	WSABUF wsabuf;
 	wsabuf.len = size;
 	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
@@ -301,7 +301,7 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer
 		if (errCode != WSA_IO_PENDING)
 		{
 			spdlog::error("WSASendTo SendToRepeat Error : {}", errCode);
-			assert(false); // ÀÏ´Ü Å©·¡½Ã³¿
+			assert(false); // ì¼ë‹¨ í¬ë˜ì‹œëƒ„
 		}
 	}
 }
@@ -315,11 +315,11 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opbPtr->buffer_);
 		Uint32 checksum = header->checksum_;
 
-		// º¸³¾¶§ Ã¼Å©½æÀº 0À¸·Î ÃÊ±âÈ­ µÈ »óÅÂ¶ó ·Ñ¹é
+		// ë³´ë‚¼ë•Œ ì²´í¬ì¸ì€ 0ìœ¼ë¡œ ì´ˆê¸°í™” ëœ ìƒíƒœë¼ ë¡¤ë°±
 		header->checksum_ = 0;
 		if (checksum == Packet::Packet::CRC32(opbPtr->buffer_, size))
 		{
-			// ÇÚµé·¯ ÅëÇØ¼­ Ã³¸® ³Ñ°Ü¹ö¸°´Ù
+			// í•¸ë“¤ëŸ¬ í†µí•´ì„œ ì²˜ë¦¬ ë„˜ê²¨ë²„ë¦°ë‹¤
 			if (handler_)
 			{
 				handler_->OnRecvFrom(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
@@ -327,17 +327,17 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 		}
 		else
 		{
-			// Ã¼Å©½æ ±úÁü
-			spdlog::warn("RecvFromComplete: checksum failed");
+			// ì²´í¬ì¸ ê¹¨ì§
+			spdlog::warn("RecvFromComplete: checksum failed {}", checksum);
 		}
 	}
 	else
 	{
-		// Çì´õ ±úÁü
+		// í—¤ë” ê¹¨ì§
 		spdlog::warn("RecvFromComplete: header failed");
 	}
 
-	// ¹İÈ¯, ´Ù½Ã Àçµî·Ï
+	// ë°˜í™˜, ë‹¤ì‹œ ì¬ë“±ë¡
 	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
 	RecvFrom();
 }
@@ -346,13 +346,13 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	// ÇÚµé·¯ ÅëÇØ¼­ Ã³¸® ³Ñ°Ü¹ö¸°´Ù
+	// í•¸ë“¤ëŸ¬ í†µí•´ì„œ ì²˜ë¦¬ ë„˜ê²¨ë²„ë¦°ë‹¤
 	if (handler_)
 	{
 		handler_->OnSendTo(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
 	}
 
-	// ÀçÀü¼Û ÆĞÅ¶ÀÌ ¾Æ´Ï¸é ÇÒ´ç ÇØÁ¦ 
+	// ì¬ì „ì†¡ íŒ¨í‚·ì´ ì•„ë‹ˆë©´ í• ë‹¹ í•´ì œ 
 	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
 	{
 		PacketManager::GetInstance().PushPacketBuffer(opbPtr);

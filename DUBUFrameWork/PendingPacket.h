@@ -3,12 +3,12 @@
 namespace DUBU
 {
 	/*
-	 * ÀçÀü¼Û ÆÐÅ¶ Á¤º¸
+	 * ìž¬ì „ì†¡ íŒ¨í‚· ì •ë³´
 	 */
 	struct PendingPacket
 	{
 		struct OverlappedPacketBuffer* buffer = nullptr;
-		Int64   timeStamp = 0;
+		Uint64   timeStamp = 0;
 		Uint32  sequenceNo = 0;
 		bool    isSent = false;
 	};

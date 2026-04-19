@@ -84,6 +84,11 @@ void DUBU::Session::Reset()
 	timestamp_ = DUBU::GetCurrentTimeMs();
 	lastPingSentTime_ = 0;
 	rttMillisec_ = DEFAULT_RTT_MS;
+
+    for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
+    {
+        pendingPackets_[i] = { nullptr, 0, 0, false };
+    }
 }
 
 bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
@@ -93,20 +98,11 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	// 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
 	timestamp_ = DUBU::GetCurrentTimeMs();
 
-    // PONG 체크
-    if (header->flags_ == Packet::PacketHeaderFlag::PING)
-    {
-        // 내용은 무시함.
-        if (lastPongSeq_ <= header->sequenceNo_)
-        {
-            AddPongCount();
-        }
-        return true;
-    }
-
     // 이전 패킷 중복 넘김
     if (header->sequenceNo_ <= recvSequenceNo_)
     {
+        // ACK 리턴
+
         return false;
     }
 
@@ -143,6 +139,8 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 
 	// 패킷별 함수 실행
 	it->second.handler_(buffer, size);
+
+    // 함수실행후 ACK 리턴
 	return true;
 }
 
@@ -151,6 +149,12 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 	Uint32 ackSeq = header->sequenceNo_;
 	int idx = ackSeq % DEFAULT_WINDOW_COUNT;
+    
+    if (!isConnect_)
+    {
+        // 이미 연결 끊음
+        return false;
+    }
 
 	if (pendingPackets_[idx].sequenceNo == ackSeq && pendingPackets_[idx].buffer != nullptr)
 	{
@@ -169,6 +173,7 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 			localWindowStart_++;
 		}
 	}
+
 	return true;
 }
 
@@ -178,8 +183,17 @@ bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
 
 	// PONG은 liveness 신호로만 사용, timestamp_만 갱신 (RTT 갱신 없음, 핸들러 실행 없음)
 	timestamp_ = DUBU::GetCurrentTimeMs();
-	spdlog::debug("PONG <- session {}", header->sessionId_);
+
+    // 카운트 갱신
+    if (lastPongSeq_ <= header->sequenceNo_)
+    {
+        AddPongCount();
+    }
 	return true;
+}
+
+void DUBU::Session::SendACK(Uint32 seqNo)
+{
 }
 
 Uint64 DUBU::Session::GetLastPingSentTime() const
@@ -192,7 +206,7 @@ void DUBU::Session::SetLastPingSentTime(Uint64 t)
 	lastPingSentTime_ = t;
 }
 
-void DUBU::Session::RepeatACK(RUDPSocket* socket, Int64 resendDelay)
+void DUBU::Session::RepeatMessage(RUDPSocket* socket, Int64 resendDelay)
 {
 	Uint64 now = GetCurrentTimeMs();
 
@@ -216,15 +230,16 @@ void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
 {
 	OverlappedPacketBuffer* pandingbuffer = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(pandingbuffer->buffer_);
-	Int64   timeStamp = header->timestamp_;
-	Uint32  sequenceNo = header->sequenceNo_;
-	bool    isSent = false;
+	Uint64 timeStamp = header->timestamp_;
+	Uint32 sequenceNo = header->sequenceNo_;
+	bool isSent = false;
 
 	// ACK가져올때 까지 킵
-	pendingPackets_[sequenceNo] = { pandingbuffer, timeStamp, sequenceNo, isSent };
+	pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { pandingbuffer, timeStamp, sequenceNo, isSent };
 }
 
 void DUBU::Session::Disconnect()
 {
-	isConnect_ = false;
+    isConnect_ = true;
+    spdlog::info("Disconnect : result ping {} / {}", pongCount_, pingCount_);
 }
