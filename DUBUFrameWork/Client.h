@@ -27,7 +27,7 @@ namespace DUBU
 		Uint32 GetClientId() const;
 
         // ping받고 pong으로 전달
-        void RepeatPongMessage();
+        void RepeatPongMessage(Uint8* ptr, Uint16 size);
 
 	private:
 		Uint32 clientId_ = 0;

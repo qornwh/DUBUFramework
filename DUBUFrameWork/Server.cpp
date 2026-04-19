@@ -234,7 +234,7 @@ void DUBU::Server::SendPing(Session* session)
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
 
-	spdlog::debug("PING -> session {}", session->GetSessionId());
+	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
 	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
 	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
     session->AddPingCount();

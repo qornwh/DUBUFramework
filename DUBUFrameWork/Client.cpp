@@ -73,7 +73,7 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	else if (flag == Packet::PacketHeaderFlag::PING)
 	{
         // PONG 메시지 전달
-        RepeatPongMessage();
+        RepeatPongMessage(buffer, size);
 	}
     else if (flag == Packet::PacketHeaderFlag::DISCONNECT)
     {
@@ -173,11 +173,14 @@ Uint32 DUBU::Client::GetClientId() const
 	return clientId_;
 }
 
-void DUBU::Client::RepeatPongMessage()
+void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
 {
+    // 기존 버퍼 헤더
+    Packet::PacketHeader* header_org = reinterpret_cast<Packet::PacketHeader*>(ptr);
+
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-    auto sequenceNo = header->sequenceNo_;
+    auto sequenceNo = header_org->sequenceNo_;
 
     // 최근 ping메시지 수신확인
     if (sequenceNo >= lastPongSeq_)
@@ -202,6 +205,6 @@ void DUBU::Client::RepeatPongMessage()
         header->checksum_ = checksum;
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
 
-        spdlog::info("Ping 체크 {}", lastPongSeq_);
+        spdlog::info("PONG SeqNo {}", lastPongSeq_);
     }
 }
