@@ -12,7 +12,7 @@
 PACKET_TEST(DUBUTest, PacketTest) {
     using namespace DUBU;
 
-	// Info ÆÐÅ¶ Å×½ºÆ®
+	// Info íŒ¨í‚· í…ŒìŠ¤íŠ¸
 	{
 		flatbuffers::FlatBufferBuilder fbb;
 
@@ -41,7 +41,7 @@ PACKET_TEST(DUBUTest, PacketTest) {
 
 		auto out_packet = Base::Sample::GetPacket(fbb_ptr);
 
-		// VerifyXXX <= ÀÌ ÇÔ¼ö°¡ ÀÐÀ» ¼ö ÀÖ´ÂÁö È®ÀÎÀÌ µÇ´Â ÇÔ¼ö/ Á¦ÀÏ µÚ¿¡°ªÀÌ Ã¹¹øÂ° µ¥ÀÌÅÍÀÎµí, Áï size°¡ ÆÐÅ¶±æÀÌ ÀÌ»óÀÌ¸é ¼º°ø <= ÀÌ°Ç ÁøÂ¥ ÆíÇÏ³×
+		// VerifyXXX <= ì´ í•¨ìˆ˜ê°€ ì½ì„ ìˆ˜ ìžˆëŠ”ì§€ í™•ì¸ì´ ë˜ëŠ” í•¨ìˆ˜/ ì œì¼ ë’¤ì—ê°’ì´ ì²«ë²ˆì§¸ ë°ì´í„°ì¸ë“¯, ì¦‰ sizeê°€ íŒ¨í‚·ê¸¸ì´ ì´ìƒì´ë©´ ì„±ê³µ <= ì´ê±´ ì§„ì§œ íŽ¸í•˜ë„¤
 		flatbuffers::Verifier verifier(cp_arr.data(), size);
 		EXPECT_TRUE(Base::Sample::VerifyPacketBuffer(verifier));
 
@@ -58,5 +58,5 @@ PACKET_TEST(DUBUTest, PacketTest) {
 		EXPECT_TRUE(std::equal(name, name + len, out_name));
 	}
 
-	// ¸ÖÆ¼½º·¹µå / 
+	// ë©€í‹°ìŠ¤ë ˆë“œ / 
 }

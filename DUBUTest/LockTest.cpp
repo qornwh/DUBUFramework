@@ -25,7 +25,7 @@ LOCK_TEST(DUBUTest, LockTest)
 			if (i % 100 == 0)
 			{
 				ReadLockGuard rl(lock);
-				volatile int read = common_value;  // ÃÖÀûÈ­ ¹æÁö
+				volatile int read = common_value;  // ìµœì í™” ë°©ì§€
 			}
 		}
 	};
@@ -43,7 +43,7 @@ LOCK_TEST(DUBUTest, LockTest)
 	}
 	auto end = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	spdlog::info("Lock ÃøÁ¤ ½Ã°£ : {}ms", duration.count());
+	spdlog::info("Lock ì¸¡ì • ì‹œê°„ : {}ms", duration.count());
 
 	EXPECT_EQ(common_value, 100'000'000);
 }
@@ -63,7 +63,7 @@ LOCK_TEST(DUBUTest, LockTest2)
 			if (i % 100 == 0)
 			{
 				std::shared_lock<std::shared_mutex> r_mutex(rw_mutex);
-				volatile int read = common_value;  // ÃÖÀûÈ­ ¹æÁö
+				volatile int read = common_value;  // ìµœì í™” ë°©ì§€
 			}
 		}
 	};
@@ -81,7 +81,7 @@ LOCK_TEST(DUBUTest, LockTest2)
 	}
 	auto end = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	spdlog::info("mutex ÃøÁ¤ ½Ã°£ : {}ms", duration.count());
+	spdlog::info("mutex ì¸¡ì • ì‹œê°„ : {}ms", duration.count());
 
 	EXPECT_EQ(common_value, 100'000'000);
 }
@@ -104,7 +104,7 @@ LOCK_TEST(DUBUTest, LockTest3)
 
 			{
 				ReadLockGuard rl(lock);
-				volatile int read = common_value;  // ÃÖÀûÈ­ ¹æÁö
+				volatile int read = common_value;  // ìµœì í™” ë°©ì§€
 			}
 		}
 	};
@@ -122,7 +122,7 @@ LOCK_TEST(DUBUTest, LockTest3)
 	}
 	auto end = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	spdlog::info("Lock ÃøÁ¤ ½Ã°£ : {}ms", duration.count());
+	spdlog::info("Lock ì¸¡ì • ì‹œê°„ : {}ms", duration.count());
 
 	EXPECT_EQ(common_value, 100'000'000 / 100);
 }
@@ -143,7 +143,7 @@ LOCK_TEST(DUBUTest, LockTest4)
 
 			{
 				std::shared_lock<std::shared_mutex> r_mutex(rw_mutex);
-				volatile int read = common_value;  // ÃÖÀûÈ­ ¹æÁö
+				volatile int read = common_value;  // ìµœì í™” ë°©ì§€
 			}
 		}
 	};
@@ -161,7 +161,7 @@ LOCK_TEST(DUBUTest, LockTest4)
 	}
 	auto end = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	spdlog::info("mutex ÃøÁ¤ ½Ã°£ : {}ms", duration.count());
+	spdlog::info("mutex ì¸¡ì • ì‹œê°„ : {}ms", duration.count());
 
 	EXPECT_EQ(common_value, 100'000'000 / 100);
 }
