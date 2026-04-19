@@ -150,7 +150,7 @@ void DUBU::Client::SendEchoMessage()
 	// 헤더 작성
 	header->checksum_ = 0;
 	header->flags_ = Packet::PacketHeaderFlag::REPEAT;
-	header->totalSize_ = sizeof(Packet::PacketHeader) + str.size();
+	header->totalSize_ = static_cast<Uint16>(sizeof(Packet::PacketHeader) + str.size());
 	header->sessionId_ = clientId_;
 	header->sequenceNo_ = 0;
 	header->timestamp_ = 0;

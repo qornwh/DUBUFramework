@@ -33,13 +33,13 @@ namespace DUBU
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
-		void RepeatMessage(class RUDPSocket* socket, Int64 resendDelay);
+		void RepeatMessage(class RUDPSocket* socket, Uint64 resendDelay);
 
         // ACK 리턴
         void SendACK(Uint32 seqNo);
 
 		Uint64 GetLastPingSentTime() const;
-		void SetLastPingSentTime(Uint64 t);
+		void SetLastPingSentTime(Uint64 time);
 		void SetPeer(Peer& peer);
 		void AddPendingPacket(Uint8* buffer, Uint16 size);
 

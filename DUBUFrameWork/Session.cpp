@@ -101,8 +101,6 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     // 이전 패킷 중복 넘김
     if (header->sequenceNo_ <= recvSequenceNo_)
     {
-        // ACK 리턴
-
         return false;
     }
 
@@ -139,8 +137,6 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 
 	// 패킷별 함수 실행
 	it->second.handler_(buffer, size);
-
-    // 함수실행후 ACK 리턴
 	return true;
 }
 
@@ -201,12 +197,12 @@ Uint64 DUBU::Session::GetLastPingSentTime() const
 	return lastPingSentTime_;
 }
 
-void DUBU::Session::SetLastPingSentTime(Uint64 t)
+void DUBU::Session::SetLastPingSentTime(Uint64 time)
 {
-	lastPingSentTime_ = t;
+	lastPingSentTime_ = time;
 }
 
-void DUBU::Session::RepeatMessage(RUDPSocket* socket, Int64 resendDelay)
+void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
 {
 	Uint64 now = GetCurrentTimeMs();
 
