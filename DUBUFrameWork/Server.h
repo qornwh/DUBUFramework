@@ -6,11 +6,11 @@
 
 namespace DUBU 
 {
-	/*
-	* Server °´Ã¼¿¡¼­¸¸ SessionManager°ü¸®ÇÑ´Ù.
-	* ±×·¯¹Ç·Î SessionManager¿¡¼­ LockÀ» Á¦°ÅÇÏ°í Server¿¡¼­ LockÃ³¸®ÇÑ´Ù.
-	* CheckSession <= ÀÏÁ¤ ÁÖ±â¸¶´Ù ¸ğµç ¼¼¼ÇÀÇ ÀçÀü¼Û ÆĞÅ¶ Àü¼Û ¹× Å¸ÀÓ¾Æ¿ô Ã¼Å©
-	*/
+    /*
+    * Server ê°ì²´ì—ì„œë§Œ SessionManagerê´€ë¦¬í•œë‹¤.
+    * ê·¸ëŸ¬ë¯€ë¡œ SessionManagerì—ì„œ Lockì„ ì œê±°í•˜ê³  Serverì—ì„œ Lockì²˜ë¦¬í•œë‹¤.
+    * CheckSession <= ì¼ì • ì£¼ê¸°ë§ˆë‹¤ ëª¨ë“  ì„¸ì…˜ì˜ ì¬ì „ì†¡ íŒ¨í‚· ì „ì†¡ ë° íƒ€ì„ì•„ì›ƒ ì²´í¬
+    */
 	class RUDPSocket;
 
 	class Server : public ISocketHandler
@@ -29,6 +29,7 @@ namespace DUBU
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
 		void ConnectMessage(Session* session);
 		void DisconnectMessage(Session* session);
+		void SendPing(Session* session);
 		void CheckSession();
 
 	private:
@@ -40,19 +41,19 @@ namespace DUBU
 		Lock sessionLock_;
 		Bool isRunning_ = false;
 
-		// Peer ¸®½ºÆ® °ü¸®
+        // Peer ë¦¬ìŠ¤íŠ¸ ê´€ë¦¬
 		Map<Uint64, Peer> peerMap_;
 
-		// CheckSession 1½º·¹µå¸¸ ÀÛµ¿µÇµµ·Ï CAS¿¬»ê
+        // CheckSession 1ìŠ¤ë ˆë“œë§Œ ì‘ë™ë˜ë„ë¡ CASì—°ì‚°
 		Atomic<Bool> sessionCAS_;
 
-		// PingÀü´Ş ½Ã°£ Ã¼Å©
+		// Pingì „ë‹¬ ì‹œê°„ ì²´í¬
 		const Int32 PingTimeout = DEFAULT_PING_TIMEOUT_MS;
 
-		// ¼¼¼Ç Å¸ÀÓ¾Æ¿ô ¼³Á¤
+		// ì„¸ì…˜ íƒ€ì„ì•„ì›ƒ ì„¤ì •
 		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
 
-		// ²÷À» ¼¼¼Ç Ä³½Ã·Î ÀúÀå
+		// ëŠì„ ì„¸ì…˜ ìºì‹œë¡œ ì €ì¥
 		Uint32 removeListCache_[MAX_CLIENT_COUNT];
 	};
 }

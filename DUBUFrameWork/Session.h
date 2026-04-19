@@ -18,6 +18,7 @@ namespace DUBU
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
 		void SetSessionId(Int32 sessionId);
+		void SetTimestamp(const Uint64 time);
 		Int32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
@@ -31,11 +32,22 @@ namespace DUBU
 
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
+		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
 		void RepeatACK(class RUDPSocket* socket, Int64 resendDelay);
+
+		Uint64 GetLastPingSentTime() const;
+		void SetLastPingSentTime(Uint64 t);
 		void SetPeer(Peer& peer);
 		void AddPendingPacket(Uint8* buffer, Uint16 size);
 
 		void Disconnect();
+
+        // 핑 카운트 기록
+        void AddPingCount() { ++pingCount_; };
+        Uint32 GetPingCount() const { return pingCount_; };
+        void AddPongCount() { ++pongCount_; };
+        Uint32 GetPongCount() const { return pongCount_; };
+        Uint32 AccSequnceNo() { return lastPongSeq_++; }
 
 	private:
 		// 세션 id
@@ -51,6 +63,9 @@ namespace DUBU
 		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
 		// 가장 마지막 시간
 		Uint64 timestamp_ = 0;
+
+		// 마지막으로 Ping을 보낸 시간 (throttle용)
+		Uint64 lastPingSentTime_ = 0;
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;
@@ -68,5 +83,10 @@ namespace DUBU
 
 		// 연결 해제됨
 		Bool isConnect_;
+
+        // 핑 카운트 기록
+        Uint32 pingCount_ = 0;
+        Uint32 pongCount_ = 0;
+        Uint32 lastPongSeq_ = 0;
 	};
 }
