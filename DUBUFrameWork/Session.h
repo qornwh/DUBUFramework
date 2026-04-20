@@ -51,7 +51,7 @@ namespace DUBU
         Uint32 GetPingCount() const { return pingCount_; };
         void AddPongCount() { ++pongCount_; };
         Uint32 GetPongCount() const { return pongCount_; };
-        Uint32 AccSequnceNo() { return lastPongSeq_++; }
+        Uint32 AccSequnceNo() { return ++lastPongSeq_; }
 
         // Echo 메시지
         void SendEchoMessage(Uint8* buffer, Uint16 size);

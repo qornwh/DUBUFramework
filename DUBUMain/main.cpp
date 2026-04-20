@@ -1,5 +1,3 @@
-#include <windows.h>
-
 #include <thread>
 #include <Server.h>
 #include <Client.h>
@@ -7,6 +5,8 @@
 #include "pch.h"
 #include "Pool.h"
 #include "BufferManager.h"
+
+#include <windows.h>
 
 int main()
 {
@@ -55,6 +55,11 @@ int main()
                 break;
             }
 
+        }
+
+        while (DUBU::GetCurrentTimeMs() - cur < 150000)
+        {
+            // 
         }
 
 		server->Stop();

@@ -207,8 +207,8 @@ bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
 	// PONG은 liveness 신호로만 사용, timestamp_만 갱신 (RTT 갱신 없음, 핸들러 실행 없음)
 	timestamp_ = DUBU::GetCurrentTimeMs();
 
-    // 카운트 갱신
-    if (lastPongSeq_ <= header->sequenceNo_)
+    // 카운트 갱신 가장 최근것만
+    if (lastPongSeq_ == header->sequenceNo_)
     {
         AddPongCount();
     }
