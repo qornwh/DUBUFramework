@@ -43,8 +43,8 @@ namespace DUBU
 		Int32 Dispatch(LPOVERLAPPED* ptr, DWORD timeout = 10);
 		void SetHandler(ISocketHandler* handler);
 		void RecvFrom();
-		void SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
-		void SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
+		void SendTo(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb);
+		void SendToReliable(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb);
 		void SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size);
 		void RecvFromComplete(OVERLAPPED* ptr, Uint16 size);
 		void SendToComplete(OVERLAPPED* ptr, Uint16 size);

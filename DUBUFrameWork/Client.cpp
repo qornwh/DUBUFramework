@@ -56,9 +56,9 @@ bool DUBU::Client::Dispatch()
 
 void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	auto buffer = opbPtr->buffer_;
+	auto buffer = opb->buffer_;
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
 	auto sessionId = header->sessionId_;
@@ -114,7 +114,7 @@ void DUBU::Client::ConnectMessage()
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
-	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
 void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
@@ -136,7 +136,7 @@ void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
     // crc32 암호화
     Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
     header->checksum_ = checksum;
-    rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+    rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
 void DUBU::Client::SendEchoMessage()
@@ -165,7 +165,7 @@ void DUBU::Client::SendEchoMessage()
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
-	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
 Uint32 DUBU::Client::GetClientId() const
@@ -203,7 +203,7 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
         // crc32 암호화
         Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
         header->checksum_ = checksum;
-        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb->buffer_, opb->size_);
+        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 
         spdlog::info("PONG SeqNo {}", lastPongSeq_);
     }

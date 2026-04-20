@@ -18,6 +18,7 @@ namespace DUBU
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
 		void SetSessionId(Int32 sessionId);
+        void SetSocket(class RUDPSocket* socket);
 		void SetTimestamp(const Uint64 time);
 		Int32 UpdateSendSequenceNo();
 
@@ -51,6 +52,9 @@ namespace DUBU
         void AddPongCount() { ++pongCount_; };
         Uint32 GetPongCount() const { return pongCount_; };
         Uint32 AccSequnceNo() { return lastPongSeq_++; }
+
+        // Echo 메시지
+        void SendEchoMessage(Uint8* buffer, Uint16 size);
 
 	private:
 		// 세션 id
@@ -91,5 +95,8 @@ namespace DUBU
         Uint32 pingCount_ = 0;
         Uint32 pongCount_ = 0;
         Uint32 lastPongSeq_ = 0;
+
+        // RUDP소켓은 raw pointer로 관리
+        RUDPSocket* rudpSocket_;
 	};
 }

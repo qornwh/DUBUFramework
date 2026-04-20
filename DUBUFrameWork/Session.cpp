@@ -30,6 +30,11 @@ void DUBU::Session::SetSessionId(Int32 sessionId)
 	sessionId_ = sessionId;
 }
 
+void DUBU::Session::SetSocket(RUDPSocket* socket)
+{
+    rudpSocket_ = socket;
+}
+
 void DUBU::Session::SetTimestamp(const Uint64 time)
 {
 	timestamp_ = time;
@@ -84,6 +89,9 @@ void DUBU::Session::Reset()
 	timestamp_ = DUBU::GetCurrentTimeMs();
 	lastPingSentTime_ = 0;
 	rttMillisec_ = DEFAULT_RTT_MS;
+    rudpSocket_ = nullptr;
+    localWindowStart_ = 0;
+    localSeqence_ = 0;
 
     for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
     {
@@ -98,10 +106,18 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	// 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
 	timestamp_ = DUBU::GetCurrentTimeMs();
 
-    // 이전 패킷 중복 넘김
-    if (header->sequenceNo_ <= recvSequenceNo_)
+    // 이전 패킷 중복 넘김 (REAPET인 경우만)
+    bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
+
+    // 순서대로 수신
+    if (isRepeat && header->sequenceNo_ != recvSequenceNo_ + 1)
     {
         return false;
+    }
+
+    if (isRepeat)
+    {
+        recvSequenceNo_ = header->sequenceNo_;
     }
 
 	// 에코 테스트
@@ -110,8 +126,12 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 		Uint32 id = header->sessionId_;
 		Uint32 seq = header->sequenceNo_;
 		Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
-		char* ptr = reinterpret_cast<char*>(buffer[sizeof(Packet::PacketHeader)]);
-		std::string_view sv(ptr, size);
+		Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
+
+        // 에코 메시지 전달
+        SendEchoMessage(ptr, size);
+
+		std::string_view sv(reinterpret_cast<char*>(ptr), size);
 		spdlog::debug("ECHO Recv : {}-{}-{}", id, seq, sv);
 		return true;
 	}
@@ -120,23 +140,30 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
 	Uint8 packetCode = header->packetCode_;
 	
-	auto it = handlers_->find(packetCode);
-	if (it == handlers_->end())
-	{
-		// 패킷코드에 대한 함수가 등록되지 않음
-		spdlog::error("Not Found PacketCode : {} !!!", packetCode);
-		return false;
-	}
+    if (handlers_ != nullptr)
+    {
+	    auto it = handlers_->find(packetCode);
+	    if (it == handlers_->end())
+	    {
+		    // 패킷코드에 대한 함수가 등록되지 않음
+		    spdlog::error("Not Found PacketCode : {} !!!", packetCode);
+		    return false;
+	    }
 
-	if (!it->second.verifier_(verifier))
-	{
-		// 패킷이 정확하지 않음
-		spdlog::warn("Verfiy Failed !!!");
-		return false;
-	}
+	    if (!it->second.verifier_(verifier))
+	    {
+		    // 패킷이 정확하지 않음
+		    spdlog::warn("Verfiy Failed !!!");
+		    return false;
+	    }
 
-	// 패킷별 함수 실행
-	it->second.handler_(buffer, size);
+	    // 패킷별 함수 실행
+	    it->second.handler_(buffer, size);
+    }
+    else
+    {
+        spdlog::warn("Not found Packet Handler Register !!!");
+    }
 	return true;
 }
 
@@ -232,10 +259,46 @@ void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
 
 	// ACK가져올때 까지 킵
 	pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { pandingbuffer, timeStamp, sequenceNo, isSent };
+
+    // Pending 로컬 시퀀스 전진시킨다. 
+    if (sequenceNo >= localSeqence_)
+    {
+        localSeqence_ = sequenceNo + 1;
+    }
 }
 
 void DUBU::Session::Disconnect()
 {
-    isConnect_ = true;
+    isConnect_ = false;
     spdlog::info("Disconnect : result ping {} / {}", pongCount_, pingCount_);
+}
+
+void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
+{
+    if (rudpSocket_ == nullptr) return;
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // 헤더 작성 (신뢰, ehco code = 0)
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::REPEAT;
+    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->sessionId_ = sessionId_;
+    header->sequenceNo_ = UpdateSendSequenceNo();
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = 0;
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendToReliable(GetSockAddr(), opb);
+    
+    // pending 전송될 때까지 대기
+    AddPendingPacket(opb->buffer_, opb->size_);
 }

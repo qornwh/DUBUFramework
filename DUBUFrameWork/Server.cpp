@@ -50,9 +50,9 @@ void DUBU::Server::Stop()
 
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	auto buffer = opbPtr->buffer_;
+	auto buffer = opb->buffer_;
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
 	auto sessionId = header->sessionId_;
@@ -123,7 +123,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
             else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
             {
                 // ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
-                result = session->RecvDispatchACK(buffer, size);
+                result = session->RecvDispatch(buffer, size);
                 if (result)
                 {
                     // ACK 전달
@@ -138,26 +138,19 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		}
 	}
 
-	// repeat ACK전송
-	if (result && (flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
-	{
-		auto remote = opbPtr->remoteAddr_;
-		auto addSize = opbPtr->size_;
-		rudpSocket_->SendTo(remote, buffer, addSize);
-	}
-
 	// 일단 실패할때 코드 및 대시보드에 띄울 데이터 큐에 넣기?
 }
 
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 }
 
 DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 {
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
+    session->SetSocket(rudpSocket_.get());
 	session->SetTimestamp(DUBU::GetCurrentTimeMs());
 	return session;
 }
@@ -181,15 +174,13 @@ void DUBU::Server::ConnectMessage(Session* session)
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
-	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+	rudpSocket_->SendTo(session->GetSockAddr(), opb);
 }
 
 void DUBU::Server::DisconnectMessage(Session* session)
 {
-    // 그래도 클라한테 한번 넘겨줌 
-
+    // 그래도 클라한테 한번 넘겨줌
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성
@@ -206,17 +197,12 @@ void DUBU::Server::DisconnectMessage(Session* session)
 	// crc32 암호화
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
-	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
-
-	// 일단 pending에 둔다.
-	session->AddPendingPacket(opb->buffer_, opb->size_);
+	rudpSocket_->SendTo(session->GetSockAddr(), opb);
 }
 
 void DUBU::Server::SendPing(Session* session)
 {
 	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	// RELIABLE 플래그 없음 — SendToComplete에서 자동 반환
-	opb->SetType(OverlappedObjType::SENDTO);
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
 	// 헤더 작성 (header-only, 비신뢰)
@@ -233,11 +219,11 @@ void DUBU::Server::SendPing(Session* session)
 
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
+	rudpSocket_->SendTo(session->GetSockAddr(), opb);
 
-	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
-	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
 	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
     session->AddPingCount();
+	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
 }
 
 void DUBU::Server::CheckSession()
@@ -324,7 +310,7 @@ void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
 
     Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
     header->checksum_ = checksum;
-    rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+    rudpSocket_->SendTo(session->GetSockAddr(), opb);
 }
 
 Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
