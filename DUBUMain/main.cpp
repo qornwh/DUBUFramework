@@ -1,14 +1,19 @@
+#include <windows.h>
+
 #include <thread>
 #include <Server.h>
 #include <Client.h>
 #include <iostream>
+#include "pch.h"
 #include "Pool.h"
 #include "BufferManager.h"
 
 int main()
 {
-	DUBU::Initialize();
-	DUBU::PacketManager::GetInstance().Initialize();
+    SetConsoleOutputCP(CP_UTF8);
+   
+    DUBU::Initialize();
+	DUBU::PacketManager::GetInstance().Initialize(); 
 
 	{
 		DUBU::Server* server;
@@ -44,6 +49,12 @@ int main()
         while (client.GetClientId())
         {
             bool ret = client.Dispatch();
+
+            if (DUBU::GetCurrentTimeMs() - cur > 60000)
+            {
+                break;
+            }
+
         }
 
 		server->Stop();
