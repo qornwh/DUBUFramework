@@ -20,7 +20,7 @@ namespace DUBU
 		void SetSessionId(Int32 sessionId);
         void SetSocket(class RUDPSocket* socket);
 		void SetTimestamp(const Uint64 time);
-		Int32 UpdateSendSequenceNo();
+		Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
 		Int32 GetSessionId() const;

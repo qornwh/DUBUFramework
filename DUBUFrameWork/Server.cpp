@@ -117,7 +117,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			}
             else if (flag == Packet::PacketHeaderFlag::NONE)
             {
-                // NONE or REPEAT 일때는 패킷을 정상 수신하여 처리
+                // NONE 일때는 패킷을 정상 수신하여 처리 ACK 안보냄
                 result = session->RecvDispatch(buffer, size);
             }
             else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)

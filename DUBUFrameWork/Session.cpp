@@ -1,5 +1,4 @@
 #include "Session.h"
-#include "Packet.h"
 #include "RUDPSocket.h"
 #include "BufferManager.h"
 #include "../extra/base_flatbuffer_generated.h"
@@ -40,7 +39,7 @@ void DUBU::Session::SetTimestamp(const Uint64 time)
 	timestamp_ = time;
 }
 
-Int32 DUBU::Session::UpdateSendSequenceNo()
+Uint32 DUBU::Session::UpdateSendSequenceNo()
 {
 	return ++sendSequenceNo_;
 }
@@ -109,15 +108,17 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
-    // 순서대로 수신
+    // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
     if (isRepeat && header->sequenceNo_ != recvSequenceNo_ + 1)
     {
-        return false;
-    }
-
-    if (isRepeat)
-    {
-        recvSequenceNo_ = header->sequenceNo_;
+        if (header->sequenceNo_ != recvSequenceNo_ + 1)
+        {
+            return false;
+        }
+        else
+        {
+            recvSequenceNo_ = header->sequenceNo_;
+        }
     }
 
 	// 에코 테스트
@@ -171,7 +172,7 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 	Uint32 ackSeq = header->sequenceNo_;
-	int idx = ackSeq % DEFAULT_WINDOW_COUNT;
+	Uint32 idx = ackSeq % DEFAULT_WINDOW_COUNT;
     
     if (!isConnect_)
     {
