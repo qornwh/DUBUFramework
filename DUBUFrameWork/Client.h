@@ -11,6 +11,12 @@ namespace DUBU
 {
 	class RUDPSocket;
 
+    /*
+    * Client : 베이스 클래스
+    *  - 초기 커넥션
+    *  - ping 수신 pong 전송
+    *  - echo 송신
+    */
 	class Client : public ISocketHandler
 	{
 	public:

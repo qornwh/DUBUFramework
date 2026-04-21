@@ -7,7 +7,10 @@
 namespace DUBU
 {
 	/*
-	* Session 클래스에서 Recv, Send를 직접 담당하지는 않는다.
+	* Session : 베이스 클래스
+    *  - 핑 카운트 기록
+    *  - reable패킷 전송률 기록
+    *  - echo 송신
 	*/
 	class Session
 	{
