@@ -226,6 +226,62 @@ void DUBU::Server::SendPing(Session* session)
 	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
 }
 
+void DUBU::Server::DisconnectMessage(Session* session)
+{
+    // 그래도 클라한테 한번 넘겨줌 
+
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	opb->SetType(OverlappedObjType::RELIABLE | OverlappedObjType::SENDTO);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// 헤더 작성
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	header->sequenceNo_ = session->UpdateSendSequenceNo();
+	header->timestamp_ = GetCurrentTimeMs();
+
+	// 전체 패킷 사이즈 설정
+	opb->size_ = header->totalSize_;
+
+	// crc32 암호화
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+
+	// 일단 pending에 둔다.
+	session->AddPendingPacket(opb->buffer_, opb->size_);
+}
+
+void DUBU::Server::SendPing(Session* session)
+{
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+	// RELIABLE 플래그 없음 — SendToComplete에서 자동 반환
+	opb->SetType(OverlappedObjType::SENDTO);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+	// 헤더 작성 (header-only, 비신뢰)
+	header->checksum_ = 0;
+	header->flags_ = Packet::PacketHeaderFlag::PING;
+	header->totalSize_ = sizeof(Packet::PacketHeader);
+	header->sessionId_ = session->GetSessionId();
+	// 비신뢰 — 핑퐁 전용 시퀀스No사용
+	header->sequenceNo_ = session->AccSequnceNo();
+	header->timestamp_ = GetCurrentTimeMs();
+	header->packetCode_ = 0;
+
+	opb->size_ = header->totalSize_;
+
+	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+	header->checksum_ = checksum;
+
+	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
+	rudpSocket_->SendTo(session->GetSockAddr(), opb->buffer_, header->totalSize_);
+	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
+    session->AddPingCount();
+}
+
 void DUBU::Server::CheckSession()
 {
 	// 시간체크

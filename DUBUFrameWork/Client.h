@@ -7,6 +7,9 @@
 // 일단 최대 10번만 연결 시도
 #define DEFAULT_REQUEST_CONNECT_NO 10
 
+// 일단 최대 10번만 연결 시도
+#define DEFAULT_REQUEST_CONNECT_NO 10
+
 namespace DUBU
 {
 	class RUDPSocket;
