@@ -7,7 +7,10 @@
 namespace DUBU
 {
 	/*
-	* Session 클래스에서 Recv, Send를 직접 담당하지는 않는다.
+	* Session : 베이스 클래스
+    *  - 핑 카운트 기록
+    *  - reable패킷 전송률 기록
+    *  - echo 송신
 	*/
 	class Session
 	{
@@ -18,8 +21,9 @@ namespace DUBU
 
 		void SetSockAddr(const SOCKADDR_IN& addr);
 		void SetSessionId(Int32 sessionId);
+        void SetSocket(class RUDPSocket* socket);
 		void SetTimestamp(const Uint64 time);
-		Int32 UpdateSendSequenceNo();
+		Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
 		Int32 GetSessionId() const;
@@ -50,7 +54,10 @@ namespace DUBU
         Uint32 GetPingCount() const { return pingCount_; };
         void AddPongCount() { ++pongCount_; };
         Uint32 GetPongCount() const { return pongCount_; };
-        Uint32 AccSequnceNo() { return lastPongSeq_++; }
+        Uint32 AccSequnceNo() { return ++lastPongSeq_; }
+
+        // Echo 메시지
+        void SendEchoMessage(Uint8* buffer, Uint16 size);
 
 	private:
 		// 세션 id
@@ -91,5 +98,8 @@ namespace DUBU
         Uint32 pingCount_ = 0;
         Uint32 pongCount_ = 0;
         Uint32 lastPongSeq_ = 0;
+
+        // RUDP소켓은 raw pointer로 관리
+        RUDPSocket* rudpSocket_;
 	};
 }

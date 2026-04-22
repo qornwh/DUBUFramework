@@ -202,12 +202,12 @@ void DUBU::RUDPSocket::RecvFrom()
 	DWORD bytesRecv = 0;
 	DWORD flags = 0;
 
-	OverlappedPacketBuffer* opbPtr = Singleton<PacketManager>::GetInstance().PopPacketBuffer();
-	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
-	wsabuf.len = opbPtr->size_;
-	opbPtr->SetType(OverlappedObjType::RECVEFROM);
+	OverlappedPacketBuffer* opb = Singleton<PacketManager>::GetInstance().PopPacketBuffer();
+	wsabuf.buf = static_cast<char*>(opb->pos_);
+	wsabuf.len = opb->size_;
+    opb->SetType(OverlappedObjType::RECVEFROM);
 
-	Int32 ret = WSARecvFrom(socket_, &wsabuf, 1, &bytesRecv, &flags, (SOCKADDR*)&opbPtr->remoteAddr_, & opbPtr->addrSize_, &opbPtr->overlapped_, nullptr);
+	Int32 ret = WSARecvFrom(socket_, &wsabuf, 1, &bytesRecv, &flags, (SOCKADDR*)&opb->remoteAddr_, &opb->addrSize_, &opb->overlapped_, nullptr);
 	if (ret == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -219,25 +219,19 @@ void DUBU::RUDPSocket::RecvFrom()
 	}
 }
 
-void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
+void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb)
 {
 	// 일반 패킷
 	WSABUF wsabuf;
 	DWORD flags = 0;
-	DWORD bytesSent = size;
+	DWORD bytesSent = opb->size_;
 
-	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
-	opbPtr->SetType(OverlappedObjType::SENDTO);
+    // overalapped 타입 설정
+    opb->SetType(OverlappedObjType::SENDTO);
 
-	// 패킷 복사
-	Packet::Packet::PacketHeaderCopy(buffer, opbPtr->buffer_);
-	Packet::Packet::PacketCopy(buffer, sizeof(Packet::PacketHeader), opbPtr->buffer_ + sizeof(Packet::PacketHeader));
-	opbPtr->size_ = size;
-	opbPtr->pos_ = opbPtr->buffer_;
-
-	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
-	wsabuf.len = opbPtr->size_;
-	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
+	wsabuf.buf = static_cast<char*>(opb->pos_);
+	wsabuf.len = opb->size_;
+	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opb->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -249,25 +243,19 @@ void DUBU::RUDPSocket::SendTo(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint
 	}
 }
 
-void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
+void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb)
 {
 	// 신뢰성 패킷 전송
 	WSABUF wsabuf;
 	DWORD flags = 0;
-	DWORD bytesSent = size;
+	DWORD bytesSent = opb->size_;
 
-	OverlappedPacketBuffer* opbPtr = PacketManager::GetInstance().PopPacketBuffer();
-	opbPtr->SetType(OverlappedObjType::SENDTO | OverlappedObjType::RELIABLE);
+    // overalapped 타입 설정
+    opb->SetType(OverlappedObjType::SENDTO | OverlappedObjType::RELIABLE);
 
-	// 패킷 복사
-	Packet::Packet::PacketHeaderCopy(buffer, opbPtr->buffer_);
-	Packet::Packet::PacketCopy(buffer, sizeof(Packet::PacketHeader), opbPtr->buffer_ + sizeof(Packet::PacketHeader));
-	opbPtr->size_ = size;
-	opbPtr->pos_ = opbPtr->buffer_;
-
-	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
-	wsabuf.len = opbPtr->size_;
-	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
+	wsabuf.buf = static_cast<char*>(opb->pos_);
+	wsabuf.len = opb->size_;
+	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opb->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -282,19 +270,19 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, Uint8* buff
 void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
 {
 	// 재전송 패킷
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
 
 	// overlapped 재사용 전 초기화 (ZeroMemory)
-	opbPtr->Initialize();
+    opb->Initialize();
 
-	// 패킷 복사는 없다 기존꺼 다시 보내는 함수
+	// 패킷 복사는 없다, 기존꺼 그대로 보내는 함수
 	WSABUF wsabuf;
 	wsabuf.len = size;
-	wsabuf.buf = static_cast<char*>(opbPtr->pos_);
+	wsabuf.buf = static_cast<char*>(opb->pos_);
 	DWORD flags = 0;
 	DWORD bytesSent = size;
 
-	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opbPtr->overlapped_, NULL);
+	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opb->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)
 	{
 		int errCode = WSAGetLastError();
@@ -308,21 +296,21 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer
 
 void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opbPtr->buffer_), size))
+	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opb->buffer_), size))
 	{
-		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opbPtr->buffer_);
+		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 		Uint32 checksum = header->checksum_;
 
 		// 보낼때 체크썸은 0으로 초기화 된 상태라 롤백
 		header->checksum_ = 0;
-		if (checksum == Packet::Packet::CRC32(opbPtr->buffer_, size))
+		if (checksum == Packet::Packet::CRC32(opb->buffer_, size))
 		{
 			// 핸들러 통해서 처리 넘겨버린다
 			if (handler_)
 			{
-				handler_->OnRecvFrom(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
+				handler_->OnRecvFrom(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), size);
 			}
 		}
 		else
@@ -338,23 +326,23 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 	}
 
 	// 반환, 다시 재등록
-	PacketManager::GetInstance().PushPacketBuffer(opbPtr);
+	PacketManager::GetInstance().PushPacketBuffer(opb);
 	RecvFrom();
 }
 
 void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opbPtr = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
 	// 핸들러 통해서 처리 넘겨버린다
 	if (handler_)
 	{
-		handler_->OnSendTo(opbPtr->remoteAddr_, reinterpret_cast<Uint8*>(opbPtr), size);
+		handler_->OnSendTo(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), size);
 	}
 
 	// 재전송 패킷이 아니면 할당 해제 
-	if ((opbPtr->type_ & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
+	if ((opb->type_ & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
 	{
-		PacketManager::GetInstance().PushPacketBuffer(opbPtr);
+		PacketManager::GetInstance().PushPacketBuffer(opb);
 	}
 }
