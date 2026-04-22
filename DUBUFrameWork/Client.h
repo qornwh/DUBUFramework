@@ -31,7 +31,7 @@ namespace DUBU
         Uint32 UpdateSendSequenceNo();
 
 		void ConnectMessage();
-        void DisconnectMessage(Uint32 disconnectSeq);
+        void DisconnectMessage();
 		void SendEchoMessage();
 		Uint32 GetClientId() const;
 
@@ -44,6 +44,9 @@ namespace DUBU
 
         // ping받고 pong으로 전달
         void RepeatPongMessage(Uint8* ptr, Uint16 size);
+
+        // 주기적 pendingMessage 전송 체크
+        void CheckPending();
 
 	private:
         // 클라이언트 id
@@ -75,6 +78,9 @@ namespace DUBU
 
         // 커넥션 카운트 체크 변수
         Uint32 connNo_ = 0;
+        
+        // 클라이언트 타임아웃 설정
+        const Int32 ClientTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
 	};
 }
 

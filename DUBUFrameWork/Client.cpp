@@ -34,6 +34,7 @@ void DUBU::Client::Connect()
 
 void DUBU::Client::Disconnect()
 {
+    DisconnectMessage();
     isConnect_ = false;
 }
 
@@ -42,8 +43,12 @@ bool DUBU::Client::Dispatch()
 	LPOVERLAPPED ptr = nullptr;
 	Int32 size = rudpSocket_->Dispatch(&ptr);
 
-	if (ptr == nullptr)
+    if (ptr == nullptr)
+    {
+        // 일단 비어있으면 체크한다.
+        CheckPending();
 		return false;
+    }
 
 	OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
 	if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
@@ -82,8 +87,7 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
     else if (flag == Packet::PacketHeaderFlag::DISCONNECT)
     {
         // 연결 해제
-        Uint32 disconnectSeq = header->sequenceNo_;
-        DisconnectMessage(disconnectSeq);
+        Disconnect();
     }
     else if (flag == Packet::PacketHeaderFlag::NONE)
     {
@@ -146,7 +150,7 @@ void DUBU::Client::ConnectMessage()
 	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
-void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
+void DUBU::Client::DisconnectMessage()
 {
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -156,7 +160,7 @@ void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
     header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
     header->totalSize_ = sizeof(Packet::PacketHeader);
     header->sessionId_ = clientId_;
-    header->sequenceNo_ = disconnectSeq;
+    header->sequenceNo_ = 0;
     header->timestamp_ = 0;
 
     // 전체 패킷 사이즈 설정
@@ -165,6 +169,8 @@ void DUBU::Client::DisconnectMessage(Uint32 disconnectSeq)
     // crc32 암호화
     Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
     header->checksum_ = checksum;
+
+    // 1회만 보냄 굳이 재전송 필요 없음(1분동안 못받는 경우 or Disconnect수신시 이미 끊길 확률 높음)
     rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
@@ -388,4 +394,21 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
 
         spdlog::info("PONG SeqNo {}", lastPongSeq_);
     }
+}
+
+void DUBU::Client::CheckPending()
+{
+    // 시간체크
+    Uint64 now = GetCurrentTimeMs();
+
+    // 재전송로직 실행
+    Uint64 delayTime = now - timestamp_;
+    if (delayTime > ClientTimeout)
+    {
+        // 끊김 감지
+        Disconnect();
+    }
+
+    // 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
+    RepeatMessage(rttMillisec_ * 2 + DEFAULT_RTT_MS_DELAY);
 }
