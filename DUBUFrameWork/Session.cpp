@@ -133,7 +133,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         SendEchoMessage(ptr, size);
 
 		std::string_view sv(reinterpret_cast<char*>(ptr), size);
-		spdlog::debug("ECHO Recv : {}-{}-{}", id, seq, sv);
+		spdlog::info("ECHO Recv : {}-{}-{}", id, seq, sv);
 		return true;
 	}
 

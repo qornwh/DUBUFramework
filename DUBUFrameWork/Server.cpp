@@ -113,7 +113,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			else if (flag == Packet::PacketHeaderFlag::PING)
 			{
 				// 서버는 PING을 받지 않는 설계 — 무시
-				spdlog::debug("Server received PING (ignored) from session {}", sessionId);
+				spdlog::info("Server received PING (ignored) from session {}", sessionId);
 			}
             else if (flag == Packet::PacketHeaderFlag::NONE)
             {

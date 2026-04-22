@@ -72,6 +72,7 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 	{
         // 서버가 발급한 ID 저장
 		clientId_ = header->sessionId_;
+        isConnect_ = true;
 	}
 	else if (flag == Packet::PacketHeaderFlag::PING)
 	{
@@ -231,7 +232,7 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
 
         std::string_view sv(reinterpret_cast<char*>(ptr), size);
-        spdlog::debug("ECHO Recv : {}-{}-{}", id, seq, sv);
+        spdlog::info("ECHO Recv : {}-{}-{}", id, seq, sv);
         return true;
     }
 
