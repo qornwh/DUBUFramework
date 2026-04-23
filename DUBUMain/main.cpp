@@ -24,46 +24,37 @@ int main()
 			delete server;
 		});
 
-		DUBU::Client client{ "127.0.0.1", SERVICE_PORT };
-		client.Connect();
+        std::thread th2([]() {
+            DUBU::Client client{ "127.0.0.1", SERVICE_PORT };
+            client.ConnectTimes();
 
-        Uint64 time = 0;
-
-        Uint64 cur = DUBU::GetCurrentTimeMs();
-
-        while (true)
-        {
-            bool ret = client.Dispatch();
-            if (ret && client.GetClientId() > 0)
+            Uint64 time = DUBU::GetCurrentTimeMs();
+            Sleep(500);
+            while (true)
             {
-                spdlog::info("ClientID : {}", client.GetClientId());
-                break;
+                Uint64 cur = DUBU::GetCurrentTimeMs();
+
+                if (cur - time > 500)
+                {
+                    client.SendEchoMessage();
+                    time = cur;
+                }
+                else
+                {
+                    client.Dispatch();
+                }
+
+                if (client.GetRecvSequenceNo() >= 10)
+                {
+                    client.Disconnect();
+                    break;
+                }
             }
-            else
-            {
-                Sleep(500);
-                client.ConnectMessage();
-            }
-        }
+        });
 
-        while (client.GetClientId())
-        {
-            bool ret = client.Dispatch();
-
-            if (DUBU::GetCurrentTimeMs() - cur > 60000)
-            {
-                break;
-            }
-
-        }
-
-        while (DUBU::GetCurrentTimeMs() - cur < 150000)
-        {
-            // 
-        }
-
-		server->Stop();
 		th.join();
+        th2.join();
+        server->Stop();
 	}
 
 	return 0;

@@ -207,6 +207,9 @@ void DUBU::Client::SendEchoMessage()
 	header->timestamp_ = GetCurrentTimeMs();
     header->packetCode_ = 0;
 
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), str.c_str(), str.size());
+
 	// 전체 패킷 사이즈 설정
 	opb->size_ = header->totalSize_;
 
@@ -214,7 +217,7 @@ void DUBU::Client::SendEchoMessage()
 	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
 	header->checksum_ = checksum;
 	rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
-    AddPendingPacket(opb->buffer_, opb->size_);
+    AddPendingPacket(opb, opb->size_);
 }
 
 Uint32 DUBU::Client::GetClientId() const
@@ -233,7 +236,7 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
     // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
-    if (isRepeat && header->sequenceNo_ != recvSequenceNo_ + 1)
+    if (isRepeat)
     {
         if (header->sequenceNo_ != recvSequenceNo_ + 1)
         {
@@ -254,7 +257,7 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
 
         std::string_view sv(reinterpret_cast<char*>(ptr), size);
-        spdlog::info("ECHO Recv : {}-{}-{}", id, seq, sv);
+        spdlog::info("ECHO Recv Client : {}-{}-{}", id, seq, sv);
         return true;
     }
 
@@ -331,22 +334,21 @@ void DUBU::Client::RepeatMessage(Uint64 resendDelay)
         PendingPacket& p = pendingPackets_[i % DEFAULT_WINDOW_COUNT];
         if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
         {
-            rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer->buffer_, p.buffer->size_);
+            rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
             p.timeStamp = now;
         }
     }
 }
 
-void DUBU::Client::AddPendingPacket(Uint8* buffer, Uint16 size)
+void DUBU::Client::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
-    OverlappedPacketBuffer* pandingbuffer = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(pandingbuffer->buffer_);
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
     Uint64 timeStamp = header->timestamp_;
     Uint32 sequenceNo = header->sequenceNo_;
     bool isSent = false;
 
     // ACK가져올때 까지 킵
-    pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { pandingbuffer, timeStamp, sequenceNo, isSent };
+    pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { opb, timeStamp, sequenceNo, isSent };
 
     // Pending 로컬 시퀀스 전진시킨다. 
     if (sequenceNo >= localSeqence_)
