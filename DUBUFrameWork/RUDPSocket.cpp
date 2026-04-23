@@ -267,20 +267,17 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, OverlappedP
 	}
 }
 
-void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, Uint8* buffer, Uint16 size)
+void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb)
 {
-	// 재전송 패킷
-	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
-
 	// overlapped 재사용 전 초기화 (ZeroMemory)
     opb->Initialize();
 
 	// 패킷 복사는 없다, 기존꺼 그대로 보내는 함수
 	WSABUF wsabuf;
-	wsabuf.len = size;
+	wsabuf.len = opb->size_;
 	wsabuf.buf = static_cast<char*>(opb->pos_);
 	DWORD flags = 0;
-	DWORD bytesSent = size;
+	DWORD bytesSent = opb->size_;
 
 	Int32 ret = WSASendTo(socket_, &wsabuf, 1, &bytesSent, flags, (SOCKADDR*)&targetAddr, sizeof(SOCKADDR_IN), &opb->overlapped_, NULL);
 	if (ret == SOCKET_ERROR)

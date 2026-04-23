@@ -45,7 +45,7 @@ namespace DUBU
 		Uint64 GetLastPingSentTime() const;
 		void SetLastPingSentTime(Uint64 time);
 		void SetPeer(Peer& peer);
-		void AddPendingPacket(Uint8* buffer, Uint16 size);
+		void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
 		void Disconnect();
 

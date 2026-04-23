@@ -109,7 +109,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
     // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
-    if (isRepeat && header->sequenceNo_ != recvSequenceNo_ + 1)
+    if (isRepeat)
     {
         if (header->sequenceNo_ != recvSequenceNo_ + 1)
         {
@@ -133,7 +133,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         SendEchoMessage(ptr, size);
 
 		std::string_view sv(reinterpret_cast<char*>(ptr), size);
-		spdlog::info("ECHO Recv : {}-{}-{}", id, seq, sv);
+		spdlog::info("ECHO Recv Server : {}-{}-{}", id, seq, sv);
 		return true;
 	}
 
@@ -239,7 +239,7 @@ void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
 		PendingPacket& p = pendingPackets_[i % DEFAULT_WINDOW_COUNT];
 		if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
 		{
-			socket->SendToRepeat(addr_, p.buffer->buffer_, p.buffer->size_);
+			socket->SendToRepeat(addr_, p.buffer);
 			p.timeStamp = now;
 		}
 	}
@@ -250,16 +250,15 @@ void DUBU::Session::SetPeer(Peer& peer)
 	peer_ = peer;
 }
 
-void DUBU::Session::AddPendingPacket(Uint8* buffer, Uint16 size)
+void DUBU::Session::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
-	OverlappedPacketBuffer* pandingbuffer = reinterpret_cast<OverlappedPacketBuffer*>(buffer);
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(pandingbuffer->buffer_);
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 	Uint64 timeStamp = header->timestamp_;
 	Uint32 sequenceNo = header->sequenceNo_;
 	bool isSent = false;
 
 	// ACK가져올때 까지 킵
-	pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { pandingbuffer, timeStamp, sequenceNo, isSent };
+	pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { opb, timeStamp, sequenceNo, isSent };
 
     // Pending 로컬 시퀀스 전진시킨다. 
     if (sequenceNo >= localSeqence_)
@@ -301,5 +300,5 @@ void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
     rudpSocket_->SendToReliable(GetSockAddr(), opb);
     
     // pending 전송될 때까지 대기
-    AddPendingPacket(opb->buffer_, opb->size_);
+    AddPendingPacket(opb, opb->size_);
 }

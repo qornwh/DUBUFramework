@@ -39,7 +39,7 @@ namespace DUBU
         bool RecvDispatch(Uint8* buffer, Uint16 size);
         bool RecvDispatchACK(Uint8* buffer, Uint16 size);
         void RepeatMessage(Uint64 resendDelay);
-        void AddPendingPacket(Uint8* buffer, Uint16 size);
+        void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
         void SendAck(Uint32 seqNo);
 
