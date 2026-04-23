@@ -20,7 +20,10 @@ namespace DUBU
 		virtual ~Server();
 
 		void Initialize();
+        // 계속실행
 		void Run();
+        // 1회 실행
+        void Dispatch();
 		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;

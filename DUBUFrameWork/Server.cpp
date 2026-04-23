@@ -43,6 +43,29 @@ void DUBU::Server::Run()
 	}
 }
 
+void DUBU::Server::Dispatch()
+{
+    if (isRunning_)
+    {
+        assert(rudpSocket_ != nullptr);
+        LPOVERLAPPED ptr = nullptr;
+        Int32 size = rudpSocket_->Dispatch(&ptr);
+
+        if (ptr == nullptr)
+        {
+            // 마지막 세션 체크
+            CheckSession();
+            return;
+        }
+
+        OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
+        if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+            rudpSocket_->RecvFromComplete(ptr, size);
+        else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
+            rudpSocket_->SendToComplete(ptr, size);
+    }
+}
+
 void DUBU::Server::Stop()
 {
 	isRunning_ = false;
