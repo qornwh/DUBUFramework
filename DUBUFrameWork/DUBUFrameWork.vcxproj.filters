@@ -57,9 +57,6 @@
     <ClInclude Include="pch.h">
       <Filter>pch</Filter>
     </ClInclude>
-    <ClInclude Include="ConcurrentQueue.h">
-      <Filter>DataStruct\DS</Filter>
-    </ClInclude>
     <ClInclude Include="RUDPSocket.h">
       <Filter>Service\RUDP</Filter>
     </ClInclude>
@@ -115,9 +112,6 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
-    </ClCompile>
-    <ClCompile Include="ConcurrentQueue.cpp">
-      <Filter>DataStruct\DS</Filter>
     </ClCompile>
     <ClCompile Include="RUDPSocket.cpp">
       <Filter>Service\RUDP</Filter>
