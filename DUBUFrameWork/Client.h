@@ -7,9 +7,6 @@
 // 일단 최대 10번만 연결 시도
 #define DEFAULT_REQUEST_CONNECT_NO 10
 
-// 일단 최대 10번만 연결 시도
-#define DEFAULT_REQUEST_CONNECT_NO 10
-
 namespace DUBU
 {
 	class RUDPSocket;
@@ -27,6 +24,7 @@ namespace DUBU
 		virtual ~Client();
 
 		void Connect();
+        void ConnectTimes(Uint32 count = 5);
 		void Disconnect();
 		bool Dispatch();
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
@@ -50,6 +48,8 @@ namespace DUBU
 
         // 주기적 pendingMessage 전송 체크
         void CheckPending();
+
+        Uint32 GetRecvSequenceNo() const;
 
 	private:
         // 클라이언트 id

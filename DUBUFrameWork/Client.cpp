@@ -32,6 +32,22 @@ void DUBU::Client::Connect()
 	}
 }
 
+void DUBU::Client::ConnectTimes(const Uint32 count)
+{
+    // 기본값 5회 연결
+    while (!isConnect_)
+    {
+        Connect();
+        Sleep(500);
+        Dispatch();
+    }
+
+    if (!isConnect_)
+    {
+        spdlog::error("Not Connect Server !!!");
+    }
+}
+
 void DUBU::Client::Disconnect()
 {
     DisconnectMessage();
@@ -411,4 +427,9 @@ void DUBU::Client::CheckPending()
 
     // 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
     RepeatMessage(rttMillisec_ * 2 + DEFAULT_RTT_MS_DELAY);
+}
+
+Uint32 DUBU::Client::GetRecvSequenceNo() const
+{
+    return recvSequenceNo_;
 }
