@@ -17,12 +17,12 @@ DUBU::Server::~Server()
 void DUBU::Server::Initialize()
 {
 	rudpSocket_->StartServer();
-	isRunning_ = true;
+	isRunning_.store(true);
 }
 
 void DUBU::Server::Run()
 {
-	while (isRunning_)
+	while (isRunning_.load())
 	{
 		assert(rudpSocket_ != nullptr);
 		LPOVERLAPPED ptr = nullptr;
@@ -68,7 +68,7 @@ void DUBU::Server::Dispatch()
 
 void DUBU::Server::Stop()
 {
-	isRunning_ = false;
+	isRunning_.store(false);
 }
 
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)

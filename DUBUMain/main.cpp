@@ -20,8 +20,17 @@ int main()
 		std::thread th([&server]() {
 			server = new DUBU::Server();
 			server->Initialize();
-			server->Run();
-			delete server;
+
+            Uint64 time = DUBU::GetCurrentTimeMs();
+            while (true)
+            {
+                Uint64 cur = DUBU::GetCurrentTimeMs();
+                server->Dispatch();
+                if (cur - time >= 10000)
+                    break;
+            }
+            if (server != nullptr)
+			    delete server;
 		});
 
         std::thread th2([]() {

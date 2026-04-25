@@ -37,6 +37,8 @@ namespace DUBU
 
         void SendAck(Uint32 seqNo, Session* session);
 
+        const Bool IsRunning() const { return isRunning_; }
+
 	private:
 		Uint64 PeerKey(const SOCKADDR_IN& addr);
 
@@ -44,7 +46,7 @@ namespace DUBU
 		SessionManager sessionManager_;
 		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock sessionLock_;
-		Bool isRunning_ = false;
+		Atomic<Bool>  isRunning_ = false;
 
         // Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;
