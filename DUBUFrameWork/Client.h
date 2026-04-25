@@ -51,6 +51,12 @@ namespace DUBU
 
         Uint32 GetRecvSequenceNo() const;
 
+        const Bool IsConnect() const { return isConnect_; }
+
+    protected:
+        // 소켓만 protected로 수정
+        std::shared_ptr<RUDPSocket> rudpSocket_;
+
 	private:
         // 클라이언트 id
 		Uint32 clientId_ = 0;
@@ -58,8 +64,6 @@ namespace DUBU
         Uint32 recvSequenceNo_ = 0;
         // 송신 시퀀스 넘버
         Uint32 sendSequenceNo_ = 0;
-
-		std::shared_ptr<RUDPSocket> rudpSocket_;
 
         // 재전송 패킷 관리
         PendingPacket pendingPackets_[DEFAULT_WINDOW_COUNT];

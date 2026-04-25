@@ -39,12 +39,14 @@ namespace DUBU
 
         const Bool IsRunning() const { return isRunning_; }
 
+    protected:
+        // 소켓만 protected로 수정
+        std::shared_ptr<RUDPSocket> rudpSocket_;
+
 	private:
 		Uint64 PeerKey(const SOCKADDR_IN& addr);
 
-	private:
 		SessionManager sessionManager_;
-		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock sessionLock_;
 		Atomic<Bool>  isRunning_ = false;
 
