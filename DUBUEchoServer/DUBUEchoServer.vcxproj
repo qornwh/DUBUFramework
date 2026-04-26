@@ -142,11 +142,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="EhcoServer.cpp" />
+    <ClCompile Include="EchoSessionHander.cpp" />
+    <ClCompile Include="EchoServer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EhcoServer.h" />
+    <ClInclude Include="EchoSessionHander.h" />
+    <ClInclude Include="EchoServer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

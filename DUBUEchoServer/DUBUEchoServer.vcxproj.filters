@@ -2,9 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="EhcoServer.cpp" />
+    <ClCompile Include="EchoServer.cpp" />
+    <ClCompile Include="EchoSessionHander.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EhcoServer.h" />
+    <ClInclude Include="EchoServer.h" />
+    <ClInclude Include="EchoSessionHander.h" />
   </ItemGroup>
 </Project>

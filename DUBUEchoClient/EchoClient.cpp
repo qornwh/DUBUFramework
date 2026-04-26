@@ -14,7 +14,7 @@ void EchoClient::SendChatMessage(const String& chat)
 {
     // 메시지 작성
     flatbuffers::FlatBufferBuilder fbb;
-    auto chatting = DUBU::Echo::CreateChattingDirect(fbb, chat.c_str());
+    auto chatting = DUBU::Echo::CreateChattingDirect(fbb, GetClientId(), chat.c_str());
     auto packet = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chatting.Union());
     DUBU::Echo::FinishPacketBuffer(fbb, packet);
     // buffer, size
@@ -31,7 +31,7 @@ void EchoClient::SendChatMessage(const String& chat)
     header->sessionId_ = GetClientId();
     header->sequenceNo_ = UpdateSendSequenceNo();
     header->timestamp_ = DUBU::GetCurrentTimeMs();
-    header->packetCode_ = 0;
+    header->packetCode_ = DUBU::Echo::PacketBody_Chatting;
 
     // 메시지 복사
     std::memcpy(opb->buffer_ + sizeof(DUBU::Packet::PacketHeader), buffer, size);

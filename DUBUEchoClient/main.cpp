@@ -1,5 +1,7 @@
 #include <iostream>
 #include "EchoClient.h"
+#include "EchoClientHander.h"
+#include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
 
@@ -20,15 +22,55 @@ int main()
 {
     SetConsoleOutputCP(CP_UTF8);
 
-    EchoClient client{ "127.0.0.1", SERVICE_PORT };
-    client.ConnectTimes();
+    // 메시지 핸들러
+    Map<Uint8, DUBU::Packet::PacketHandler> handlers;
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Chatting, 
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return EchoClientHander::GetInstance().ChatVerifier(v);
+            },
+            // handler_
+            [](Uint8* buf, Int32 len) {
+                EchoClientHander::GetInstance().ChatHandler(buf, len);
+            }
+        }
+    );
 
-    Uint64 time = DUBU::GetCurrentTimeMs();
-    Sleep(500);
+    // 클라이언트
+    EchoClient* client;
+    client = new EchoClient("127.0.0.1", SERVICE_PORT, &handlers);
+    EchoClientHander::GetInstance().SetOwner(client);
+    
+    // 5회 연결 요청
+    client->ConnectTimes(5);
+
+    // 연결확인
+    if (!client->IsConnect())
+    {
+        spdlog::warn("Not Connect Server !!!");
+        return 0;
+    }
+
+    std::thread th([&client, &handlers]() {
+
+        Uint64 time = DUBU::GetCurrentTimeMs();
+        while (client->IsConnect())
+        {
+            client->Dispatch();
+        }
+        if (client != nullptr)
+        {
+            delete client;
+            client = nullptr;
+        }
+    });
+
     
     String chat = "";
     chat.reserve(200);
-    while (true)
+    while (client != nullptr && client->IsConnect())
     {
         std::cout << "input >> ";
         if (!std::getline(std::cin, chat))
@@ -36,20 +78,21 @@ int main()
             break;
         }
 
-        if (chat.empty())
+        if (!chat.empty())
         {
-            continue;
+            client->SendChatMessage(chat);
         }
 
-        client.SendChatMessage(chat);
         if (InterruptCtrlC)
         {
-            if (client.IsConnect())
+            if (client->IsConnect())
             {
-                client.Disconnect();
+                client->Disconnect();
             }
             break;
         }
     }
+    th.join();
+
     return 0;
 }

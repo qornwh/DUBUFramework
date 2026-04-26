@@ -1,10 +1,11 @@
 #include <thread>
-#include <Server.h>
-#include <Client.h>
 #include <iostream>
 #include "pch.h"
 #include "Pool.h"
 #include "BufferManager.h"
+#include "EchoServer.h"
+#include "EchoSessionHander.h"
+#include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
 
@@ -28,12 +29,29 @@ int main()
     DUBU::Initialize();
     DUBU::PacketManager::GetInstance().Initialize();
 
+    // 메시지 핸들러
+    Map<Uint8, DUBU::Packet::PacketHandler> handlers;
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Chatting,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return EchoSessionHander::GetInstance().ChatVerifier(v);
+            },
+            // handler_
+            [](Uint8* buf, Int32 len) {
+                EchoSessionHander::GetInstance().ChatHandler(buf, len);
+            }
+        }
+    );
+
     {
         SetConsoleCtrlHandler(KeyBoarHandler, TRUE);
-        DUBU::Server* server;
-        std::thread th([&server]() {
-            server = new DUBU::Server();
-            server->Initialize();
+        EchoServer* server;
+        std::thread th([&server, &handlers]() {
+            server = new EchoServer();
+            server->Initialize(&handlers);
+            EchoSessionHander::GetInstance().SetOwner(server);
 
             Uint64 time = DUBU::GetCurrentTimeMs();
             while (server->IsRunning())
@@ -42,7 +60,10 @@ int main()
                 server->Dispatch();
             }
             if (server != nullptr)
+            {
                 delete server;
+                server = nullptr;
+            }
         });
 
         while (true)
