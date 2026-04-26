@@ -14,15 +14,16 @@ DUBU::Server::~Server()
 	rudpSocket_->EndServer();
 }
 
-void DUBU::Server::Initialize()
+void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 {
+    sessionManager_.SetHandlers(handlers);
 	rudpSocket_->StartServer();
-	isRunning_ = true;
+	isRunning_.store(true);
 }
 
 void DUBU::Server::Run()
 {
-	while (isRunning_)
+	while (isRunning_.load())
 	{
 		assert(rudpSocket_ != nullptr);
 		LPOVERLAPPED ptr = nullptr;
@@ -43,9 +44,32 @@ void DUBU::Server::Run()
 	}
 }
 
+void DUBU::Server::Dispatch()
+{
+    if (isRunning_)
+    {
+        assert(rudpSocket_ != nullptr);
+        LPOVERLAPPED ptr = nullptr;
+        Int32 size = rudpSocket_->Dispatch(&ptr);
+
+        if (ptr == nullptr)
+        {
+            // 마지막 세션 체크
+            CheckSession();
+            return;
+        }
+
+        OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
+        if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+            rudpSocket_->RecvFromComplete(ptr, size);
+        else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
+            rudpSocket_->SendToComplete(ptr, size);
+    }
+}
+
 void DUBU::Server::Stop()
 {
-	isRunning_ = false;
+	isRunning_.store(false);
 }
 
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)

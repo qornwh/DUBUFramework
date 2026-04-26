@@ -57,6 +57,4 @@ PACKET_TEST(DUBUTest, PacketTest) {
 		EXPECT_EQ(len, out_len);
 		EXPECT_TRUE(std::equal(name, name + len, out_name));
 	}
-
-	// 멀티스레드 / 
 }

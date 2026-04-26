@@ -1,0 +1,18 @@
+namespace DUBU.Echo;
+
+// 채팅 메시지
+table Chatting {
+  id:uint64;
+  message:string;
+}
+
+// 패킷 종류 나열
+union PacketBody {
+  Chatting,
+}
+
+table Packet {
+  body:PacketBody;
+}
+
+root_type Packet;

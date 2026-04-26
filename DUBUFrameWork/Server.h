@@ -19,8 +19,11 @@ namespace DUBU
 		Server();
 		virtual ~Server();
 
-		void Initialize();
+		void Initialize(const Map<Uint8, Packet::PacketHandler>* handlers);
+        // 계속실행
 		void Run();
+        // 1회 실행
+        void Dispatch();
 		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
@@ -34,14 +37,21 @@ namespace DUBU
 
         void SendAck(Uint32 seqNo, Session* session);
 
+        const Bool IsRunning() const { return isRunning_; }
+        Lock& GetSessionLock() { return sessionLock_; }
+        SessionManager& GetSessionManager() { return sessionManager_; }
+        const Map<Uint64, Peer>& GetPeers() const { return peerMap_; }
+
+    protected:
+        // 소켓만 protected로 수정
+        std::shared_ptr<RUDPSocket> rudpSocket_;
+
 	private:
 		Uint64 PeerKey(const SOCKADDR_IN& addr);
 
-	private:
 		SessionManager sessionManager_;
-		std::shared_ptr<RUDPSocket> rudpSocket_;
 		Lock sessionLock_;
-		Bool isRunning_ = false;
+		Atomic<Bool>  isRunning_ = false;
 
         // Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;

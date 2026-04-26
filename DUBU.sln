@@ -14,6 +14,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DUBUEchoServer", "DUBUEchoServer\DUBUEchoServer.vcxproj", "{FD7F85D0-BAD6-406A-B303-B1A903CB4286}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DUBUEchoClient", "DUBUEchoClient\DUBUEchoClient.vcxproj", "{166F70DB-8413-4DEC-88CE-54A2095659D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extra", "Extra", "{9BD209FF-F997-49E7-9266-8D2CBA48F204}"
+	ProjectSection(SolutionItems) = preProject
+		extra\dubu_echo_packet.fbs = extra\dubu_echo_packet.fbs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -46,6 +55,22 @@ Global
 		{2B87FBF7-DED9-4545-8EF3-F008E81597BD}.Release|x64.Build.0 = Release|x64
 		{2B87FBF7-DED9-4545-8EF3-F008E81597BD}.Release|x86.ActiveCfg = Release|Win32
 		{2B87FBF7-DED9-4545-8EF3-F008E81597BD}.Release|x86.Build.0 = Release|Win32
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Debug|x64.ActiveCfg = Debug|x64
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Debug|x64.Build.0 = Debug|x64
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Debug|x86.ActiveCfg = Debug|Win32
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Debug|x86.Build.0 = Debug|Win32
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Release|x64.ActiveCfg = Release|x64
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Release|x64.Build.0 = Release|x64
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Release|x86.ActiveCfg = Release|Win32
+		{FD7F85D0-BAD6-406A-B303-B1A903CB4286}.Release|x86.Build.0 = Release|Win32
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Debug|x64.ActiveCfg = Debug|x64
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Debug|x64.Build.0 = Debug|x64
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Debug|x86.ActiveCfg = Debug|Win32
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Debug|x86.Build.0 = Debug|Win32
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x64.ActiveCfg = Release|x64
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x64.Build.0 = Release|x64
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x86.ActiveCfg = Release|Win32
+		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

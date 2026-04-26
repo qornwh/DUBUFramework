@@ -20,7 +20,7 @@ DUBU::Session* DUBU::SessionManager::AddSession()
 {
     Uint32 sessionId = GenerateId();
     sessionCount_.fetch_add(1);
-    Session* session = Pop<Session>(nullptr);
+    Session* session = Pop<Session>(handlers_);
     session->Reset();
     session->SetSessionId(sessionId);
     sessionMap_.insert({ sessionId, session });
@@ -51,6 +51,11 @@ DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
 Map<Uint32, DUBU::Session*>& DUBU::SessionManager::GetSessions()
 {
     return sessionMap_;
+}
+
+void DUBU::SessionManager::SetHandlers(const Map<Uint8, Packet::PacketHandler>* handlers)
+{
+    handlers_ = handlers;
 }
 
 Uint32 DUBU::SessionManager::GenerateId()
