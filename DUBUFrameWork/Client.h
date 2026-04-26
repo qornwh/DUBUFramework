@@ -53,6 +53,8 @@ namespace DUBU
 
         const Bool IsConnect() const { return isConnect_; }
 
+        Lock& GetLock() { return lock_; }
+
     protected:
         // 소켓만 protected로 수정
         std::shared_ptr<RUDPSocket> rudpSocket_;
@@ -88,6 +90,9 @@ namespace DUBU
         
         // 클라이언트 타임아웃 설정
         const Int32 ClientTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
+
+        // 클라이언트 lock
+        Lock lock_;
 	};
 }
 

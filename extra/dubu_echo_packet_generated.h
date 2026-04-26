@@ -66,13 +66,18 @@ bool VerifyPacketBodyVector(::flatbuffers::Verifier &verifier, const ::flatbuffe
 struct Chatting FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ChattingBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_MESSAGE = 4
+    VT_ID = 4,
+    VT_MESSAGE = 6
   };
+  uint64_t id() const {
+    return GetField<uint64_t>(VT_ID, 0);
+  }
   const ::flatbuffers::String *message() const {
     return GetPointer<const ::flatbuffers::String *>(VT_MESSAGE);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_ID, 8) &&
            VerifyOffset(verifier, VT_MESSAGE) &&
            verifier.VerifyString(message()) &&
            verifier.EndTable();
@@ -83,6 +88,9 @@ struct ChattingBuilder {
   typedef Chatting Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
+  void add_id(uint64_t id) {
+    fbb_.AddElement<uint64_t>(Chatting::VT_ID, id, 0);
+  }
   void add_message(::flatbuffers::Offset<::flatbuffers::String> message) {
     fbb_.AddOffset(Chatting::VT_MESSAGE, message);
   }
@@ -99,18 +107,22 @@ struct ChattingBuilder {
 
 inline ::flatbuffers::Offset<Chatting> CreateChatting(
     ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> message = 0) {
   ChattingBuilder builder_(_fbb);
+  builder_.add_id(id);
   builder_.add_message(message);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<Chatting> CreateChattingDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t id = 0,
     const char *message = nullptr) {
   auto message__ = message ? _fbb.CreateString(message) : 0;
   return DUBU::Echo::CreateChatting(
       _fbb,
+      id,
       message__);
 }
 

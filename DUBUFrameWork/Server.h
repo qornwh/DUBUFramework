@@ -19,7 +19,7 @@ namespace DUBU
 		Server();
 		virtual ~Server();
 
-		void Initialize();
+		void Initialize(const Map<Uint8, Packet::PacketHandler>* handlers);
         // 계속실행
 		void Run();
         // 1회 실행
@@ -38,6 +38,9 @@ namespace DUBU
         void SendAck(Uint32 seqNo, Session* session);
 
         const Bool IsRunning() const { return isRunning_; }
+        Lock& GetSessionLock() { return sessionLock_; }
+        SessionManager& GetSessionManager() { return sessionManager_; }
+        const Map<Uint64, Peer>& GetPeers() const { return peerMap_; }
 
     protected:
         // 소켓만 protected로 수정

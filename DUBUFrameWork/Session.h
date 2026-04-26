@@ -59,6 +59,8 @@ namespace DUBU
         // Echo 메시지
         void SendEchoMessage(Uint8* buffer, Uint16 size);
 
+        void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size);
+
 	private:
 		// 세션 id
 		Uint32 sessionId_ = 0;

@@ -2,6 +2,7 @@ namespace DUBU.Echo;
 
 // 채팅 메시지
 table Chatting {
+  id:uint64;
   message:string;
 }
 

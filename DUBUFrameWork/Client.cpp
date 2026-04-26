@@ -24,6 +24,7 @@ void DUBU::Client::Connect()
 	if (rudpSocket_.get() != nullptr)
 	{
 		ConnectMessage();
+        timestamp_ = DUBU::GetCurrentTimeMs();
 	}
 	else
 	{

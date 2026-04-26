@@ -302,3 +302,32 @@ void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
     // pending 전송될 때까지 대기
     AddPendingPacket(opb, opb->size_);
 }
+
+void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    if (rudpSocket_ == nullptr) return;
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::REPEAT;
+    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->sessionId_ = sessionId_;
+    header->sequenceNo_ = UpdateSendSequenceNo();
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = code;
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendToReliable(GetSockAddr(), opb);
+
+    // pending 전송될 때까지 대기
+    AddPendingPacket(opb, opb->size_);
+}

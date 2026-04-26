@@ -14,8 +14,9 @@ DUBU::Server::~Server()
 	rudpSocket_->EndServer();
 }
 
-void DUBU::Server::Initialize()
+void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 {
+    sessionManager_.SetHandlers(handlers);
 	rudpSocket_->StartServer();
 	isRunning_.store(true);
 }
