@@ -93,6 +93,8 @@ DUBUFramework는 안정적인 개발을 위해 **테스트 주도 개발(TDD)** 
 - **현재는 멀티스레드 공유변수 동기화 체크, flatbuffer로 패킷 생성만 체크**
 - **DUBUEchoServer / DUBUEchoClient** 채팅 구현 프로젝트 사용가능
 
+  ![Chatting](./images/Chatting.png)
+
 ## 추가 구현 예정
 
 - **RUDP:** 최적화 고도화 예정
