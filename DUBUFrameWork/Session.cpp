@@ -246,6 +246,9 @@ void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
 		{
 			socket->SendToRepeat(addr_, p.buffer);
 			p.timeStamp = now;
+#ifdef _DEBUG
+            resendCount_.fetch_add(1);
+#endif
 		}
 	}
 }
@@ -275,7 +278,9 @@ void DUBU::Session::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
-    spdlog::info("Disconnect : result ping {} / {}", pongCount_, pingCount_);
+#ifdef _DEBUG
+    spdlog::info("Disconnect : result resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
+#endif
 }
 
 void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
