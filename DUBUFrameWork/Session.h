@@ -101,6 +101,11 @@ namespace DUBU
         Uint32 pongCount_ = 0;
         Uint32 lastPongSeq_ = 0;
 
+#ifdef _DEBUG
+        // 재전송 패킷 기록
+        Atomic<Uint64> resendCount_;
+#endif
+
         // RUDP소켓은 raw pointer로 관리
         RUDPSocket* rudpSocket_;
 	};

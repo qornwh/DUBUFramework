@@ -111,9 +111,9 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
     if (isRepeat)
     {
-        if (header->sequenceNo_ <= recvSequenceNo_ && header->sequenceNo_ + 3 > recvSequenceNo_)
+        if (header->sequenceNo_ <= recvSequenceNo_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > recvSequenceNo_)
         {
-            // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 3개까지 적용 시킨다. 파싱 필요x 이미 함)
+            // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
             return true;
         }
         if (header->sequenceNo_ != recvSequenceNo_ + 1)
@@ -246,6 +246,9 @@ void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
 		{
 			socket->SendToRepeat(addr_, p.buffer);
 			p.timeStamp = now;
+#ifdef _DEBUG
+            resendCount_.fetch_add(1);
+#endif
 		}
 	}
 }
@@ -275,7 +278,9 @@ void DUBU::Session::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
-    spdlog::info("Disconnect : result ping {} / {}", pongCount_, pingCount_);
+#ifdef _DEBUG
+    spdlog::info("Disconnect : result resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
+#endif
 }
 
 void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)

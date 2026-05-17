@@ -19,6 +19,10 @@ void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
     sessionManager_.SetHandlers(handlers);
 	rudpSocket_->StartServer();
 	isRunning_.store(true);
+
+#ifdef _DEBUG
+    preTime = GetCurrentTimeMs();
+#endif
 }
 
 void DUBU::Server::Run()
@@ -61,9 +65,19 @@ void DUBU::Server::Dispatch()
 
         OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
         if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+        {
             rudpSocket_->RecvFromComplete(ptr, size);
+#ifdef _DEBUG
+            recvPacketCount_.fetch_add(1);
+#endif
+        }
         else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
+        {
             rudpSocket_->SendToComplete(ptr, size);
+#ifdef _DEBUG
+            sendPacketCount_.fetch_add(1);
+#endif
+        }
     }
 }
 
@@ -152,13 +166,23 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
                 {
                     // ACK 전달
                     SendAck(seqNo, session);
+#ifdef _DEBUG
+                    sendAckCount_.fetch_add(1);
+#endif
                 }
             }
             else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
             {
                 // ACK 수신 pendingpacket 지움
-                session->RecvDispatchACK(buffer, size);
+                result = session->RecvDispatchACK(buffer, size);
+#ifdef _DEBUG
+                recvAckCount_.fetch_add(1);
+#endif
             }
+
+#ifdef _DEBUG
+            recvByteCount_.fetch_add(header->totalSize_);
+#endif
 		}
 	}
 
@@ -168,6 +192,10 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+#ifdef _DEBUG
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+    sendByteCount_.fetch_add(header->totalSize_);
+#endif
 }
 
 DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
@@ -176,6 +204,10 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 	session->SetSockAddr(addr);
     session->SetSocket(rudpSocket_.get());
 	session->SetTimestamp(DUBU::GetCurrentTimeMs());
+#ifdef _DEBUG
+    newSessionCount_.fetch_add(1);
+#endif // _DEBUG
+
 	return session;
 }
 
@@ -279,7 +311,10 @@ void DUBU::Server::CheckSession()
 			if (delayTime > SessionTimeout)
 			{
 				// 끊김 감지
-				removeListCache_[idx++] = session->GetSessionId();
+                removeListCache_[idx++] = session->GetSessionId();
+#ifdef _DEBUG
+                timeoutSessionCount_.fetch_add(1);
+#endif
 			}
 			else if (delayTime > PingTimeout)
 			{
@@ -313,6 +348,39 @@ void DUBU::Server::CheckSession()
 		}
 	}
 
+#ifdef _DEBUG
+    if (now - preTime >= logTimeOut)
+    {
+        preTime = now;
+        lastStatsTickMs_.store(now);
+        timeoutSessionCount_.fetch_add(1);
+
+        Uint32 activeCount = 0;
+        Uint32 rttSum = 0;
+        Uint32 rttMax = 0;
+
+        // 일단 디버그용이라 코드 보기 어려워 분리해서 로그 찍는다.
+        for (auto& [sessionId, session] : sessionManager_.GetSessions())
+        {
+            if (session != nullptr)
+            {
+                Uint32 rtt = session->GetRttMillisec();
+                if (rtt > rttMax)
+                {
+                    rttMax = rtt;
+                }
+                rttSum += rtt;
+                activeCount++;
+            }
+        }
+        float rttAvg = 0.0f;
+        if (activeCount > 0)
+        {
+            rttAvg = static_cast<float>(rttSum) / activeCount;
+        }
+        PrintStats(activeCount, rttAvg, rttMax);
+    }
+#endif
 	sessionCAS_.store(false);
 }
 
@@ -341,4 +409,27 @@ Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
 {
 	// ip를 16비트 시프트후 port와 or연산으로 key관리
 	return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
+}
+
+void DUBU::Server::PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 rttMaxMillisec)
+{
+    Uint64 recvPacket = recvPacketCount_.exchange(0);
+    Uint64 sendPacket = sendPacketCount_.exchange(0);
+    Uint64 recvByte = recvByteCount_.exchange(0);
+    Uint64 sendByte = sendByteCount_.exchange(0);
+    Uint64 recvAck = recvAckCount_.exchange(0);
+    Uint64 sendAck = sendAckCount_.exchange(0);
+    Uint64 timeout = timeoutSessionCount_.exchange(0);
+    Uint32 newCount = newSessionCount_.exchange(0);
+
+    spdlog::info(
+        "[STATS] active={} new=+{} "
+        "recv={}p/{:.2f}MB send={}p/{:.2f}MB "
+        "recv_ack={} send_ack={} timeout={} "
+        "rtt_avg={:.1f}ms rtt_max={}ms",
+        activeCount, newCount,
+        recvPacket, recvByte / 1048576.0,
+        sendPacket, sendByte / 1048576.0,
+        recvAck, sendAck, timeout,
+        rttAvgMillisec, rttMaxMillisec);
 }
