@@ -19,7 +19,7 @@ int main()
 		DUBU::Server* server;
 		std::thread th([&server]() {
 			server = new DUBU::Server();
-			server->Initialize();
+			server->Initialize(nullptr);
 
             Uint64 time = DUBU::GetCurrentTimeMs();
             while (true)

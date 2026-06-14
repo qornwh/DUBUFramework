@@ -411,6 +411,7 @@ Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
 	return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
 }
 
+#ifdef _DEBUG
 void DUBU::Server::PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 rttMaxMillisec)
 {
     Uint64 recvPacket = recvPacketCount_.exchange(0);
@@ -433,3 +434,4 @@ void DUBU::Server::PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 r
         recvAck, sendAck, timeout,
         rttAvgMillisec, rttMaxMillisec);
 }
+#endif

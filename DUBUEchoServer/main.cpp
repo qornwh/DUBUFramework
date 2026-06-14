@@ -47,9 +47,8 @@ int main()
 
     {
         SetConsoleCtrlHandler(KeyBoarHandler, TRUE);
-        EchoServer* server;
+        EchoServer* server = new EchoServer();
         std::thread th([&server, &handlers]() {
-            server = new EchoServer();
             server->Initialize(&handlers);
             EchoSessionHander::GetInstance().SetOwner(server);
 
