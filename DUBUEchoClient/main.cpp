@@ -18,7 +18,7 @@ BOOL WINAPI KeyBoarHandler(DWORD signal)
     return FALSE;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
 
@@ -38,9 +38,19 @@ int main()
         }
     );
 
+    if (argc < 2 || argv == nullptr)
+    {
+        spdlog::error("Add Param Ip !!!");
+        return 0;
+    }
+    else
+    {
+        spdlog::info("Connect Server Ip {}", argv[0]);
+    }
+
     // 클라이언트
     EchoClient* client;
-    client = new EchoClient("127.0.0.1", SERVICE_PORT, &handlers);
+    client = new EchoClient(argv[1], SERVICE_PORT, &handlers);
     EchoClientHander::GetInstance().SetOwner(client);
     
     // 5회 연결 요청
