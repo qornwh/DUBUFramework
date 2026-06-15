@@ -46,7 +46,6 @@ int main()
     );
 
     {
-        SetConsoleCtrlHandler(KeyBoarHandler, TRUE);
         EchoServer* server = new EchoServer();
         std::thread th([&server, &handlers]() {
             server->Initialize(&handlers);
