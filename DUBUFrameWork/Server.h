@@ -68,6 +68,7 @@ namespace DUBU
 		// 끊을 세션 캐시로 저장
 		Uint32 removeListCache_[MAX_CLIENT_COUNT];
 
+    protected:
 #ifdef _DEBUG
         // 디버그에서 통계낼때 사용
         void PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 rttMaxMillisec);
