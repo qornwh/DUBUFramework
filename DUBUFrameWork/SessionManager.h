@@ -3,6 +3,7 @@
 #include <random>
 #include "Session.h"
 #include "RWLock.h"
+#include "Pool.h"
 
 namespace DUBU
 {
@@ -49,7 +50,7 @@ namespace DUBU
         T* session = Pop<T>(handlers_);
         session->Reset();
         session->SetSessionId(sessionId);
-        sessionMap_.insert({ sessionId, static_cast<Session>(session) });
+        sessionMap_.insert({ sessionId, static_cast<Session*>(session) });
 
         return session;
     }
