@@ -8,7 +8,9 @@
     <ClCompile Include="GatewaySession.cpp">
       <Filter>Gateway</Filter>
     </ClCompile>
-    <ClCompile Include="GatewaySessionHandler.cpp" />
+    <ClCompile Include="GatewaySessionHandler.cpp">
+      <Filter>Gateway</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GatewaySession.h">
@@ -17,7 +19,9 @@
     <ClInclude Include="GatewayServer.h">
       <Filter>Gateway</Filter>
     </ClInclude>
-    <ClInclude Include="GatewaySessionHandler.h" />
+    <ClInclude Include="GatewaySessionHandler.h">
+      <Filter>Gateway</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Gateway">

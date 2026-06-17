@@ -1,7 +1,9 @@
 #include "GatewayServer.h"
 #include "GatewaySession.h"
+#include "BufferManager.h"
+#include "../extra/dubu_echo_packet_generated.h"
 
-GatewayServer::GatewayServer(int sessionCount = 1) : DUBU::Server(), sessionCount_(sessionCount)
+GatewayServer::GatewayServer() : DUBU::Server()
 {
 }
 
@@ -9,15 +11,47 @@ GatewayServer::~GatewayServer()
 {
 }
 
+void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* handlers)
+{
+    DUBU::Server::Initialize(handlers);
+
+    {
+        // 에코 서버 세션 생성
+        const String echoServerIp = "";
+        const Uint32 echoServerPort = 12346;
+        SOCKADDR_IN echoServerAddr;
+        memset(&echoServerAddr, 0, sizeof(echoServerAddr));
+        echoServerAddr.sin_family = AF_INET;
+        echoServerAddr.sin_port = htons(echoServerPort);
+        if (inet_pton(AF_INET, echoServerIp.c_str(), &echoServerAddr.sin_addr) <= 0)
+        {
+            assert(false);
+        }
+
+        echoSessionList_.reserve(echoCount_);
+        for (Int64 i = 0; i < echoCount_; ++i)
+        {
+            echoSessionList_.emplace_back(CreateSession(echoServerAddr));
+        }
+    }
+}
+
 DUBU::Session* GatewayServer::CreateSession(const SOCKADDR_IN& addr)
 {
+    // GatewaySession : 구체적으로 인게임 / 소셜에 대한 세션
     GatewaySession* session = GetSessionManager().AddSession<GatewaySession>();
     session->SetSockAddr(addr);
     session->SetSocket(rudpSocket_.get());
     session->SetTimestamp(DUBU::GetCurrentTimeMs());
-#ifdef _DEBUG
-    newSessionCount_.fetch_add(1);
-#endif // _DEBUG
 
     return session;
+}
+
+void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    // 나머지 연산으로 분산해서 세션 전송
+    DUBU::OverlappedPacketBuffer* opb = reinterpret_cast<DUBU::OverlappedPacketBuffer*>(buffer);
+    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(opb->buffer_);
+
+    echoSessionList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size);
 }

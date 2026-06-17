@@ -6,6 +6,8 @@
 
 namespace DUBU
 {
+    struct OverlappedPacketBuffer;
+
 	/*
 	* Session : 베이스 클래스
     *  - 핑 카운트 기록
@@ -59,6 +61,8 @@ namespace DUBU
         // Echo 메시지
         void SendEchoMessage(Uint8* buffer, Uint16 size);
 
+        void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
+        void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size);
         void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size);
 
 	private:

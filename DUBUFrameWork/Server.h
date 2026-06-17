@@ -19,7 +19,7 @@ namespace DUBU
 		Server();
 		virtual ~Server();
 
-		void Initialize(const Map<Uint8, Packet::PacketHandler>* handlers);
+        virtual void Initialize(const Map<Uint8, Packet::PacketHandler>* handlers);
         // 계속실행
 		void Run();
         // 1회 실행
