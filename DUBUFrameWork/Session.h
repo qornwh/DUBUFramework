@@ -65,6 +65,9 @@ namespace DUBU
         void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size);
         void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size);
 
+        void SetAwaysConnect(Bool awaysConnect);
+        Bool GetAwaysConnect() const { return awaysConnect_; };
+
 	private:
 		// 세션 id
 		Uint32 sessionId_ = 0;
@@ -112,5 +115,8 @@ namespace DUBU
 
         // RUDP소켓은 raw pointer로 관리
         RUDPSocket* rudpSocket_;
+
+        // 상시 세션
+        Bool awaysConnect_;
 	};
 }

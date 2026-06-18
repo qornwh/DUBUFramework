@@ -405,3 +405,8 @@ void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size)
     // pending 전송될 때까지 대기
     AddPendingPacket(opb, opb->size_);
 }
+
+void DUBU::Session::SetAwaysConnect(Bool awaysConnect)
+{
+    awaysConnect_ = awaysConnect;
+}
