@@ -7,10 +7,10 @@ namespace DUBU
 {
     namespace Echo
     {
-        class Packet;
+        struct Packet;
     }
 }
-class DUBU::Session;
+class GatewaySession;
 
 class GatewayServer : public DUBU::Server
 {
@@ -20,14 +20,13 @@ public:
 
     void Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* handlers) override;
 
-    virtual DUBU::Session* CreateSession(const SOCKADDR_IN& addr);
+    GatewaySession* CreateGatewaySession(const SOCKADDR_IN& addr);
 
     // 에코 서버로 전송
-    void SendToEcho(Uint8* ptr, Uint8 code, Uint16 size);
+    void SendToEcho(Uint8* buffer, Uint8 code, Uint16 size);
 
 private:
-    // 다른 서버에 통신할 무언가 개발
-    // 에코서버와 연결 개수
+    // 임시로 일단 1개 테스트
     const Uint64 echoCount_ = 1;
     Vector<DUBU::Session*> echoSessionList_;
 };

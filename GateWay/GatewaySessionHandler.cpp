@@ -1,8 +1,9 @@
 #include "GatewaySessionHandler.h"
+#include "Session.h"
 #include "../extra/dubu_echo_packet_generated.h"
 #include "GatewayServer.h"
 
-GatewaySessionHandler::GatewaySessionHandler()
+GatewaySessionHandler::GatewaySessionHandler() : owner_(nullptr), clientToGatway_(false)
 {
 }
 
@@ -25,17 +26,23 @@ void GatewaySessionHandler::ChatHandler(Uint8* buffer, Int32 size)
         if (chat && chat->message())
         {
             const std::string& msg = chat->message()->str();
-            // 게이트 웨이서버 수신 성공 -> 에코서버 전송
-            spdlog::info("Gateway to Echo");
-
             if (owner_ != nullptr)
             {
+                // 게이트 웨이서버 수신 성공 -> 에코서버 전송
+                spdlog::info("Gateway to Echo");
                 flatbuffers::FlatBufferBuilder fbb;
                 flatbuffers::Offset<DUBU::Echo::Chatting> chattingOffset = DUBU::Echo::CreateChattingDirect(fbb, chat->id(), msg.c_str());
                 flatbuffers::Offset<DUBU::Echo::Packet> packetOffset = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chattingOffset.Union());
                 DUBU::Echo::FinishPacketBuffer(fbb, packetOffset);
 
-                owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                if (clientToGatway_)
+                {
+                    owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                }
+                else
+                {
+                    session_->SendPacket(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                }
             }
         }
     }
@@ -44,4 +51,14 @@ void GatewaySessionHandler::ChatHandler(Uint8* buffer, Int32 size)
 void GatewaySessionHandler::SetOwner(GatewayServer* owner)
 {
     owner_ = owner;
+}
+
+void GatewaySessionHandler::SetSession(DUBU::Session* session)
+{
+    session_ = session;
+}
+
+void GatewaySessionHandler::SetClientToGatway(Bool isClientToGatway)
+{
+    clientToGatway_ = isClientToGatway;
 }

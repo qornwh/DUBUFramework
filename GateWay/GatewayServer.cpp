@@ -17,7 +17,7 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
 
     {
         // 에코 서버 세션 생성
-        const String echoServerIp = "";
+        const String echoServerIp = "127.0.0.1";
         const Uint32 echoServerPort = 12346;
         SOCKADDR_IN echoServerAddr;
         memset(&echoServerAddr, 0, sizeof(echoServerAddr));
@@ -29,14 +29,16 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
         }
 
         echoSessionList_.reserve(echoCount_);
-        for (Int64 i = 0; i < echoCount_; ++i)
+        for (Int32 i = 0; i < echoCount_; ++i)
         {
-            echoSessionList_.emplace_back(CreateSession(echoServerAddr));
+            GatewaySession* session = CreateGatewaySession(echoServerAddr);
+            echoSessionList_.emplace_back(session);
+            session->SetAwaysConnect(true);
         }
     }
 }
 
-DUBU::Session* GatewayServer::CreateSession(const SOCKADDR_IN& addr)
+GatewaySession* GatewayServer::CreateGatewaySession(const SOCKADDR_IN& addr)
 {
     // GatewaySession : 구체적으로 인게임 / 소셜에 대한 세션
     GatewaySession* session = GetSessionManager().AddSession<GatewaySession>();
@@ -49,9 +51,9 @@ DUBU::Session* GatewayServer::CreateSession(const SOCKADDR_IN& addr)
 
 void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
-    // 나머지 연산으로 분산해서 세션 전송
     DUBU::OverlappedPacketBuffer* opb = reinterpret_cast<DUBU::OverlappedPacketBuffer*>(buffer);
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(opb->buffer_);
 
+    // 나머지 연산으로 분산해서 각 세션 전송
     echoSessionList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size);
 }
