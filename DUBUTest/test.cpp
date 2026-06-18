@@ -45,7 +45,7 @@ TEST(DUBUTest, SocketTest)
 	DUBU::PacketManager::GetInstance().Initialize();
 
 	DUBU::Server service;
-	service.Initialize();
+	service.Initialize(nullptr);
 
 	AAA& aaa = *DUBU::Pop<AAA>();
 	// placement new
