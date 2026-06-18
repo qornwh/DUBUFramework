@@ -169,6 +169,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     else
     {
         spdlog::warn("Not found Packet Handler Register !!!");
+        return false;
     }
 	return true;
 }
@@ -337,7 +338,7 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
     header->checksum_ = checksum;
 
-    if (header->flags_ & Packet::PacketHeaderFlag::REPEAT)
+    if ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
     {
         rudpSocket_->SendToReliable(GetSockAddr(), opb);
 
