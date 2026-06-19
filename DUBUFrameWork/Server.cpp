@@ -147,7 +147,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
                     spdlog::info("Already Disconnect Session");
                     return;
                 }
-				spdlog::error("SessionId{} not found", sessionId);
+				spdlog::error("SessionId {} not found", sessionId);
 				return;
 			}
 
