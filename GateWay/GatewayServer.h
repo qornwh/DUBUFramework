@@ -21,8 +21,6 @@ public:
 
     void Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* handlers) override;
 
-    GatewaySession* CreateGatewaySession(const SOCKADDR_IN& addr);
-
     // 에코 서버로 전송
     void SendToEcho(Uint8* buffer, Uint8 code, Uint16 size);
 

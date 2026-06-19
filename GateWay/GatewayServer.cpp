@@ -45,17 +45,6 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
     }
 }
 
-GatewaySession* GatewayServer::CreateGatewaySession(const SOCKADDR_IN& addr)
-{
-    // GatewaySession : 구체적으로 인게임 / 소셜에 대한 세션
-    GatewaySession* session = GetSessionManager().AddSession<GatewaySession>();
-    session->SetSockAddr(addr);
-    session->SetSocket(rudpSocket_.get());
-    session->SetTimestamp(DUBU::GetCurrentTimeMs());
-
-    return session;
-}
-
 void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
