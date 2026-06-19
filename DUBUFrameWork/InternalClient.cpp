@@ -97,6 +97,11 @@ void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint1
         clientId_ = header->sessionId_;
         isConnect_ = true;
     }
+    else if (flag == Packet::PacketHeaderFlag::PING)
+    {
+        // PONG 메시지 전달
+        RepeatPongMessage(buffer, size);
+    }
     else if (flag == Packet::PacketHeaderFlag::DISCONNECT)
     {
         // 연결 해제
