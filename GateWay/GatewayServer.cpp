@@ -40,7 +40,7 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
 
         for (Int32 i = 0; i < echoCount_; ++i)
         {
-            internalClientList_[i]->Connect();
+            internalClientList_[i]->ConnectTimes(5);
         }
     }
 }
@@ -58,10 +58,31 @@ GatewaySession* GatewayServer::CreateGatewaySession(const SOCKADDR_IN& addr)
 
 void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
-    DUBU::OverlappedPacketBuffer* opb = reinterpret_cast<DUBU::OverlappedPacketBuffer*>(buffer);
-    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(opb->buffer_);
-
-    // 나머지 연산으로 분산해서 각 세션 전송
-    //echoSessionList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size);
+    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
     internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size);
+}
+
+Bool GatewayServer::InnerDispatch()
+{
+    for (Int32 i = 0; i < echoCount_; ++i)
+    {
+        internalClientList_[i]->Dispatch();
+    }
+
+    return true;
+}
+
+void GatewayServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    DUBU::ReadLockGuard rl(GetSessionLock());
+
+    for (auto [_, session] : GetSessionManager().GetSessions())
+    {
+        if (session == nullptr)
+        {
+            continue;
+        }
+
+        session->SendPacketReliable(buffer, code, size);
+    }
 }

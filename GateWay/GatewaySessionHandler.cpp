@@ -28,14 +28,18 @@ void GatewaySessionHandler::ChatHandler(DUBU::Session* session, Uint8* buffer, I
             const std::string& msg = chat->message()->str();
             if (owner_ != nullptr)
             {
-                // 게이트 웨이서버 수신 성공 -> 에코서버 전송
-                spdlog::info("Gateway to Echo");
-                flatbuffers::FlatBufferBuilder fbb;
-                flatbuffers::Offset<DUBU::Echo::Chatting> chattingOffset = DUBU::Echo::CreateChattingDirect(fbb, chat->id(), msg.c_str());
-                flatbuffers::Offset<DUBU::Echo::Packet> packetOffset = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chattingOffset.Union());
-                DUBU::Echo::FinishPacketBuffer(fbb, packetOffset);
-                
-                owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                if (session != nullptr)
+                {
+                    // 게이트 웨이서버 수신 성공 -> 에코서버 전송
+                    spdlog::info("Gateway to Echo");
+                    owner_->SendToEcho(buffer, DUBU::Echo::PacketBody_Chatting, size);
+                }
+                else
+                {
+                    // 에코 서버 -> 게이트 웨이
+                    spdlog::info("Echo to Gateway");
+                    owner_->Broadcast(buffer + sizeof(DUBU::Packet::PacketHeader), DUBU::Echo::PacketBody_Chatting, size);
+                }
             }
         }
     }

@@ -333,17 +333,18 @@ void DUBU::InternalClient::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 
 
 void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
 {
+    // 헤더까지 포함된 스타일/ 즉 전달용
     if (rudpSocket_ == nullptr) return;
 
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 메시지 복사
+    std::memcpy(opb->buffer_, buffer, size);
+
     // TODO : 빠른 일정내 서브 세션 필요, 클라 유니크키 - 세션 매핑 되야 게이트웨이 서버 가
     header->checksum_ = 0;
     header->sessionId_ = clientId_;
-
-    // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;

@@ -26,6 +26,11 @@ public:
     // 에코 서버로 전송
     void SendToEcho(Uint8* buffer, Uint8 code, Uint16 size);
 
+    // 내부 서버 dispatch
+    Bool InnerDispatch();
+
+    void Broadcast(Uint8* buffer, Uint8 code, Uint16 size);
+
 private:
     // 임시로 일단 1개 테스트
     const Uint64 echoCount_ = 1;

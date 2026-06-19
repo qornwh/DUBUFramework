@@ -40,10 +40,10 @@ int main(int argc, char** argv)
             [](flatbuffers::Verifier& v) {
                 return GatewaySessionHandler::GetInstance().ChatVerifier(v);
             },
-        // handler_
-        [](DUBU::Session* session, Uint8* buf, Int32 len) {
-            GatewaySessionHandler::GetInstance().ChatHandler(session, buf, len);
-        }
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                GatewaySessionHandler::GetInstance().ChatHandler(session, buf, len);
+            }
         }
     );
 
@@ -58,6 +58,7 @@ int main(int argc, char** argv)
             {
                 Uint64 cur = DUBU::GetCurrentTimeMs();
                 server->Dispatch();
+                server->InnerDispatch();
             }
             if (server != nullptr)
             {
