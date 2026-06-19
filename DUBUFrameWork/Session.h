@@ -118,6 +118,6 @@ namespace DUBU
         RUDPSocket* rudpSocket_;
 
         // 상시 세션
-        Bool awaysConnect_;
+        Bool awaysConnect_ = false;
 	};
 }

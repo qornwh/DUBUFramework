@@ -338,7 +338,9 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
-    // 헤더는 크게 설정하지 않는다 그저 바로 다른 서버로 넘기는 용도
+    // TODO : 빠른 일정내 서브 세션 필요, 클라 유니크키 - 세션 매핑 되야 게이트웨이 서버 가
+    header->checksum_ = 0;
+    header->sessionId_ = clientId_;
 
     // 메시지 복사
     std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);

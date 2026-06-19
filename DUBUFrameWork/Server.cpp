@@ -310,12 +310,12 @@ void DUBU::Server::CheckSession()
 		ReadLockGuard rw(sessionLock_);
 		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
-            if (session->GetAwaysConnect())
+            if (session == nullptr || !session->IsConnection())
             {
                 continue;
             }
 
-            if (!session->IsConnection())
+            if (session->GetAwaysConnect())
             {
                 continue;
             }
