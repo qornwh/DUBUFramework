@@ -5,6 +5,7 @@
 #include "BufferManager.h"
 #include "GatewayServer.h"
 #include "GatewaySessionHandler.h"
+#include "Session.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -40,8 +41,8 @@ int main(int argc, char** argv)
                 return GatewaySessionHandler::GetInstance().ChatVerifier(v);
             },
         // handler_
-        [](Uint8* buf, Int32 len) {
-            GatewaySessionHandler::GetInstance().ChatHandler(buf, len);
+        [](DUBU::Session* session, Uint8* buf, Int32 len) {
+            GatewaySessionHandler::GetInstance().ChatHandler(session, buf, len);
         }
         }
     );

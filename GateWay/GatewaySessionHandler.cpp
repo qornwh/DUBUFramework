@@ -16,7 +16,7 @@ Bool GatewaySessionHandler::ChatVerifier(flatbuffers::Verifier& verifier)
     return DUBU::Echo::VerifyPacketBuffer(verifier);
 }
 
-void GatewaySessionHandler::ChatHandler(Uint8* buffer, Int32 size)
+void GatewaySessionHandler::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
 {
     const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + sizeof(DUBU::Packet::PacketHeader));
 
@@ -39,9 +39,9 @@ void GatewaySessionHandler::ChatHandler(Uint8* buffer, Int32 size)
                 {
                     owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
                 }
-                else
+                else if (session != nullptr)
                 {
-                    session_->SendPacket(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                    session->SendPacket(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
                 }
             }
         }
@@ -51,11 +51,6 @@ void GatewaySessionHandler::ChatHandler(Uint8* buffer, Int32 size)
 void GatewaySessionHandler::SetOwner(GatewayServer* owner)
 {
     owner_ = owner;
-}
-
-void GatewaySessionHandler::SetSession(DUBU::Session* session)
-{
-    session_ = session;
 }
 
 void GatewaySessionHandler::SetClientToGatway(Bool isClientToGatway)

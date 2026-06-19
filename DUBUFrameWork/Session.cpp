@@ -164,7 +164,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	    }
 
 	    // 패킷별 함수 실행
-	    it->second.handler_(buffer, size);
+	    it->second.handler_(this, buffer, size);
     }
     else
     {

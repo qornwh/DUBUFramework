@@ -4,6 +4,7 @@
 namespace DUBU
 {
     class RUDPSocket;
+    class Session;
 }
 
 class EchoServer;
@@ -16,7 +17,7 @@ public:
 
     // chat
     Bool ChatVerifier(flatbuffers::Verifier& verifier);
-    void ChatHandler(Uint8* buffer, Int32 size);
+    void ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
 
     void SetOwner(EchoServer* owner);
 private:

@@ -39,8 +39,8 @@ int main()
                 return EchoSessionHander::GetInstance().ChatVerifier(v);
             },
             // handler_
-            [](Uint8* buf, Int32 len) {
-                EchoSessionHander::GetInstance().ChatHandler(buf, len);
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                EchoSessionHander::GetInstance().ChatHandler(session, buf, len);
             }
         }
     );
