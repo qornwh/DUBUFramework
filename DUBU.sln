@@ -23,7 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extra", "Extra", "{9BD209FF
 		extra\dubu_echo_packet.fbs = extra\dubu_echo_packet.fbs
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GateWay", "GateWay\GateWay.vcxproj", "{8F867376-8E65-4749-A067-68F6C6C34AC0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gateway", "GateWay\GateWay.vcxproj", "{8F867376-8E65-4749-A067-68F6C6C34AC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,11 +42,9 @@ Global
 		{9DD9666A-F70A-45B5-96C8-C5444A4D1891}.Release|x86.ActiveCfg = Release|Win32
 		{9DD9666A-F70A-45B5-96C8-C5444A4D1891}.Release|x86.Build.0 = Release|Win32
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Debug|x64.ActiveCfg = Debug|x64
-		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Debug|x64.Build.0 = Debug|x64
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Debug|x86.ActiveCfg = Debug|Win32
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Debug|x86.Build.0 = Debug|Win32
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Release|x64.ActiveCfg = Release|x64
-		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Release|x64.Build.0 = Release|x64
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Release|x86.ActiveCfg = Release|Win32
 		{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}.Release|x86.Build.0 = Release|Win32
 		{2B87FBF7-DED9-4545-8EF3-F008E81597BD}.Debug|x64.ActiveCfg = Debug|x64
