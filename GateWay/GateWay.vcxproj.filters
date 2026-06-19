@@ -27,5 +27,13 @@
     <Filter Include="Gateway">
       <UniqueIdentifier>{d7b049d2-612f-4867-a8ce-262850f7c02e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{bbaa6e5e-53dc-4b75-9d2b-6053ef583acc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Config.json">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
 </Project>

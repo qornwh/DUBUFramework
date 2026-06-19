@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "Packet.h"
 #include "Peer.h"
 #include "PendingPacket.h"
@@ -79,7 +80,7 @@ namespace DUBU
 		Uint32 retryCount_ = 0;
 
 		// 초기값 0.5초
-		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
+		Uint32 rttMillisec_ = g_defaultRttMs;
 		// 가장 마지막 시간
 		Uint64 timestamp_ = 0;
 

@@ -164,6 +164,7 @@
   <ItemGroup>
     <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Config.cpp" />
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="OverlappedObj.cpp" />
     <ClCompile Include="Packet.cpp" />
@@ -183,6 +184,7 @@
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Config.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="OverlappedObj.h" />
     <ClInclude Include="Packet.h" />

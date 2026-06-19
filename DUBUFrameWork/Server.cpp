@@ -331,8 +331,8 @@ void DUBU::Server::CheckSession()
 				}
 			}
 
-			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			// 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
+			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
 		}
 	}
 

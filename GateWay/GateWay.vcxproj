@@ -71,6 +71,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
@@ -116,6 +122,10 @@
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
+if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -135,6 +145,10 @@
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
+if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GatewayServer.cpp" />
@@ -146,6 +160,9 @@
     <ClInclude Include="GatewayServer.h" />
     <ClInclude Include="GatewaySession.h" />
     <ClInclude Include="GatewaySessionHandler.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Config.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

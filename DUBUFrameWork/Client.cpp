@@ -4,7 +4,7 @@
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Client::Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
-    handlers_(handlers), clientId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), rttMillisec_(DEFAULT_RTT_MS), isConnect_(false)
+    handlers_(handlers), clientId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
@@ -434,8 +434,8 @@ void DUBU::Client::CheckPending()
         Disconnect();
     }
 
-    // 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-    RepeatMessage(rttMillisec_ * 2 + DEFAULT_RTT_MS_DELAY);
+    // 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
+    RepeatMessage(rttMillisec_ * 2 + g_defaultRttMsDelay);
 }
 
 Uint32 DUBU::Client::GetRecvSequenceNo() const

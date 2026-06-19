@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "RWLock.h"
 #include "RUDPSocket.h"
 #include "SessionManager.h"
@@ -60,10 +61,10 @@ namespace DUBU
 		Atomic<Bool> sessionCAS_;
 
 		// Ping전달 시간 체크
-		const Int32 PingTimeout = DEFAULT_PING_TIMEOUT_MS;
+		const Int32 PingTimeout = g_defaultPingTimeoutMs;
 
 		// 세션 타임아웃 설정
-		const Int32 SessionTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
+		const Int32 SessionTimeout = g_defaultDisconnectTimeoutMs;
 
 		// 끊을 세션 캐시로 저장
 		Uint32 removeListCache_[MAX_CLIENT_COUNT];

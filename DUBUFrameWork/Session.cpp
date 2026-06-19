@@ -4,7 +4,7 @@
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
-	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(DEFAULT_RTT_MS), isConnect_(false)
+	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
 }
 
@@ -87,7 +87,7 @@ void DUBU::Session::Reset()
 	sendSequenceNo_ = 0;
 	timestamp_ = DUBU::GetCurrentTimeMs();
 	lastPingSentTime_ = 0;
-	rttMillisec_ = DEFAULT_RTT_MS;
+	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
     localWindowStart_ = 0;
     localSeqence_ = 0;

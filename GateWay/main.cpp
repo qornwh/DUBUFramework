@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
 
+    DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
     DUBU::PacketManager::GetInstance().Initialize();
 

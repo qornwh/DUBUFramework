@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "Packet.h"
 #include "RUDPSocket.h"
 #include "PendingPacket.h"
@@ -72,7 +73,7 @@ namespace DUBU
         Uint32 localWindowStart_ = 0;
         Uint32 localSeqence_ = 0;
         // 초기값 0.5초
-        Uint32 rttMillisec_ = DEFAULT_RTT_MS;
+        Uint32 rttMillisec_ = g_defaultRttMs;
         // 가장 마지막 시간
         Uint64 timestamp_ = 0;
 
@@ -89,7 +90,7 @@ namespace DUBU
         Uint32 connNo_ = 0;
         
         // 클라이언트 타임아웃 설정
-        const Int32 ClientTimeout = DEFAULT_DISCONNECT_TIMEOUT_MS;
+        const Int32 ClientTimeout = g_defaultDisconnectTimeoutMs;
 
         // 클라이언트 lock
         Lock lock_;

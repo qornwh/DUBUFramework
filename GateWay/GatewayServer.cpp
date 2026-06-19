@@ -18,7 +18,7 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
     {
         // 에코 서버 세션 생성
         const String echoServerIp = "127.0.0.1";
-        const Uint32 echoServerPort = 12346;
+        const Uint32 echoServerPort = 12345;
         SOCKADDR_IN echoServerAddr;
         memset(&echoServerAddr, 0, sizeof(echoServerAddr));
         echoServerAddr.sin_family = AF_INET;
