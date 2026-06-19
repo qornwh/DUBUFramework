@@ -102,6 +102,12 @@
     <ClInclude Include="Config.h">
       <Filter>Config</Filter>
     </ClInclude>
+    <ClInclude Include="InternalClient.h">
+      <Filter>Service\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectionType.h">
+      <Filter>Service\Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -157,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="InternalClient.cpp">
+      <Filter>Service\Client</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

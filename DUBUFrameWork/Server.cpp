@@ -2,6 +2,7 @@
 #include "RUDPSocket.h"
 #include "Packet.h"
 #include "BufferManager.h"
+#include "ConnectionType.h"
 
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
 {
@@ -112,6 +113,13 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			ConnectMessage(session);
 			// Peer 생성
 			peerMap_.emplace(key, Peer{key, addr, session});
+
+            // 상시 연결 여부 확인
+            Uint8 connectType = header->packetCode_;
+            if (static_cast<Client::ConnectionType>(connectType) == Client::ConnectionType::Internal)
+            {
+                session->SetAwaysConnect(true);
+            }
 		}
 		else
 		{

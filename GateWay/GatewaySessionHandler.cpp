@@ -34,15 +34,8 @@ void GatewaySessionHandler::ChatHandler(DUBU::Session* session, Uint8* buffer, I
                 flatbuffers::Offset<DUBU::Echo::Chatting> chattingOffset = DUBU::Echo::CreateChattingDirect(fbb, chat->id(), msg.c_str());
                 flatbuffers::Offset<DUBU::Echo::Packet> packetOffset = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chattingOffset.Union());
                 DUBU::Echo::FinishPacketBuffer(fbb, packetOffset);
-
-                if (clientToGatway_)
-                {
-                    owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
-                }
-                else if (session != nullptr)
-                {
-                    session->SendPacket(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
-                }
+                
+                owner_->SendToEcho(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
             }
         }
     }

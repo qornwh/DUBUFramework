@@ -9,6 +9,7 @@ namespace DUBU
     {
         struct Packet;
     }
+    class InternalClient;
 }
 class GatewaySession;
 
@@ -28,6 +29,6 @@ public:
 private:
     // 임시로 일단 1개 테스트
     const Uint64 echoCount_ = 1;
-    Vector<DUBU::Session*> echoSessionList_;
+    Vector<DUBU::InternalClient*> internalClientList_;
 };
 
