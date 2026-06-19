@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extra", "Extra", "{9BD209FF
 		extra\dubu_echo_packet.fbs = extra\dubu_echo_packet.fbs
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GateWay", "GateWay\GateWay.vcxproj", "{8F867376-8E65-4749-A067-68F6C6C34AC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -71,6 +73,14 @@ Global
 		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x64.Build.0 = Release|x64
 		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x86.ActiveCfg = Release|Win32
 		{166F70DB-8413-4DEC-88CE-54A2095659D4}.Release|x86.Build.0 = Release|Win32
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Debug|x64.ActiveCfg = Debug|x64
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Debug|x64.Build.0 = Debug|x64
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Debug|x86.ActiveCfg = Debug|Win32
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Debug|x86.Build.0 = Debug|Win32
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Release|x64.ActiveCfg = Release|x64
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Release|x64.Build.0 = Release|x64
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Release|x86.ActiveCfg = Release|Win32
+		{8F867376-8E65-4749-A067-68F6C6C34AC0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

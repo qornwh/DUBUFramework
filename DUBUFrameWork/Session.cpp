@@ -4,7 +4,7 @@
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
-	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(DEFAULT_RTT_MS), isConnect_(false)
+	handlers_(handlers), sessionId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
 }
 
@@ -87,7 +87,7 @@ void DUBU::Session::Reset()
 	sendSequenceNo_ = 0;
 	timestamp_ = DUBU::GetCurrentTimeMs();
 	lastPingSentTime_ = 0;
-	rttMillisec_ = DEFAULT_RTT_MS;
+	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
     localWindowStart_ = 0;
     localSeqence_ = 0;
@@ -164,11 +164,12 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	    }
 
 	    // 패킷별 함수 실행
-	    it->second.handler_(buffer, size);
+	    it->second.handler_(this, buffer, size);
     }
     else
     {
         spdlog::warn("Not found Packet Handler Register !!!");
+        return false;
     }
 	return true;
 }
@@ -313,6 +314,69 @@ void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
     AddPendingPacket(opb, opb->size_);
 }
 
+void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    if (rudpSocket_ == nullptr) return;
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    header->checksum_ = 0;
+    // 해당함수는 미리 설정한 flag로 정한다.
+    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->sessionId_ = sessionId_;
+    header->sequenceNo_ = UpdateSendSequenceNo();
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = code;
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+
+    if ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
+    {
+        rudpSocket_->SendToReliable(GetSockAddr(), opb);
+
+        // pending 전송될 때까지 대기
+        AddPendingPacket(opb, opb->size_);
+    }
+    else
+    {
+        rudpSocket_->SendTo(GetSockAddr(), opb);
+    }
+}
+
+void DUBU::Session::SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    if (rudpSocket_ == nullptr) return;
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::NONE;
+    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->sessionId_ = sessionId_;
+    header->sequenceNo_ = UpdateSendSequenceNo();
+    header->timestamp_ = GetCurrentTimeMs();
+    header->packetCode_ = code;
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendTo(GetSockAddr(), opb);
+}
+
 void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size)
 {
     if (rudpSocket_ == nullptr) return;
@@ -340,4 +404,9 @@ void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size)
 
     // pending 전송될 때까지 대기
     AddPendingPacket(opb, opb->size_);
+}
+
+void DUBU::Session::SetAwaysConnect(Bool awaysConnect)
+{
+    awaysConnect_ = awaysConnect;
 }

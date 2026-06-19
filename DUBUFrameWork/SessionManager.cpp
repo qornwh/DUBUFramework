@@ -1,5 +1,4 @@
 #include "SessionManager.h"
-#include "Pool.h"
 
 DUBU::SessionManager::SessionManager()
 {

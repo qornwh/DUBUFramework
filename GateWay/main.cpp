@@ -3,8 +3,9 @@
 #include "pch.h"
 #include "Pool.h"
 #include "BufferManager.h"
-#include "EchoServer.h"
-#include "EchoSessionHander.h"
+#include "GatewayServer.h"
+#include "GatewaySessionHandler.h"
+#include "Session.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -22,10 +23,11 @@ BOOL WINAPI KeyBoarHandler(DWORD signal)
     return FALSE;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
 
+    DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
     DUBU::PacketManager::GetInstance().Initialize();
 
@@ -36,26 +38,27 @@ int main()
         DUBU::Packet::PacketHandler{
             // verifier_
             [](flatbuffers::Verifier& v) {
-                return EchoSessionHander::GetInstance().ChatVerifier(v);
+                return GatewaySessionHandler::GetInstance().ChatVerifier(v);
             },
             // handler_
             [](DUBU::Session* session, Uint8* buf, Int32 len) {
-                EchoSessionHander::GetInstance().ChatHandler(session, buf, len);
+                GatewaySessionHandler::GetInstance().ChatHandler(session, buf, len);
             }
         }
     );
 
     {
-        EchoServer* server = new EchoServer();
+        GatewayServer* server = new GatewayServer();
         std::thread th([&server, &handlers]() {
             server->Initialize(&handlers);
-            EchoSessionHander::GetInstance().SetOwner(server);
+            GatewaySessionHandler::GetInstance().SetOwner(server);
 
             Uint64 time = DUBU::GetCurrentTimeMs();
             while (server->IsRunning())
             {
                 Uint64 cur = DUBU::GetCurrentTimeMs();
                 server->Dispatch();
+                server->InnerDispatch();
             }
             if (server != nullptr)
             {

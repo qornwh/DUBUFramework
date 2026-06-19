@@ -34,7 +34,7 @@ int main()
 		});
 
         std::thread th2([]() {
-            DUBU::Client client{ "127.0.0.1", SERVICE_PORT };
+            DUBU::Client client{ "127.0.0.1", DUBU::g_servicePort };
             client.ConnectTimes();
 
             Uint64 time = DUBU::GetCurrentTimeMs();

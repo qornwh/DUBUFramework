@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "Singleton.h"
 #include "OverlappedObj.h"
 #include "RWLock.h"

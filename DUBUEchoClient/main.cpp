@@ -1,6 +1,7 @@
 #include <iostream>
 #include "EchoClient.h"
 #include "EchoClientHander.h"
+#include "Session.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -32,8 +33,8 @@ int main(int argc, char** argv)
                 return EchoClientHander::GetInstance().ChatVerifier(v);
             },
             // handler_
-            [](Uint8* buf, Int32 len) {
-                EchoClientHander::GetInstance().ChatHandler(buf, len);
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                EchoClientHander::GetInstance().ChatHandler(session, buf, len);
             }
         }
     );
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
 
     // 클라이언트
     EchoClient* client;
-    client = new EchoClient(argv[1], SERVICE_PORT, &handlers);
+    client = new EchoClient(argv[1], 12346, &handlers);
     EchoClientHander::GetInstance().SetOwner(client);
     
     // 5회 연결 요청

@@ -40,6 +40,9 @@
     <Filter Include="ObjectPool">
       <UniqueIdentifier>{e89fddcb-67e9-4d84-b639-e83631f65915}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{8c233fb2-4851-4403-80b8-538bcc95ca13}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -96,6 +99,15 @@
     <ClInclude Include="PendingPacket.h">
       <Filter>Service</Filter>
     </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="InternalClient.h">
+      <Filter>Service\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="ConnectionType.h">
+      <Filter>Service\Client</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -148,6 +160,12 @@
     </ClCompile>
     <ClCompile Include="PendingPacket.cpp">
       <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="InternalClient.cpp">
+      <Filter>Service\Client</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

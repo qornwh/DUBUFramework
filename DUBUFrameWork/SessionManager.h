@@ -3,6 +3,7 @@
 #include <random>
 #include "Session.h"
 #include "RWLock.h"
+#include "Pool.h"
 
 namespace DUBU
 {
@@ -18,10 +19,15 @@ namespace DUBU
 		SessionManager& operator=(const SessionManager& other) = delete;
 		SessionManager& operator=(SessionManager&& other) = delete;
 
-		Session* AddSession();
-		void RemoveSession(Uint32 sessionId);
-		Session* GetSession(Uint32 sessionId);
+        template<std::derived_from<Session> T>
+		T* AddSession();
+        template<std::derived_from<Session> T>
+        T* GetSession(Uint32 sessionId);
+
+        Session* AddSession();
+        Session* GetSession(Uint32 sessionId);
 		Map<Uint32, Session*>& GetSessions();
+        void RemoveSession(Uint32 sessionId);
 
         void SetHandlers(const Map<Uint8, Packet::PacketHandler>* handlers);
 
@@ -36,5 +42,27 @@ namespace DUBU
         // 세션핸들러
         const Map<Uint8, Packet::PacketHandler>* handlers_;
 	};
+    template<std::derived_from<Session> T>
+    inline T* SessionManager::AddSession()
+    {
+        Uint32 sessionId = GenerateId();
+        sessionCount_.fetch_add(1);
+        T* session = Pop<T>(handlers_);
+        session->Reset();
+        session->SetSessionId(sessionId);
+        sessionMap_.insert({ sessionId, static_cast<Session*>(session) });
+
+        return session;
+    }
+    template<std::derived_from<Session> T>
+    inline T* SessionManager::GetSession(Uint32 sessionId)
+    {
+        auto it = sessionMap_.find(sessionId);
+        if (it != sessionMap_.end())
+        {
+            return static_cast<T*>(it->second);
+        }
+        return nullptr;
+    }
 }
 

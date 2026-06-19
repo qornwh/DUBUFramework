@@ -5,6 +5,8 @@
 
 namespace DUBU
 {
+    class Session;
+
 	namespace Packet 
 	{
 		/*
@@ -56,7 +58,7 @@ namespace DUBU
 		struct PacketHandler
 		{
 			Function<bool(flatbuffers::Verifier&)> verifier_;
-			Function<void(Uint8*, Int32)> handler_;
+			Function<void(Session*, Uint8*, Int32)> handler_; // 클라는 세션이 없어서 포인터로...
 		};
 	}
 }

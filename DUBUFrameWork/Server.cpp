@@ -2,6 +2,7 @@
 #include "RUDPSocket.h"
 #include "Packet.h"
 #include "BufferManager.h"
+#include "ConnectionType.h"
 
 DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
 {
@@ -112,6 +113,13 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			ConnectMessage(session);
 			// Peer 생성
 			peerMap_.emplace(key, Peer{key, addr, session});
+
+            // 상시 연결 여부 확인
+            Uint8 connectType = header->packetCode_;
+            if (static_cast<Client::ConnectionType>(connectType) == Client::ConnectionType::Internal)
+            {
+                session->SetAwaysConnect(true);
+            }
 		}
 		else
 		{
@@ -139,7 +147,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
                     spdlog::info("Already Disconnect Session");
                     return;
                 }
-				spdlog::error("SessionId{} not found", sessionId);
+				spdlog::error("SessionId {} not found", sessionId);
 				return;
 			}
 
@@ -302,7 +310,12 @@ void DUBU::Server::CheckSession()
 		ReadLockGuard rw(sessionLock_);
 		for (auto& [_, session] : sessionManager_.GetSessions())
 		{
-            if (!session->IsConnection())
+            if (session == nullptr || !session->IsConnection())
+            {
+                continue;
+            }
+
+            if (session->GetAwaysConnect())
             {
                 continue;
             }
@@ -326,8 +339,8 @@ void DUBU::Server::CheckSession()
 				}
 			}
 
-			// 재전송, 왕복시간은 * 2 + DEFAULT_RTT_MS_DELAY
-			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + DEFAULT_RTT_MS_DELAY);
+			// 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
+			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
 		}
 	}
 

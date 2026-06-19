@@ -2,6 +2,7 @@
 #include "../extra/dubu_echo_packet_generated.h"
 #include "RUDPSocket.h"
 #include "EchoServer.h"
+#include "Session.h"
 
 EchoSessionHander::EchoSessionHander()
 {
@@ -16,7 +17,7 @@ Bool EchoSessionHander::ChatVerifier(flatbuffers::Verifier& verifier)
     return DUBU::Echo::VerifyPacketBuffer(verifier);
 }
 
-void EchoSessionHander::ChatHandler(Uint8* buffer, Int32 size)
+void EchoSessionHander::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
 {
     const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + sizeof(DUBU::Packet::PacketHeader));
 

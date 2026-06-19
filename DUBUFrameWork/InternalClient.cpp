@@ -1,39 +1,40 @@
-#include "Client.h"
+#include "InternalClient.h"
 #include "RUDPSocket.h"
 #include "BufferManager.h"
+#include "ConnectionType.h"
 #include "../extra/base_flatbuffer_generated.h"
 
-DUBU::Client::Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
+DUBU::InternalClient::InternalClient(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
     handlers_(handlers), clientId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
-	rudpSocket_ = std::make_shared<RUDPSocket>();
-	rudpSocket_->SetHandler(this);
-	rudpSocket_->StartClient(serverIP, serverPort);
-	rudpSocket_->RecvFrom();
+    rudpSocket_ = std::make_shared<RUDPSocket>();
+    rudpSocket_->SetHandler(this);
+    rudpSocket_->StartClient(serverIP, serverPort);
+    rudpSocket_->RecvFrom();
 }
 
-DUBU::Client::~Client()
+DUBU::InternalClient::~InternalClient()
 {
-	rudpSocket_->EndClient();
+    rudpSocket_->EndClient();
 }
 
-void DUBU::Client::Connect()
+void DUBU::InternalClient::Connect()
 {
-	// clientId = 0, flag = SESSION 인 패킷 전송
-	// 추가로 5~10번 커넥션 요청해도 안오면 연결실패 추가
-	if (rudpSocket_.get() != nullptr)
-	{
-		ConnectMessage();
+    // clientId = 0, flag = SESSION 인 패킷 전송
+    // 추가로 5~10번 커넥션 요청해도 안오면 연결실패 추가
+    if (rudpSocket_.get() != nullptr)
+    {
+        ConnectMessage();
         timestamp_ = DUBU::GetCurrentTimeMs();
-	}
-	else
-	{
+    }
+    else
+    {
         spdlog::error("Not Connect RUDPSocket !!!");
         assert(-1);
-	}
+    }
 }
 
-void DUBU::Client::ConnectTimes(const Uint32 count)
+void DUBU::InternalClient::ConnectTimes(const Uint32 count)
 {
     // 기본값 5회 연결
     while (!isConnect_)
@@ -49,58 +50,53 @@ void DUBU::Client::ConnectTimes(const Uint32 count)
     }
 }
 
-void DUBU::Client::Disconnect()
+void DUBU::InternalClient::Disconnect()
 {
     DisconnectMessage();
     isConnect_ = false;
 }
 
-bool DUBU::Client::Dispatch()
+bool DUBU::InternalClient::Dispatch()
 {
-	LPOVERLAPPED ptr = nullptr;
-	Int32 size = rudpSocket_->Dispatch(&ptr);
+    LPOVERLAPPED ptr = nullptr;
+    Int32 size = rudpSocket_->Dispatch(&ptr);
 
     if (ptr == nullptr)
     {
         // 일단 비어있으면 체크한다.
         CheckPending();
-		return false;
+        return false;
     }
 
-	OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
-	if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
-	{
-		rudpSocket_->RecvFromComplete(ptr, size);
-	}
-	else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
-	{
-		rudpSocket_->SendToComplete(ptr, size);
-	}
-	return true;
+    OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
+    if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+    {
+        rudpSocket_->RecvFromComplete(ptr, size);
+    }
+    else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
+    {
+        rudpSocket_->SendToComplete(ptr, size);
+    }
+    return true;
 }
 
-void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
+void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
-	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+    OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	auto buffer = opb->buffer_;
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
+    auto buffer = opb->buffer_;
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
     auto flag = header->flags_;
     auto seqNo = header->sequenceNo_;
 
-	bool result = false;
-	if (flag == Packet::PacketHeaderFlag::SESSION)
-	{
+    bool result = false;
+    if (flag == Packet::PacketHeaderFlag::SESSION)
+    {
         // 서버가 발급한 ID 저장
-		clientId_ = header->sessionId_;
+        clientId_ = header->sessionId_;
         isConnect_ = true;
-	}
-	else if (flag == Packet::PacketHeaderFlag::PING)
-	{
-        // PONG 메시지 전달
-        RepeatPongMessage(buffer, size);
-	}
+    }
     else if (flag == Packet::PacketHeaderFlag::DISCONNECT)
     {
         // 연결 해제
@@ -128,16 +124,16 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
     }
 }
 
-void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
+void DUBU::InternalClient::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 }
 
-Uint32 DUBU::Client::UpdateSendSequenceNo()
+Uint32 DUBU::InternalClient::UpdateSendSequenceNo()
 {
     return ++sendSequenceNo_;
 }
 
-void DUBU::Client::ConnectMessage()
+void DUBU::InternalClient::ConnectMessage()
 {
     if (connNo_ >= DEFAULT_REQUEST_CONNECT_NO)
     {
@@ -147,27 +143,28 @@ void DUBU::Client::ConnectMessage()
     }
     connNo_++;
 
-	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
-	// 헤더 작성
-	header->checksum_ = 0;
-	header->flags_ = Packet::PacketHeaderFlag::SESSION;
-	header->totalSize_ = sizeof(Packet::PacketHeader);
-	header->sessionId_ = 0;
-	header->sequenceNo_ = 0;
-	header->timestamp_ = 0;
+    // 헤더 작성
+    header->checksum_ = 0;
+    header->flags_ = Packet::PacketHeaderFlag::SESSION;
+    header->totalSize_ = sizeof(Packet::PacketHeader);
+    header->sessionId_ = 0;
+    header->sequenceNo_ = 0;
+    header->timestamp_ = 0;
+    header->packetCode_ = static_cast<Uint8>(Client::ConnectionType::Internal);
 
-	// 전체 패킷 사이즈 설정
-	opb->size_ = header->totalSize_;
+    // 전체 패킷 사이즈 설정
+    opb->size_ = header->totalSize_;
 
-	// crc32 암호화
-	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
-	header->checksum_ = checksum;
-	rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+    // crc32 암호화
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+    rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
-void DUBU::Client::DisconnectMessage()
+void DUBU::InternalClient::DisconnectMessage()
 {
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -191,42 +188,12 @@ void DUBU::Client::DisconnectMessage()
     rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
-void DUBU::Client::SendEchoMessage()
+Uint32 DUBU::InternalClient::GetClientId() const
 {
-	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-
-	// ECHO 메시지
-	String str = "ECHO TEST !!!";
-
-	// 헤더 작성
-	header->checksum_ = 0;
-	header->flags_ = Packet::PacketHeaderFlag::REPEAT;
-	header->totalSize_ = static_cast<Uint16>(sizeof(Packet::PacketHeader) + str.size());
-	header->sessionId_ = clientId_;
-	header->sequenceNo_ = UpdateSendSequenceNo();
-	header->timestamp_ = GetCurrentTimeMs();
-    header->packetCode_ = 0;
-
-    // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), str.c_str(), str.size());
-
-	// 전체 패킷 사이즈 설정
-	opb->size_ = header->totalSize_;
-
-	// crc32 암호화
-	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
-	header->checksum_ = checksum;
-	rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
-    AddPendingPacket(opb, opb->size_);
+    return clientId_;
 }
 
-Uint32 DUBU::Client::GetClientId() const
-{
-	return clientId_;
-}
-
-bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
+bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
@@ -299,7 +266,7 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
     return true;
 }
 
-bool DUBU::Client::RecvDispatchACK(Uint8* buffer, Uint16 size)
+bool DUBU::InternalClient::RecvDispatchACK(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
     Uint32 ackSeq = header->sequenceNo_;
@@ -332,7 +299,7 @@ bool DUBU::Client::RecvDispatchACK(Uint8* buffer, Uint16 size)
     return true;
 }
 
-void DUBU::Client::RepeatMessage(Uint64 resendDelay)
+void DUBU::InternalClient::RepeatMessage(Uint64 resendDelay)
 {
     Uint64 now = GetCurrentTimeMs();
 
@@ -347,7 +314,7 @@ void DUBU::Client::RepeatMessage(Uint64 resendDelay)
     }
 }
 
-void DUBU::Client::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
+void DUBU::InternalClient::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
     Uint64 timeStamp = header->timestamp_;
@@ -364,7 +331,41 @@ void DUBU::Client::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
     }
 }
 
-void DUBU::Client::SendAck(Uint32 seqNo)
+void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
+{
+    // 헤더까지 포함된 스타일/ 즉 전달용
+    if (rudpSocket_ == nullptr) return;
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_, buffer, size);
+
+    // TODO : 빠른 일정내 서브 세션 필요, 클라 유니크키 - 세션 매핑 되야 게이트웨이 서버 가
+    header->checksum_ = 0;
+    header->sessionId_ = clientId_;
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+
+    if ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
+    {
+        rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
+
+        // pending 전송될 때까지 대기
+        AddPendingPacket(opb, opb->size_);
+    }
+    else
+    {
+        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+    }
+}
+
+void DUBU::InternalClient::SendAck(Uint32 seqNo)
 {
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -385,43 +386,7 @@ void DUBU::Client::SendAck(Uint32 seqNo)
     rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
-void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
-{
-    // 기존 버퍼 헤더
-    Packet::PacketHeader* header_org = reinterpret_cast<Packet::PacketHeader*>(ptr);
-
-    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-    auto sequenceNo = header_org->sequenceNo_;
-
-    // 최근 ping메시지 수신확인
-    if (lastPongSeq_ <= sequenceNo)
-    {
-        lastPongSeq_ = sequenceNo;
-
-        // 헤더 작성
-        header->checksum_ = 0;
-        header->flags_ = Packet::PacketHeaderFlag::PONG;
-        header->totalSize_ = sizeof(Packet::PacketHeader);
-        header->sessionId_ = clientId_;
-        header->sequenceNo_ = sequenceNo;
-        header->timestamp_ = 0;
-
-        // 전체 패킷 사이즈 설정
-        opb->size_ = header->totalSize_;
-        // 타입 설정
-        opb->SetType(OverlappedObjType::SENDTO);
-
-        // crc32 암호화
-        Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
-        header->checksum_ = checksum;
-        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
-
-        spdlog::info("PONG SeqNo {}", lastPongSeq_);
-    }
-}
-
-void DUBU::Client::CheckPending()
+void DUBU::InternalClient::CheckPending()
 {
     // 시간체크
     Uint64 now = GetCurrentTimeMs();
@@ -438,7 +403,7 @@ void DUBU::Client::CheckPending()
     RepeatMessage(rttMillisec_ * 2 + g_defaultRttMsDelay);
 }
 
-Uint32 DUBU::Client::GetRecvSequenceNo() const
+Uint32 DUBU::InternalClient::GetRecvSequenceNo() const
 {
     return recvSequenceNo_;
 }

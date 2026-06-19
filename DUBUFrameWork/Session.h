@@ -1,11 +1,14 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "Packet.h"
 #include "Peer.h"
 #include "PendingPacket.h"
 
 namespace DUBU
 {
+    struct OverlappedPacketBuffer;
+
 	/*
 	* Session : 베이스 클래스
     *  - 핑 카운트 기록
@@ -59,7 +62,12 @@ namespace DUBU
         // Echo 메시지
         void SendEchoMessage(Uint8* buffer, Uint16 size);
 
+        void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
+        void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size);
         void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size);
+
+        void SetAwaysConnect(Bool awaysConnect);
+        Bool GetAwaysConnect() const { return awaysConnect_; };
 
 	private:
 		// 세션 id
@@ -72,7 +80,7 @@ namespace DUBU
 		Uint32 retryCount_ = 0;
 
 		// 초기값 0.5초
-		Uint32 rttMillisec_ = DEFAULT_RTT_MS;
+		Uint32 rttMillisec_ = g_defaultRttMs;
 		// 가장 마지막 시간
 		Uint64 timestamp_ = 0;
 
@@ -108,5 +116,8 @@ namespace DUBU
 
         // RUDP소켓은 raw pointer로 관리
         RUDPSocket* rudpSocket_;
+
+        // 상시 세션
+        Bool awaysConnect_ = false;
 	};
 }

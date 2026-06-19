@@ -10,42 +10,39 @@
 
 namespace DUBU
 {
-	class RUDPSocket;
+    class RUDPSocket;
 
     /*
-    * Client : 베이스 클래스
-    *  - 초기 커넥션
-    *  - ping 수신 pong 전송
-    *  - echo 송신
+    * InternalClient : 서버간 연결할 베이스 클래스
+    *  - 서버 - 서버 연결에 사용할 클라이언트 / 기존 베이스 클라이언트와 다름
     */
-	class Client : public ISocketHandler
-	{
-	public:
-		Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers = nullptr);
-		virtual ~Client();
 
-		void Connect();
+    class InternalClient : public ISocketHandler
+    {
+    public:
+        InternalClient(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers = nullptr);
+        virtual ~InternalClient();
+
+        void Connect();
         void ConnectTimes(Uint32 count = 5);
-		void Disconnect();
-		bool Dispatch();
-		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
-		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
+        void Disconnect();
+        bool Dispatch();
+        void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
+        void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
         Uint32 UpdateSendSequenceNo();
 
-		void ConnectMessage();
+        void ConnectMessage();
         void DisconnectMessage();
-		void SendEchoMessage();
-		Uint32 GetClientId() const;
+        void SendEchoMessage();
+        Uint32 GetClientId() const;
 
         bool RecvDispatch(Uint8* buffer, Uint16 size);
         bool RecvDispatchACK(Uint8* buffer, Uint16 size);
         void RepeatMessage(Uint64 resendDelay);
         void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
+        void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
         void SendAck(Uint32 seqNo);
-
-        // ping받고 pong으로 전달
-        void RepeatPongMessage(Uint8* ptr, Uint16 size);
 
         // 주기적 pendingMessage 전송 체크
         void CheckPending();
@@ -60,9 +57,9 @@ namespace DUBU
         // 소켓만 protected로 수정
         std::shared_ptr<RUDPSocket> rudpSocket_;
 
-	private:
+    private:
         // 클라이언트 id
-		Uint32 clientId_ = 0;
+        Uint32 clientId_ = 0;
         // 수신 시퀀스 넘버
         Uint32 recvSequenceNo_ = 0;
         // 송신 시퀀스 넘버
@@ -88,12 +85,11 @@ namespace DUBU
 
         // 커넥션 카운트 체크 변수
         Uint32 connNo_ = 0;
-        
-        // 클라이언트 타임아웃 설정
+
+        // 타임아웃 설정
         const Int32 ClientTimeout = g_defaultDisconnectTimeoutMs;
 
-        // 클라이언트 lock
         Lock lock_;
-	};
+    };
 }
 

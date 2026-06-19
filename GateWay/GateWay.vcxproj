@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -21,33 +21,33 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8D7C0CCA-73D2-4043-9303-E315BF28FA4F}</ProjectGuid>
-    <RootNamespace>DUBUFrameWork</RootNamespace>
+    <ProjectGuid>{8f867376-8e65-4749-a067-68f6c6c34ac0}</ProjectGuid>
+    <RootNamespace>GateWay</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>DUBUFrameWork</ProjectName>
+    <ProjectName>Gateway</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -72,11 +72,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(IncludePath)</IncludePath>
-    <ReferencePath>$(ReferencePath)</ReferencePath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -85,18 +84,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <HeapReserveSize>256</HeapReserveSize>
-      <HeapCommitSize>256</HeapCommitSize>
-      <StackReserveSize>1</StackReserveSize>
-      <StackCommitSize>1</StackCommitSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -105,10 +98,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,92 +109,60 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUBUFrameWork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <HeapReserveSize>256</HeapReserveSize>
-      <HeapCommitSize>256</HeapCommitSize>
-      <StackReserveSize>1</StackReserveSize>
-      <StackCommitSize>1</StackCommitSize>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)boost_1_89_0\stage\lib;$(SolutionDir)flatbuffers-25.9.23\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
+if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);DUBU_EXPORT</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)DUBUFrameWork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)boost_1_89_0\stage\lib;$(SolutionDir)flatbuffers-25.9.23\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
+if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BufferManager.cpp" />
-    <ClCompile Include="Client.cpp" />
-    <ClCompile Include="Config.cpp" />
-    <ClCompile Include="InternalClient.cpp" />
-    <ClCompile Include="ObjectPool.cpp" />
-    <ClCompile Include="OverlappedObj.cpp" />
-    <ClCompile Include="Packet.cpp" />
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="Peer.cpp" />
-    <ClCompile Include="PendingPacket.cpp" />
-    <ClCompile Include="Pool.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="RUDPSocket.cpp" />
-    <ClCompile Include="RWLock.cpp" />
-    <ClCompile Include="Server.cpp" />
-    <ClCompile Include="Session.cpp" />
-    <ClCompile Include="SessionManager.cpp" />
-    <ClCompile Include="Singleton.cpp" />
-    <ClCompile Include="SocketConfig.cpp" />
+    <ClCompile Include="GatewayServer.cpp" />
+    <ClCompile Include="GatewaySession.cpp" />
+    <ClCompile Include="GatewaySessionHandler.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BufferManager.h" />
-    <ClInclude Include="Client.h" />
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="ConnectionType.h" />
-    <ClInclude Include="InternalClient.h" />
-    <ClInclude Include="ObjectPool.h" />
-    <ClInclude Include="OverlappedObj.h" />
-    <ClInclude Include="Packet.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="Peer.h" />
-    <ClInclude Include="PendingPacket.h" />
-    <ClInclude Include="Pool.h" />
-    <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="RUDPSocket.h" />
-    <ClInclude Include="RWLock.h" />
-    <ClInclude Include="Server.h" />
-    <ClInclude Include="Session.h" />
-    <ClInclude Include="SessionManager.h" />
-    <ClInclude Include="Singleton.h" />
-    <ClInclude Include="SocketConfig.h" />
-    <ClInclude Include="Types.h" />
+    <ClInclude Include="GatewayServer.h" />
+    <ClInclude Include="GatewaySession.h" />
+    <ClInclude Include="GatewaySessionHandler.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Config.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

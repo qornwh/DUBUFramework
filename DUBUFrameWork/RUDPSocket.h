@@ -1,5 +1,6 @@
 #pragma once
 #include "pch.h"
+#include "Config.h"
 #include "RWLock.h"
 
 namespace DUBU
@@ -52,8 +53,8 @@ namespace DUBU
 	private:
 		HANDLE iocpHd_;
 		SOCKET socket_ = INVALID_SOCKET;
-		Int32 port_ = SERVICE_PORT;
-		Int32 firstClientCount_ = FIRST_CLIENT_COUNT;
+		Int32 port_ = g_servicePort;
+		Int32 firstClientCount_ = g_firstClientCount;
 		Lock lk_;
 		bool isServer_ = false;
 		ISocketHandler* handler_ = nullptr;
