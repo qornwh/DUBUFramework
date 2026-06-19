@@ -333,7 +333,7 @@ void DUBU::InternalClient::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 
 
 void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
 {
-    // 헤더까지 포함된 스타일/ 즉 전달용
+    // 헤더까지 포함된 스타일 / 즉 전달용
     if (rudpSocket_ == nullptr) return;
 
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
@@ -384,6 +384,42 @@ void DUBU::InternalClient::SendAck(Uint32 seqNo)
     Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
     header->checksum_ = checksum;
     rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+}
+
+void DUBU::InternalClient::RepeatPongMessage(Uint8* ptr, Uint16 size)
+{
+    // 기존 버퍼 헤더
+    Packet::PacketHeader* header_org = reinterpret_cast<Packet::PacketHeader*>(ptr);
+
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+    auto sequenceNo = header_org->sequenceNo_;
+
+    // 최근 ping메시지 수신확인
+    if (lastPongSeq_ <= sequenceNo)
+    {
+        lastPongSeq_ = sequenceNo;
+
+        // 헤더 작성
+        header->checksum_ = 0;
+        header->flags_ = Packet::PacketHeaderFlag::PONG;
+        header->totalSize_ = sizeof(Packet::PacketHeader);
+        header->sessionId_ = clientId_;
+        header->sequenceNo_ = sequenceNo;
+        header->timestamp_ = 0;
+
+        // 전체 패킷 사이즈 설정
+        opb->size_ = header->totalSize_;
+        // 타입 설정
+        opb->SetType(OverlappedObjType::SENDTO);
+
+        // crc32 암호화
+        Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+        header->checksum_ = checksum;
+        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+
+        spdlog::info("PONG SeqNo {}", lastPongSeq_);
+    }
 }
 
 void DUBU::InternalClient::CheckPending()

@@ -114,12 +114,12 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 			// Peer 생성
 			peerMap_.emplace(key, Peer{key, addr, session});
 
-            // 상시 연결 여부 확인
-            Uint8 connectType = header->packetCode_;
+            // 상시 연결 여부 확인 <= 일단 필요 없어보임.
+            /*Uint8 connectType = header->packetCode_;
             if (static_cast<Client::ConnectionType>(connectType) == Client::ConnectionType::Internal)
             {
                 session->SetAwaysConnect(true);
-            }
+            }*/
 		}
 		else
 		{

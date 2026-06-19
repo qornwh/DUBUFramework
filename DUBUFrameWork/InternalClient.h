@@ -44,6 +44,9 @@ namespace DUBU
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
         void SendAck(Uint32 seqNo);
 
+        // ping받고 pong으로 전달
+        void RepeatPongMessage(Uint8* ptr, Uint16 size);
+
         // 주기적 pendingMessage 전송 체크
         void CheckPending();
 
