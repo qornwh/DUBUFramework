@@ -37,8 +37,9 @@ void GatewaySessionHandler::ChatHandler(DUBU::Session* session, Uint8* buffer, I
                 else
                 {
                     // 에코 서버 -> 게이트 웨이
+                    const Uint16 payloadSize = static_cast<Uint16>(size - sizeof(DUBU::Packet::PacketHeader));
                     spdlog::info("Echo to Gateway");
-                    owner_->Broadcast(buffer + sizeof(DUBU::Packet::PacketHeader), DUBU::Echo::PacketBody_Chatting, size);
+                    owner_->Broadcast(buffer + sizeof(DUBU::Packet::PacketHeader), DUBU::Echo::PacketBody_Chatting, payloadSize);
                 }
             }
         }
