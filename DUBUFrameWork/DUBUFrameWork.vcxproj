@@ -181,6 +181,7 @@
     <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="Singleton.cpp" />
     <ClCompile Include="SocketConfig.cpp" />
+    <ClCompile Include="Subheader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
@@ -203,6 +204,7 @@
     <ClInclude Include="SessionManager.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="SocketConfig.h" />
+    <ClInclude Include="Subheader.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

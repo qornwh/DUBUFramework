@@ -43,6 +43,9 @@
     <Filter Include="Config">
       <UniqueIdentifier>{8c233fb2-4851-4403-80b8-538bcc95ca13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Packet\Subheader">
+      <UniqueIdentifier>{deaf8c82-4ea9-413d-abd3-49804b84d415}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -108,6 +111,9 @@
     <ClInclude Include="ConnectionType.h">
       <Filter>Service\Client</Filter>
     </ClInclude>
+    <ClInclude Include="Subheader.h">
+      <Filter>Packet\Subheader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -166,6 +172,9 @@
     </ClCompile>
     <ClCompile Include="InternalClient.cpp">
       <Filter>Service\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="Subheader.cpp">
+      <Filter>Packet\Subheader</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
