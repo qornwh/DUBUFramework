@@ -27,7 +27,6 @@ int main()
     SetConsoleOutputCP(CP_UTF8);
 
     DUBU::Initialize();
-    DUBU::PacketManager::GetInstance().Initialize();
 
     // 메시지 핸들러
     Map<Uint8, DUBU::Packet::PacketHandler> handlers;

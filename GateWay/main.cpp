@@ -29,7 +29,6 @@ int main(int argc, char** argv)
 
     DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
-    DUBU::PacketManager::GetInstance().Initialize();
 
     // 메시지 핸들러
     Map<Uint8, DUBU::Packet::PacketHandler> handlers;

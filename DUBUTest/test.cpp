@@ -42,7 +42,6 @@ TEST(DUBUTest, Sample)
 TEST(DUBUTest, SocketTest)
 {
 	DUBU::Initialize();
-	DUBU::PacketManager::GetInstance().Initialize();
 
 	DUBU::Server service;
 	service.Initialize(nullptr);

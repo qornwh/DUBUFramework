@@ -13,7 +13,6 @@ int main()
     SetConsoleOutputCP(CP_UTF8);
    
     DUBU::Initialize();
-	DUBU::PacketManager::GetInstance().Initialize(); 
 
 	{
 		DUBU::Server* server;
