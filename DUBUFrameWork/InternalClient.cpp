@@ -233,7 +233,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint32 id = header->sessionId_;
         Uint32 seq = header->sequenceNo_;
         Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
-        Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
+        Uint8* ptr = buffer + sizeof(Packet::PacketHeader);
 
         std::string_view sv(reinterpret_cast<char*>(ptr), size);
         spdlog::info("ECHO Recv Client : {}-{}-{}", id, seq, sv);
