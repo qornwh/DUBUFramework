@@ -10,6 +10,8 @@
 
 #include <windows.h>
 
+// 게이트웨이 테스트용 코드
+
 static bool InterruptCtrlC = false;
 
 BOOL WINAPI KeyBoarHandler(DWORD signal)
@@ -42,6 +44,10 @@ int main(int argc, char** argv)
             // handler_
             [](DUBU::Session* session, Uint8* buf, Int32 len) {
                 GatewaySessionHandler::GetInstance().ChatHandler(session, buf, len);
+            },
+            // handler2_
+            [](DUBU::Session* session, Uint8* buf, Int32 len, Uint8* subBuf, Uint8 type) {
+                GatewaySessionHandler::GetInstance().ChatHandler2(session, buf, len, subBuf, type);
             }
         }
     );

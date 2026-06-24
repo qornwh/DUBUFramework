@@ -21,6 +21,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extra", "Extra", "{9BD209FF-F997-49E7-9266-8D2CBA48F204}"
 	ProjectSection(SolutionItems) = preProject
 		extra\dubu_echo_packet.fbs = extra\dubu_echo_packet.fbs
+		extra\GatewaySubHeader.cpp = extra\GatewaySubHeader.cpp
+		extra\GatewaySubHeader.h = extra\GatewaySubHeader.h
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gateway", "GateWay\GateWay.vcxproj", "{8F867376-8E65-4749-A067-68F6C6C34AC0}"
