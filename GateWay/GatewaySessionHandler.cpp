@@ -55,8 +55,8 @@ void GatewaySessionHandler::ChatHandler2(DUBU::Session* session, Uint8* buffer, 
     if (sh->type_ == type)
     {
         offset += sh->GetSize();
-        Uint32 GatewaySessionID = sh->depthId1;
-        Uint32 serverSessionID = sh->depthId2;
+        Uint32 GatewaySessionID = sh->depthId1_;
+        Uint32 serverSessionID = sh->depthId2_;
 
         const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + offset);
 

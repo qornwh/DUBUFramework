@@ -29,7 +29,7 @@ namespace DUBU
 		Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
-		Int32 GetSessionId() const;
+        Uint32 GetSessionId() const;
 		Uint32 GetRecvSequenceNo() const;
 		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
@@ -63,8 +63,8 @@ namespace DUBU
         void SendEchoMessage(Uint8* buffer, Uint16 size);
 
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
-        void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size);
-        void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size);
+        void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
+        void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
 
         void SetAwaysConnect(Bool awaysConnect);
         Bool GetAwaysConnect() const { return awaysConnect_; };

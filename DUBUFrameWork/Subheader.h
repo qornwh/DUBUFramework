@@ -17,7 +17,7 @@ namespace DUBU
         struct Subheader
         {
             Uint8 type_ = Type;
-            const T* GetSubheader() const;
+            const Subheader<T, Type>* GetSubheader() const;
             Uint8 GetSize();
         };
 
@@ -27,15 +27,15 @@ namespace DUBU
         };
 
         template<typename T, Uint8 Type>
-        inline const T* Subheader<T, Type>::GetSubheader() const
+        inline const Subheader<T, Type>* Subheader<T, Type>::GetSubheader() const
         {
-            return nullptr;
+            return this;
         }
 
         template<typename T, Uint8 Type>
         inline Uint8 Subheader<T, Type>::GetSize()
         {
-            return sizeof(T);
+            return sizeof(Subheader<T, Type>);
         }
     }
 }
