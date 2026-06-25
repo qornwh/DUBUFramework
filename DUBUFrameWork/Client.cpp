@@ -91,6 +91,10 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
     auto seqNo = header->sequenceNo_;
 
 	bool result = false;
+
+    // 수신 시간 갱신
+    timestamp_ = DUBU::GetCurrentTimeMs();
+
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
         // 서버가 발급한 ID 저장
@@ -230,9 +234,6 @@ Uint32 DUBU::Client::GetClientId() const
 bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
-
-    // 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
-    timestamp_ = DUBU::GetCurrentTimeMs();
 
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
