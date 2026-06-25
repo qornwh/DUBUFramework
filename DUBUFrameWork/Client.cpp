@@ -1,6 +1,7 @@
 #include "Client.h"
 #include "RUDPSocket.h"
 #include "BufferManager.h"
+#include "Subheader.h"
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Client::Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
@@ -90,6 +91,10 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
     auto seqNo = header->sequenceNo_;
 
 	bool result = false;
+
+    // 수신 시간 갱신
+    timestamp_ = DUBU::GetCurrentTimeMs();
+
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
         // 서버가 발급한 ID 저장
@@ -230,9 +235,6 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-    // 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
-    timestamp_ = DUBU::GetCurrentTimeMs();
-
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
@@ -269,8 +271,19 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
     }
 
     // 패킷  체크
-    flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
-    Uint8 packetCode = header->packetCode_;
+    Uint8 shType = header->packetCode_ >> 5;
+    Uint8 packetCode = header->packetCode_ & 0b00011111;
+    Uint32 offset = sizeof(Packet::PacketHeader);
+    Uint8* shBuffer = nullptr;
+
+    if (shType > 0)
+    {
+        Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + sizeof(Packet::PacketHeader));
+        offset += sh->GetSize();
+        shBuffer = reinterpret_cast<Uint8*>(sh);
+    }
+
+    flatbuffers::Verifier verifier(buffer + offset, size);
 
     if (handlers_ != nullptr)
     {
@@ -290,7 +303,14 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         }
 
         // 패킷별 함수 실행
-        it->second.handler_(nullptr, buffer, size);
+        if (shType > 0 && shBuffer != nullptr)
+        {
+            it->second.handler2_(nullptr, buffer, size, shBuffer, shType);
+        }
+        else
+        {
+            it->second.handler_(nullptr, buffer, size);
+        }
     }
     else
     {

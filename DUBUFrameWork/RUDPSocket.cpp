@@ -54,7 +54,7 @@ void DUBU::RUDPSocket::EndServer()
 	isServer_ = false;
 
 	// 패킷매니저의 모든 패킷 버퍼에 연결된 iocp큐 제거
-	const Set<DUBU::OverlappedPacketBuffer*>& useList = Singleton<PacketManager>::GetInstance().GetUseList();
+	const Set<DUBU::OverlappedPacketBuffer*>& useList = PacketManager::GetInstance().GetUseList();
 	Uint64 EXIT_SIGNAL = 0xFFFFFFFFFFFFF;
 	for (auto use : useList)
 	{
@@ -202,7 +202,7 @@ void DUBU::RUDPSocket::RecvFrom()
 	DWORD bytesRecv = 0;
 	DWORD flags = 0;
 
-	OverlappedPacketBuffer* opb = Singleton<PacketManager>::GetInstance().PopPacketBuffer();
+	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
 	wsabuf.buf = static_cast<char*>(opb->pos_);
 	wsabuf.len = opb->size_;
     opb->SetType(OverlappedObjType::RECVEFROM);

@@ -2,6 +2,7 @@
 #include "RUDPSocket.h"
 #include "BufferManager.h"
 #include "ConnectionType.h"
+#include "Subheader.h"
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::InternalClient::InternalClient(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
@@ -89,6 +90,9 @@ void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint1
 
     auto flag = header->flags_;
     auto seqNo = header->sequenceNo_;
+
+    // 수신 시간 갱신
+    timestamp_ = DUBU::GetCurrentTimeMs();
 
     bool result = false;
     if (flag == Packet::PacketHeaderFlag::SESSION)
@@ -202,9 +206,6 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-    // 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
-    timestamp_ = DUBU::GetCurrentTimeMs();
-
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
@@ -233,7 +234,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint32 id = header->sessionId_;
         Uint32 seq = header->sequenceNo_;
         Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
-        Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
+        Uint8* ptr = buffer + sizeof(Packet::PacketHeader);
 
         std::string_view sv(reinterpret_cast<char*>(ptr), size);
         spdlog::info("ECHO Recv Client : {}-{}-{}", id, seq, sv);
@@ -241,8 +242,19 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
     }
 
     // 패킷  체크
-    flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
-    Uint8 packetCode = header->packetCode_;
+    Uint8 shType = header->packetCode_ >> 5;
+    Uint8 packetCode = header->packetCode_ & 0b00011111;
+    Uint32 offset = sizeof(Packet::PacketHeader);
+    Uint8* shBuffer = nullptr;
+
+    if (shType > 0)
+    {
+        Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + sizeof(Packet::PacketHeader));
+        offset += sh->GetSize();
+        shBuffer = reinterpret_cast<Uint8*>(sh);
+    }
+
+    flatbuffers::Verifier verifier(buffer + offset, size);
 
     if (handlers_ != nullptr)
     {
@@ -262,7 +274,14 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
         }
 
         // 패킷별 함수 실행
-        it->second.handler_(nullptr, buffer, size);
+        if (shType > 0 && shBuffer != nullptr)
+        {
+            it->second.handler2_(nullptr, buffer, size, shBuffer, shType);
+        }
+        else
+        {
+            it->second.handler_(nullptr, buffer, size);
+        }
     }
     else
     {

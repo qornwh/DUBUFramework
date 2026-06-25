@@ -11,7 +11,22 @@ GatewayServer::GatewayServer() : DUBU::Server()
 GatewayServer::~GatewayServer()
 {
     // 클라이언트 disconnect 소멸
+    for (auto* client : internalClientList_)
+    {
+        if (client == nullptr)
+        {
+            continue;
+        }
 
+        if (client->IsConnect())
+        {
+            client->Disconnect();
+        }
+
+        delete client;
+    }
+
+    internalClientList_.clear();
 }
 
 void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* handlers)

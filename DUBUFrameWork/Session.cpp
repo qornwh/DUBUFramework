@@ -1,6 +1,7 @@
 #include "Session.h"
 #include "RUDPSocket.h"
 #include "BufferManager.h"
+#include "Subheader.h"
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
@@ -44,7 +45,7 @@ Uint32 DUBU::Session::UpdateSendSequenceNo()
 	return ++sendSequenceNo_;
 }
 
-Int32 DUBU::Session::GetSessionId() const
+Uint32 DUBU::Session::GetSessionId() const
 {
 	return sessionId_;
 }
@@ -143,8 +144,19 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	}
 
 	// 패킷  체크
-	flatbuffers::Verifier verifier(buffer + sizeof(Packet::PacketHeader), size);
-	Uint8 packetCode = header->packetCode_;
+    Uint8 shType = header->packetCode_ >> 5;
+    Uint8 packetCode = header->packetCode_ & 0b00011111;
+    Uint32 offset = sizeof(Packet::PacketHeader);
+    Uint8* shBuffer = nullptr;
+
+    if (shType > 0)
+    {
+        Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + sizeof(Packet::PacketHeader));
+        offset += sh->GetSize();
+        shBuffer = reinterpret_cast<Uint8*>(sh);
+    }
+
+	flatbuffers::Verifier verifier(buffer + offset, size);
 	
     if (handlers_ != nullptr)
     {
@@ -164,7 +176,14 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	    }
 
 	    // 패킷별 함수 실행
-	    it->second.handler_(this, buffer, size);
+        if (shType > 0 && shBuffer != nullptr)
+        {
+            it->second.handler2_(this, buffer, size, shBuffer, shType);
+        }
+        else
+        {
+	        it->second.handler_(this, buffer, size);
+        }
     }
     else
     {
@@ -321,16 +340,15 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 메시지 복사 : 헤더가 포함된 버전이라 전체 카피
+    std::memcpy(opb->buffer_, buffer, size);
+
+    // 시간, 현재 세션 등만 다시 복사. flag 제외
     header->checksum_ = 0;
-    // 해당함수는 미리 설정한 flag로 정한다.
     header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
     header->timestamp_ = GetCurrentTimeMs();
-    header->packetCode_ = code;
-
-    // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;
@@ -351,23 +369,35 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     }
 }
 
-void DUBU::Session::SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size)
+void DUBU::Session::SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader, Uint16 subHeaderSize)
 {
     if (rudpSocket_ == nullptr) return;
 
+    Uint32 offset = sizeof(Packet::PacketHeader);
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     header->checksum_ = 0;
     header->flags_ = Packet::PacketHeaderFlag::NONE;
-    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->totalSize_ = static_cast <Uint16>(offset) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
     header->timestamp_ = GetCurrentTimeMs();
     header->packetCode_ = code;
 
+    if (subHeader != nullptr && subHeaderSize > 0)
+    {
+        const Packet::SubheaderBase* sh = reinterpret_cast<const Packet::SubheaderBase*>(subHeader);
+        // 서브헤더 크기만큼 복사해 준다.
+        std::memcpy(opb->buffer_ + offset, subHeader, subHeaderSize);
+        offset += subHeaderSize;
+        // 서브헤더 코드 비트연산으로 체크 가능하도록
+        header->packetCode_ |= (sh->type_ << 5);
+        header->totalSize_ += subHeaderSize;
+    }
+
     // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+    std::memcpy(opb->buffer_ + offset, buffer, size);
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;
@@ -377,23 +407,35 @@ void DUBU::Session::SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size)
     rudpSocket_->SendTo(GetSockAddr(), opb);
 }
 
-void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size)
+void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader, Uint16 subHeaderSize)
 {
     if (rudpSocket_ == nullptr) return;
 
+    Uint32 offset = sizeof(Packet::PacketHeader);
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     header->checksum_ = 0;
     header->flags_ = Packet::PacketHeaderFlag::REPEAT;
-    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->totalSize_ = static_cast<Uint16>(offset) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
     header->timestamp_ = GetCurrentTimeMs();
     header->packetCode_ = code;
 
+    if (subHeader != nullptr && subHeaderSize > 0)
+    {
+        const Packet::SubheaderBase* sh = reinterpret_cast<const Packet::SubheaderBase*>(subHeader);
+        // 서브헤더 크기만큼 복사해 준다.
+        std::memcpy(opb->buffer_ + offset, subHeader, subHeaderSize);
+        offset += subHeaderSize;
+        // 서브헤더 코드 비트연산으로 체크 가능하도록
+        header->packetCode_ |= (sh->type_ << 5);
+        header->totalSize_ += subHeaderSize;
+    }
+
     // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), buffer, size);
+    std::memcpy(opb->buffer_ + offset, buffer, size);
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;

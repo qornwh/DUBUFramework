@@ -59,6 +59,7 @@ namespace DUBU
 		{
 			Function<bool(flatbuffers::Verifier&)> verifier_;
 			Function<void(Session*, Uint8*, Int32)> handler_; // 클라는 세션이 없어서 포인터로...
+            Function<void(Session*, Uint8*, Int32, Uint8*, Uint8)> handler2_; // 서브 핸들러용...(서브헤더 포인터, 타입 파라미터 2개 추가)
 		};
 	}
 }

@@ -1,4 +1,5 @@
 #include "Pool.h"
+#include "BufferManager.h"
 
 namespace DUBU
 {
@@ -71,10 +72,18 @@ DUBU::DubuByteData::~DubuByteData()
 
 void DUBU::Initialize()
 {
+    static Bool initialized = false;
+    if (initialized)
+        return;
+
+    initialized = true;
+
 	for (int i = 0; i < PoolSize; ++i)
 	{
 		PoolList.push_back(std::make_shared<DubuByteData>());
 	}
+
+    DUBU::PacketManager::GetInstance().Initialize();
 }
 
 DUBU::DubuByteDataSPtr DUBU::FindBlock(DubuBytePtr ptr)
