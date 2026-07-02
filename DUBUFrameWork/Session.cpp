@@ -17,7 +17,7 @@ void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
 {
 	addr_ = addr;
 	isConnect_ = true;
-	timestamp_ = DUBU::GetCurrentTimeMs();
+	timestamp_ = DUBU::GetRelativeTimeMs();
 }
 
 const SOCKADDR_IN& DUBU::Session::GetSockAddr() const
@@ -35,7 +35,7 @@ void DUBU::Session::SetSocket(RUDPSocket* socket)
     rudpSocket_ = socket;
 }
 
-void DUBU::Session::SetTimestamp(const Uint64 time)
+void DUBU::Session::SetTimestamp(const Uint32 time)
 {
 	timestamp_ = time;
 }
@@ -70,7 +70,7 @@ Uint32 DUBU::Session::GetRttMillisec() const
 	return rttMillisec_;
 }
 
-Uint64 DUBU::Session::GetTimestamp() const
+Uint32 DUBU::Session::GetTimestamp() const
 {
 	return timestamp_;
 }
@@ -86,7 +86,7 @@ void DUBU::Session::Reset()
 	sessionId_ = 0;
 	recvSequenceNo_ = 0;
 	sendSequenceNo_ = 0;
-	timestamp_ = DUBU::GetCurrentTimeMs();
+	timestamp_ = DUBU::GetRelativeTimeMs();
 	lastPingSentTime_ = 0;
 	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
@@ -104,7 +104,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
 	// 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
-	timestamp_ = DUBU::GetCurrentTimeMs();
+	timestamp_ = DUBU::GetRelativeTimeMs();
 
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
@@ -208,7 +208,7 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 	if (pendingPackets_[idx].sequenceNo == ackSeq && pendingPackets_[idx].buffer != nullptr)
 	{
 		// RTT 갱신 : 비율 4 : 1
-		Int64 rtt = GetCurrentTimeMs() - pendingPackets_[idx].timeStamp;
+		Uint32 rtt = GetRelativeTimeMs() - pendingPackets_[idx].timeStamp;
 		rttMillisec_ = (Uint32)(rttMillisec_ * 0.8f + rtt * 0.2f);
 
 		// 수신 성공 버퍼 지운다.
@@ -231,7 +231,7 @@ bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
 	// PONG은 liveness 신호로만 사용, timestamp_만 갱신 (RTT 갱신 없음, 핸들러 실행 없음)
-	timestamp_ = DUBU::GetCurrentTimeMs();
+	timestamp_ = DUBU::GetRelativeTimeMs();
 
     // 카운트 갱신 가장 최근것만
     if (lastPongSeq_ == header->sequenceNo_)
@@ -245,19 +245,19 @@ void DUBU::Session::SendACK(Uint32 seqNo)
 {
 }
 
-Uint64 DUBU::Session::GetLastPingSentTime() const
+Uint32 DUBU::Session::GetLastPingSentTime() const
 {
 	return lastPingSentTime_;
 }
 
-void DUBU::Session::SetLastPingSentTime(Uint64 time)
+void DUBU::Session::SetLastPingSentTime(Uint32 time)
 {
 	lastPingSentTime_ = time;
 }
 
-void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint64 resendDelay)
+void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint32 resendDelay)
 {
-	Uint64 now = GetCurrentTimeMs();
+	Uint32 now = GetRelativeTimeMs();
 
 	for (Uint32 i = localWindowStart_; i < localSeqence_; ++i)
 	{
@@ -281,7 +281,7 @@ void DUBU::Session::SetPeer(Peer& peer)
 void DUBU::Session::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-	Uint64 timeStamp = header->timestamp_;
+	Uint32 timeStamp = header->timestamp_;
 	Uint32 sequenceNo = header->sequenceNo_;
 	bool isSent = false;
 
@@ -316,7 +316,7 @@ void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
     header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = 0;
 
     // 메시지 복사
@@ -348,7 +348,7 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;
@@ -382,7 +382,7 @@ void DUBU::Session::SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size,
     header->totalSize_ = static_cast <Uint16>(offset) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = code;
 
     if (subHeader != nullptr && subHeaderSize > 0)
@@ -420,7 +420,7 @@ void DUBU::Session::SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size, c
     header->totalSize_ = static_cast<Uint16>(offset) + size;
     header->sessionId_ = sessionId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = code;
 
     if (subHeader != nullptr && subHeaderSize > 0)

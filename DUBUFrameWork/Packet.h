@@ -37,8 +37,9 @@ namespace DUBU
 			PacketHeaderFlag flags_;
 			Uint32 sessionId_;
 			Uint32 sequenceNo_;
-			Uint64 timestamp_;
+			Uint32 timestamp_;
 			Uint32 checksum_;
+            Uint32 chunkInfo_;
 		};
 
 		class Packet

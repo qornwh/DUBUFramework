@@ -20,10 +20,10 @@ int main()
 			server = new DUBU::Server();
 			server->Initialize(nullptr);
 
-            Uint64 time = DUBU::GetCurrentTimeMs();
+            Uint32 time = DUBU::GetRelativeTimeMs();
             while (true)
             {
-                Uint64 cur = DUBU::GetCurrentTimeMs();
+                Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
                 if (cur - time >= 10000)
                     break;
@@ -36,11 +36,11 @@ int main()
             DUBU::Client client{ "127.0.0.1", DUBU::g_servicePort };
             client.ConnectTimes();
 
-            Uint64 time = DUBU::GetCurrentTimeMs();
+            Uint32 time = DUBU::GetRelativeTimeMs();
             Sleep(500);
             while (true)
             {
-                Uint64 cur = DUBU::GetCurrentTimeMs();
+                Uint32 cur = DUBU::GetRelativeTimeMs();
 
                 if (cur - time > 500)
                 {

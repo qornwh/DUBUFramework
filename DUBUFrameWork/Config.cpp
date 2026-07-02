@@ -7,10 +7,10 @@ namespace DUBU
 {
 	Int32 g_firstClientCount = FIRST_CLIENT_COUNT;
     Uint16 g_servicePort = SERVICE_PORT;
-	Int32 g_defaultRttMs = DEFAULT_RTT_MS;
-	Int32 g_defaultRttMsDelay = DEFAULT_RTT_MS_DELAY;
-	Int32 g_defaultDisconnectTimeoutMs = DEFAULT_DISCONNECT_TIMEOUT_MS;
-	Int32 g_defaultPingTimeoutMs = DEFAULT_PING_TIMEOUT_MS;
+    Uint32 g_defaultRttMs = DEFAULT_RTT_MS;
+    Uint32 g_defaultRttMsDelay = DEFAULT_RTT_MS_DELAY;
+	Uint32 g_defaultDisconnectTimeoutMs = DEFAULT_DISCONNECT_TIMEOUT_MS;
+    Uint32 g_defaultPingTimeoutMs = DEFAULT_PING_TIMEOUT_MS;
 
 	template <typename T>
 	static void SetNumberConfig(const json& config, const char* key, T& value)

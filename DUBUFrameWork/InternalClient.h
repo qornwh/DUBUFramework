@@ -38,7 +38,7 @@ namespace DUBU
 
         bool RecvDispatch(Uint8* buffer, Uint16 size);
         bool RecvDispatchACK(Uint8* buffer, Uint16 size);
-        void RepeatMessage(Uint64 resendDelay);
+        void RepeatMessage(Uint32 resendDelay);
         void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
@@ -75,7 +75,7 @@ namespace DUBU
         // 초기값 0.5초
         Uint32 rttMillisec_ = g_defaultRttMs;
         // 가장 마지막 시간
-        Uint64 timestamp_ = 0;
+        Uint32 timestamp_ = 0;
 
         // 패킷별 함수 분기대신 Map사용
         const Map<Uint8, Packet::PacketHandler>* handlers_;
@@ -90,7 +90,7 @@ namespace DUBU
         Uint32 connNo_ = 0;
 
         // 타임아웃 설정
-        const Int32 ClientTimeout = g_defaultDisconnectTimeoutMs;
+        const Uint32 ClientTimeout = g_defaultDisconnectTimeoutMs;
 
         Lock lock_;
     };
