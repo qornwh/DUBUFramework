@@ -30,6 +30,7 @@ namespace DUBU
 			DISCONNECT  = 0b11111111
 		};
 
+#pragma pack(push, 4)
 		struct PacketHeader
 		{
 			Uint16 totalSize_;
@@ -41,6 +42,7 @@ namespace DUBU
 			Uint32 checksum_;
             Uint32 chunkInfo_;
 		};
+#pragma pack(pop)
 
 		class Packet
 		{
