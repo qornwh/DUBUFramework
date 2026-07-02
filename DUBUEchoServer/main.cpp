@@ -50,10 +50,10 @@ int main()
             server->Initialize(&handlers);
             EchoSessionHander::GetInstance().SetOwner(server);
 
-            Uint64 time = DUBU::GetCurrentTimeMs();
+            Uint32 time = DUBU::GetRelativeTimeMs();
             while (server->IsRunning())
             {
-                Uint64 cur = DUBU::GetCurrentTimeMs();
+                Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
             }
             if (server != nullptr)

@@ -9,8 +9,8 @@ namespace DUBU
 	struct PendingPacket
 	{
 		struct OverlappedPacketBuffer* buffer = nullptr;
-		Uint64   timeStamp = 0;
-		Uint32  sequenceNo = 0;
-		bool    isSent = false;
+		Uint32 timeStamp = 0;
+		Uint32 sequenceNo = 0;
+		bool isSent = false;
 	};
 };

@@ -61,10 +61,10 @@ namespace DUBU
 		Atomic<Bool> sessionCAS_;
 
 		// Ping전달 시간 체크
-		const Int32 PingTimeout = g_defaultPingTimeoutMs;
+		const Uint32 PingTimeout = g_defaultPingTimeoutMs;
 
 		// 세션 타임아웃 설정
-		const Int32 SessionTimeout = g_defaultDisconnectTimeoutMs;
+		const Uint32 SessionTimeout = g_defaultDisconnectTimeoutMs;
 
 		// 끊을 세션 캐시로 저장
 		Uint32 removeListCache_[MAX_CLIENT_COUNT];
@@ -87,9 +87,9 @@ namespace DUBU
         Atomic<Uint64> sendAckCount_;
         
         // 10초
-        const Uint64 logTimeOut = 10000;
+        const Uint32 logTimeOut_ = 10000;
         // 이전시간
-        Uint64 preTime = 0;
+        Uint32 preTime_ = 0;
         // 타임아웃된 세션 개수
         Atomic<Uint64> timeoutSessionCount_;
 
@@ -97,7 +97,7 @@ namespace DUBU
         Atomic<Uint32> newSessionCount_;
 
         // 마지막 로그 출력 시간
-        Atomic<Uint64> lastStatsTickMs_;
+        Atomic<Uint32> lastStatsTickMs_;
 #endif
 	};
 }

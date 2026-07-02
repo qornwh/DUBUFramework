@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 
     std::thread th([&client, &handlers]() {
 
-        Uint64 time = DUBU::GetCurrentTimeMs();
+        Uint32 time = DUBU::GetRelativeTimeMs();
         while (client->IsConnect())
         {
             client->Dispatch();

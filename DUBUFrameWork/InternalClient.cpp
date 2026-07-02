@@ -26,7 +26,7 @@ void DUBU::InternalClient::Connect()
     if (rudpSocket_.get() != nullptr)
     {
         ConnectMessage();
-        timestamp_ = DUBU::GetCurrentTimeMs();
+        timestamp_ = DUBU::GetRelativeTimeMs();
     }
     else
     {
@@ -92,7 +92,7 @@ void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint1
     auto seqNo = header->sequenceNo_;
 
     // 수신 시간 갱신
-    timestamp_ = DUBU::GetCurrentTimeMs();
+    timestamp_ = DUBU::GetRelativeTimeMs();
 
     bool result = false;
     if (flag == Packet::PacketHeaderFlag::SESSION)
@@ -305,7 +305,7 @@ bool DUBU::InternalClient::RecvDispatchACK(Uint8* buffer, Uint16 size)
     if (pendingPackets_[idx].sequenceNo == ackSeq && pendingPackets_[idx].buffer != nullptr)
     {
         // RTT 갱신 : 비율 4 : 1
-        Int64 rtt = GetCurrentTimeMs() - pendingPackets_[idx].timeStamp;
+        Uint32 rtt = GetRelativeTimeMs() - pendingPackets_[idx].timeStamp;
         rttMillisec_ = (Uint32)(rttMillisec_ * 0.8f + rtt * 0.2f);
 
         // 수신 성공 버퍼 지운다.
@@ -323,9 +323,9 @@ bool DUBU::InternalClient::RecvDispatchACK(Uint8* buffer, Uint16 size)
     return true;
 }
 
-void DUBU::InternalClient::RepeatMessage(Uint64 resendDelay)
+void DUBU::InternalClient::RepeatMessage(Uint32 resendDelay)
 {
-    Uint64 now = GetCurrentTimeMs();
+    Uint32 now = GetRelativeTimeMs();
 
     for (Uint32 i = localWindowStart_; i < localSeqence_; ++i)
     {
@@ -341,7 +341,7 @@ void DUBU::InternalClient::RepeatMessage(Uint64 resendDelay)
 void DUBU::InternalClient::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-    Uint64 timeStamp = header->timestamp_;
+    Uint32 timeStamp = header->timestamp_;
     Uint32 sequenceNo = header->sequenceNo_;
     bool isSent = false;
 
@@ -370,7 +370,7 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size)
     header->checksum_ = 0;
     header->sessionId_ = clientId_;
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;
@@ -402,7 +402,7 @@ void DUBU::InternalClient::SendAck(Uint32 seqNo)
     header->totalSize_ = sizeof(Packet::PacketHeader);
     header->sessionId_ = clientId_;
     header->sequenceNo_ = seqNo;
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = 0;
 
     opb->size_ = header->totalSize_;
@@ -451,10 +451,10 @@ void DUBU::InternalClient::RepeatPongMessage(Uint8* ptr, Uint16 size)
 void DUBU::InternalClient::CheckPending()
 {
     // 시간체크
-    Uint64 now = GetCurrentTimeMs();
+    Uint32 now = GetRelativeTimeMs();
 
     // 재전송로직 실행
-    Uint64 delayTime = now - timestamp_;
+    Uint32 delayTime = now - timestamp_;
     if (delayTime > ClientTimeout)
     {
         // 끊김 감지

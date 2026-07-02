@@ -22,7 +22,7 @@ void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 	isRunning_.store(true);
 
 #ifdef _DEBUG
-    preTime = GetCurrentTimeMs();
+    preTime_ = GetRelativeTimeMs();
 #endif
 }
 
@@ -211,7 +211,7 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 	Session* session = sessionManager_.AddSession();
 	session->SetSockAddr(addr);
     session->SetSocket(rudpSocket_.get());
-	session->SetTimestamp(DUBU::GetCurrentTimeMs());
+	session->SetTimestamp(DUBU::GetRelativeTimeMs());
 #ifdef _DEBUG
     newSessionCount_.fetch_add(1);
 #endif // _DEBUG
@@ -253,7 +253,7 @@ void DUBU::Server::DisconnectMessage(Session* session)
 	header->totalSize_ = sizeof(Packet::PacketHeader);
 	header->sessionId_ = session->GetSessionId();
 	header->sequenceNo_ = session->UpdateSendSequenceNo();
-	header->timestamp_ = GetCurrentTimeMs();
+	header->timestamp_ = GetRelativeTimeMs();
 
 	// 전체 패킷 사이즈 설정
 	opb->size_ = header->totalSize_;
@@ -276,7 +276,7 @@ void DUBU::Server::SendPing(Session* session)
 	header->sessionId_ = session->GetSessionId();
 	// 비신뢰 — 핑퐁 전용 시퀀스No사용
 	header->sequenceNo_ = session->AccSequnceNo();
-	header->timestamp_ = GetCurrentTimeMs();
+	header->timestamp_ = GetRelativeTimeMs();
 	header->packetCode_ = 0;
 
 	opb->size_ = header->totalSize_;
@@ -293,7 +293,7 @@ void DUBU::Server::SendPing(Session* session)
 void DUBU::Server::CheckSession()
 {
 	// 시간체크
-	Uint64 now = GetCurrentTimeMs();
+	Uint32 now = GetRelativeTimeMs();
 	// 끊을 세션
 	Uint8 idx = 0;
 
@@ -320,7 +320,7 @@ void DUBU::Server::CheckSession()
                 continue;
             }
 
-			Uint64 delayTime = now - session->GetTimestamp();
+			Uint32 delayTime = now - session->GetTimestamp();
 			if (delayTime > SessionTimeout)
 			{
 				// 끊김 감지
@@ -332,7 +332,7 @@ void DUBU::Server::CheckSession()
 			else if (delayTime > PingTimeout)
 			{
 				// PingTimeout 간격으로 throttle — 3s 시점부터 3s마다 최대 ~3회
-				if (now - session->GetLastPingSentTime() >= (Uint64)PingTimeout)
+				if (now - session->GetLastPingSentTime() >= (Uint32)PingTimeout)
 				{
 					SendPing(session);
 					session->SetLastPingSentTime(now);
@@ -349,7 +349,7 @@ void DUBU::Server::CheckSession()
 		WriteLockGuard rw(sessionLock_);
 		for (Int32 i = 0; i < idx; ++i)
 		{
-			Int32 sessionId = removeListCache_[i];
+			Uint32 sessionId = removeListCache_[i];
 			Session* session = sessionManager_.GetSession(sessionId);
 			if (session != nullptr)
 			{
@@ -362,9 +362,9 @@ void DUBU::Server::CheckSession()
 	}
 
 #ifdef _DEBUG
-    if (now - preTime >= logTimeOut)
+    if (now - preTime_ >= logTimeOut_)
     {
-        preTime = now;
+        preTime_ = now;
         lastStatsTickMs_.store(now);
         timeoutSessionCount_.fetch_add(1);
 
@@ -408,7 +408,7 @@ void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
     header->totalSize_ = sizeof(Packet::PacketHeader);
     header->sessionId_ = session->GetSessionId();
     header->sequenceNo_ = seqNo;
-    header->timestamp_ = GetCurrentTimeMs();
+    header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = 0;
 
     opb->size_ = header->totalSize_;

@@ -30,7 +30,7 @@ void EchoClient::SendChatMessage(const String& chat)
     header->totalSize_ = static_cast<Uint16>(sizeof(DUBU::Packet::PacketHeader) + size);
     header->sessionId_ = GetClientId();
     header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = DUBU::GetCurrentTimeMs();
+    header->timestamp_ = DUBU::GetRelativeTimeMs();
     header->packetCode_ = DUBU::Echo::PacketBody_Chatting;
 
     // 메시지 복사

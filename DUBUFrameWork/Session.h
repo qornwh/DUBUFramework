@@ -25,7 +25,7 @@ namespace DUBU
 		void SetSockAddr(const SOCKADDR_IN& addr);
 		void SetSessionId(Int32 sessionId);
         void SetSocket(class RUDPSocket* socket);
-		void SetTimestamp(const Uint64 time);
+		void SetTimestamp(const Uint32 time);
 		Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
@@ -34,19 +34,19 @@ namespace DUBU
 		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
-		Uint64 GetTimestamp() const;
+		Uint32 GetTimestamp() const;
 		Bool IsConnection() const;
 
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
-		void RepeatMessage(class RUDPSocket* socket, Uint64 resendDelay);
+		void RepeatMessage(class RUDPSocket* socket, Uint32 resendDelay);
 
         // ACK 리턴
         void SendACK(Uint32 seqNo);
 
-		Uint64 GetLastPingSentTime() const;
-		void SetLastPingSentTime(Uint64 time);
+		Uint32 GetLastPingSentTime() const;
+		void SetLastPingSentTime(Uint32 time);
 		void SetPeer(Peer& peer);
 		void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
@@ -82,10 +82,10 @@ namespace DUBU
 		// 초기값 0.5초
 		Uint32 rttMillisec_ = g_defaultRttMs;
 		// 가장 마지막 시간
-		Uint64 timestamp_ = 0;
+		Uint32 timestamp_ = 0;
 
 		// 마지막으로 Ping을 보낸 시간 (throttle용)
-		Uint64 lastPingSentTime_ = 0;
+		Uint32 lastPingSentTime_ = 0;
 
 		// ip port바인딩 => ip바껴도 sessionID로 판별하기 때문에 유지가능
 		SOCKADDR_IN addr_;
