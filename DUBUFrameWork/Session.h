@@ -75,6 +75,9 @@ namespace DUBU
         Uint64 lastRepeatNoOrder_ = 0;
         Uint64 cacheRepeatNoOrder_ = 0;
 
+        // 0번은 repeat 순서 보장 x이다, 이외에는 모두 채널번호다.
+        Vector<OverlappedPacketBuffer*> CacheAlreadyPackets_[1 << 6];
+
 	private:
 		// 세션 id
 		Uint32 sessionId_ = 0;
