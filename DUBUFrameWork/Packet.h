@@ -23,6 +23,7 @@ namespace DUBU
 			REPEAT      = 0b00000001,
 			CHUNK       = 0b00000010,
             CHANNEL     = 0b00000100,
+            CHANNELMASK = 0b01111000,
 			ACK		    = 0b11000000,
 			PING	    = 0b11100000,
 			PONG        = 0b11110000,

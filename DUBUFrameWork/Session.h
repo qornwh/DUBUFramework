@@ -69,6 +69,12 @@ namespace DUBU
         void SetAwaysConnect(Bool awaysConnect);
         Bool GetAwaysConnect() const { return awaysConnect_; };
 
+    private:
+        // 미리온 repeat 패킷은 캐싱해둠. 그후 이전 번호까지 되면 그거 가져와서 실행함.
+        Uint64 currentRepeatNoOrder_ = 0;
+        Uint64 lastRepeatNoOrder_ = 0;
+        Uint64 cacheRepeatNoOrder_ = 0;
+
 	private:
 		// 세션 id
 		Uint32 sessionId_ = 0;

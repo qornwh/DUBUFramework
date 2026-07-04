@@ -109,21 +109,56 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
-    // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
     if (isRepeat)
     {
-        if (header->sequenceNo_ <= recvSequenceNo_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > recvSequenceNo_)
+        Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
+        if (channel > 0)
         {
-            // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
-            return true;
-        }
-        if (header->sequenceNo_ != recvSequenceNo_ + 1)
-        {
-            return false;
+            // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
+            if (header->sequenceNo_ <= recvSequenceNo_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > recvSequenceNo_)
+            {
+                // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
+                return true;
+            }
+            if (header->sequenceNo_ != recvSequenceNo_ + 1)
+            {
+                return false;
+            }
+            else
+            {
+                recvSequenceNo_ = header->sequenceNo_;
+            }
         }
         else
         {
-            recvSequenceNo_ = header->sequenceNo_;
+            // 순서 상관 x
+            if (header->sequenceNo_ <= currentRepeatNoOrder_)
+            {
+                return true;
+            }
+            else if (header->sequenceNo_ > currentRepeatNoOrder_ + 1)
+            {
+                // 캐싱
+                Uint64 del = header->sequenceNo_ - currentRepeatNoOrder_;
+                if (del > 64)
+                {
+                    // 최대 캐싱 가능크기는 64넘기면 캐싱안하고 넘어간다.
+                    false;
+                }
+
+                if (header->sequenceNo_ > lastRepeatNoOrder_)
+                {
+                    // 패킷 캐싱
+                    lastRepeatNoOrder_ = header->sequenceNo_;
+                    cacheRepeatNoOrder_ &= static_cast<Uint64>(1) << (del);
+                }
+                return true;
+            }
+            else
+            {
+                // 순차 
+                recvSequenceNo_ = header->sequenceNo_;
+            }
         }
     }
 
