@@ -114,6 +114,9 @@
     <ClInclude Include="Subheader.h">
       <Filter>Packet\Subheader</Filter>
     </ClInclude>
+    <ClInclude Include="CachePacket.h">
+      <Filter>Service</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
