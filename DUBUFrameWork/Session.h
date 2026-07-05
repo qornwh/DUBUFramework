@@ -4,10 +4,17 @@
 #include "Packet.h"
 #include "Peer.h"
 #include "PendingPacket.h"
+#include "CachePacket.h"
 
 namespace DUBU
 {
     struct OverlappedPacketBuffer;
+
+    struct CacheAlreadyPacket
+    {
+        RepeatPacketState repeatPacketState;
+        CachePacket cachePackets[DEFAULT_WINDOW_COUNT];
+    };
 
 	/*
 	* Session : 베이스 클래스
@@ -41,6 +48,7 @@ namespace DUBU
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
 		void RepeatMessage(class RUDPSocket* socket, Uint32 resendDelay);
+        void PacketParse(Uint8* buffer, Uint16 size);
 
         // ACK 리턴
         void SendACK(Uint32 seqNo);
@@ -70,13 +78,13 @@ namespace DUBU
         Bool GetAwaysConnect() const { return awaysConnect_; };
 
     private:
-        // 미리온 repeat 패킷은 캐싱해둠. 그후 이전 번호까지 되면 그거 가져와서 실행함.
-        Uint64 currentRepeatNoOrder_ = 0;
-        Uint64 lastRepeatNoOrder_ = 0;
-        Uint64 cacheRepeatNoOrder_ = 0;
+        // 순서보장 x 재전송 x 패킷 정보
+        RepeatPacketState rNopsNo_;
+        // 순서보장 x 재전송 o 패킷 정보
+        RepeatPacketState rpsNo_;
 
-        // 0번은 repeat 순서 보장 x이다, 이외에는 모두 채널번호다.
-        Vector<OverlappedPacketBuffer*> CacheAlreadyPackets_[1 << 6];
+        // 채널 번호 32개
+        CacheAlreadyPacket cacheAlreadyPackets_[1 << 6];
 
 	private:
 		// 세션 id

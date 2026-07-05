@@ -11,6 +11,10 @@ DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
 
 DUBU::Session::~Session()
 {
+    if (isConnect_)
+    {
+        Reset();
+    }
 }
 
 void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
@@ -82,6 +86,11 @@ Bool DUBU::Session::IsConnection() const
 
 void DUBU::Session::Reset()
 {
+    if (isConnect_ == true)
+    {
+        isConnect_ = false;
+    }
+
 	// 세션 초기화
 	sessionId_ = 0;
 	recvSequenceNo_ = 0;
@@ -96,6 +105,27 @@ void DUBU::Session::Reset()
     for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
     {
         pendingPackets_[i] = { nullptr, 0, 0, false };
+    }
+
+    for (Uint32 channelID = 0; channelID < (1 << 6); ++channelID)
+    {
+        CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
+        RepeatPacketState& rps = cap.repeatPacketState;
+        rps.cacheRepeatCount = 0;
+        rps.lastRepeatSeq = 0;
+        rps.currentRepeatSeq = 0;
+
+        for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
+        {
+            CachePacket& cachePacket = cap.cachePackets[i];
+            if (cachePacket.buffer != nullptr)
+            {
+                cachePacket.isKeep = false;
+                cachePacket.sequenceNo = 0;
+                cachePacket.timeStamp = 0;
+                CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+            }
+        }
     }
 }
 
@@ -114,6 +144,9 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
         if (channel > 0)
         {
+            // 채널 ID
+            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+
             // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
             if (header->sequenceNo_ <= recvSequenceNo_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > recvSequenceNo_)
             {
@@ -122,110 +155,105 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
             }
             if (header->sequenceNo_ != recvSequenceNo_ + 1)
             {
-                return false;
-            }
-            else
-            {
-                recvSequenceNo_ = header->sequenceNo_;
-            }
-        }
-        else
-        {
-            // 순서 상관 x
-            if (header->sequenceNo_ <= currentRepeatNoOrder_)
-            {
-                return true;
-            }
-            else if (header->sequenceNo_ > currentRepeatNoOrder_ + 1)
-            {
+                CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
+                RepeatPacketState& rps = cap.repeatPacketState;
+
                 // 캐싱
-                Uint64 del = header->sequenceNo_ - currentRepeatNoOrder_;
+                Uint64 del = header->sequenceNo_ - rps.currentRepeatSeq;
                 if (del > 64)
                 {
                     // 최대 캐싱 가능크기는 64넘기면 캐싱안하고 넘어간다.
                     false;
                 }
 
-                if (header->sequenceNo_ > lastRepeatNoOrder_)
+                if (header->sequenceNo_ > rps.lastRepeatSeq)
                 {
                     // 패킷 캐싱
-                    lastRepeatNoOrder_ = header->sequenceNo_;
-                    cacheRepeatNoOrder_ &= static_cast<Uint64>(1) << (del);
+                    CachePacket& cachePacket = cap.cachePackets[header->sequenceNo_ % DEFAULT_WINDOW_COUNT];
+                    cachePacket.buffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                    cachePacket.sequenceNo = header->sequenceNo_;
+                    cachePacket.timeStamp = DUBU::GetRelativeTimeMs();
+                    cachePacket.isKeep = true;
+
+                    rps.lastRepeatSeq = header->sequenceNo_;
+                    rps.cacheRepeatCount &= static_cast<Uint64>(1) << (del);
                 }
                 return true;
             }
             else
             {
-                // 순차 
-                recvSequenceNo_ = header->sequenceNo_;
+                CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
+                RepeatPacketState& rps = cap.repeatPacketState;
+
+                // 현재꺼는 실행
+                PacketParse(buffer, size);
+                rps.cacheRepeatCount <<= 1;
+
+                // 미리 수신된 패킷 있으면 실행해 준다.
+                for (Int32 i = rps.currentRepeatSeq + 1; i < rps.lastRepeatSeq; ++i)
+                {
+                    CachePacket& cachePacket = cap.cachePackets[i % DEFAULT_WINDOW_COUNT];
+                    if (!cachePacket.isKeep)
+                    {
+                        break;
+                    }
+
+                    // 실행 후 반환한다.
+                    PacketParse(cachePacket.buffer->buffer_, cachePacket.buffer->size_);
+                    cachePacket.isKeep = false;
+                    CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+                }
+                return true;
             }
-        }
-    }
-
-	// 에코 테스트
-	if (header->packetCode_ == 0)
-	{
-		Uint32 id = header->sessionId_;
-		Uint32 seq = header->sequenceNo_;
-		Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
-		Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
-
-        // 에코 메시지 전달
-        SendEchoMessage(ptr, size);
-
-		std::string_view sv(reinterpret_cast<char*>(ptr), size);
-		spdlog::info("ECHO Recv Server : {}-{}-{}", id, seq, sv);
-		return true;
-	}
-
-	// 패킷  체크
-    Uint8 shType = header->packetCode_ >> 5;
-    Uint8 packetCode = header->packetCode_ & 0b00011111;
-    Uint32 offset = sizeof(Packet::PacketHeader);
-    Uint8* shBuffer = nullptr;
-
-    if (shType > 0)
-    {
-        Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + sizeof(Packet::PacketHeader));
-        offset += sh->GetSize();
-        shBuffer = reinterpret_cast<Uint8*>(sh);
-    }
-
-	flatbuffers::Verifier verifier(buffer + offset, size);
-	
-    if (handlers_ != nullptr)
-    {
-	    auto it = handlers_->find(packetCode);
-	    if (it == handlers_->end())
-	    {
-		    // 패킷코드에 대한 함수가 등록되지 않음
-		    spdlog::error("Not Found PacketCode : {} !!!", packetCode);
-		    return false;
-	    }
-
-	    if (!it->second.verifier_(verifier))
-	    {
-		    // 패킷이 정확하지 않음
-		    spdlog::warn("Verfiy Failed !!!");
-		    return false;
-	    }
-
-	    // 패킷별 함수 실행
-        if (shType > 0 && shBuffer != nullptr)
-        {
-            it->second.handler2_(this, buffer, size, shBuffer, shType);
         }
         else
         {
-	        it->second.handler_(this, buffer, size);
+            // 순서 상관 x
+            if (header->sequenceNo_ <= rpsNo_.currentRepeatSeq)
+            {
+                return true;
+            }
+            else if (header->sequenceNo_ > rpsNo_.currentRepeatSeq + 1)
+            {
+                // 현재 순서가 아닌 패킷인 경우
+                Uint64 del64 = header->sequenceNo_ - rpsNo_.currentRepeatSeq;
+                if (del64 > 63)
+                {
+                    // 63초과한 미래이면 그냥 패스 - 재전송 하라고 한다.
+                    return false;
+                }
+
+                // 마지막 갱신
+                if (header->sequenceNo_ > rpsNo_.lastRepeatSeq)
+                {
+                    header->sequenceNo_ = rpsNo_.lastRepeatSeq;
+                }
+
+                // 실행여부 확인후 넘긴다.
+                Uint8 del = static_cast<Uint8>(1 << del64);
+                if ((rpsNo_.cacheRepeatCount & del) != del)
+                {
+                    rpsNo_.cacheRepeatCount &= del;
+                    PacketParse(buffer, size);
+                }
+                return true;
+            }
+            else
+            { 
+                rpsNo_.currentRepeatSeq = header->sequenceNo_;
+                rpsNo_.cacheRepeatCount <<= 1;
+                PacketParse(buffer, size);
+
+                // 이미 처리된 경우 1씩 땡긴다.
+                while ((rpsNo_.cacheRepeatCount & 1) == 1)
+                {
+                    rpsNo_.cacheRepeatCount <<= 1;
+                    ++rpsNo_.currentRepeatSeq;
+                }
+                return true;
+            }
         }
     }
-    else
-    {
-        spdlog::warn("Not found Packet Handler Register !!!");
-        return false;
-    }
-	return true;
 }
 
 bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
@@ -306,6 +334,74 @@ void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint32 resendDelay)
 #endif
 		}
 	}
+}
+
+void DUBU::Session::PacketParse(Uint8* buffer, Uint16 size)
+{
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
+
+    // 에코 테스트
+    if (header->packetCode_ == 0)
+    {
+        Uint32 id = header->sessionId_;
+        Uint32 seq = header->sequenceNo_;
+        Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
+        Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
+
+        // 에코 메시지 전달
+        SendEchoMessage(ptr, size);
+
+        std::string_view sv(reinterpret_cast<char*>(ptr), size);
+        spdlog::info("ECHO Recv Server : {}-{}-{}", id, seq, sv);
+        return;
+    }
+
+    // 패킷  체크
+    Uint8 shType = header->packetCode_ >> 5;
+    Uint8 packetCode = header->packetCode_ & 0b00011111;
+    Uint32 offset = sizeof(Packet::PacketHeader);
+    Uint8* shBuffer = nullptr;
+
+    if (shType > 0)
+    {
+        Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + sizeof(Packet::PacketHeader));
+        offset += sh->GetSize();
+        shBuffer = reinterpret_cast<Uint8*>(sh);
+    }
+
+    flatbuffers::Verifier verifier(buffer + offset, size);
+
+    if (handlers_ != nullptr)
+    {
+        auto it = handlers_->find(packetCode);
+        if (it == handlers_->end())
+        {
+            // 패킷코드에 대한 함수가 등록되지 않음
+            spdlog::error("Not Found PacketCode : {} !!!", packetCode);
+            return;
+        }
+
+        if (!it->second.verifier_(verifier))
+        {
+            // 패킷이 정확하지 않음
+            spdlog::warn("Verfiy Failed !!!");
+            return;
+        }
+
+        // 패킷별 함수 실행
+        if (shType > 0 && shBuffer != nullptr)
+        {
+            it->second.handler2_(this, buffer, size, shBuffer, shType);
+        }
+        else
+        {
+            it->second.handler_(this, buffer, size);
+        }
+    }
+    else
+    {
+        spdlog::warn("Not found Packet Handler Register !!!");
+    }
 }
 
 void DUBU::Session::SetPeer(Peer& peer)
