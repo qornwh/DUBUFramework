@@ -252,7 +252,8 @@ void DUBU::Server::DisconnectMessage(Session* session)
 	header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
 	header->totalSize_ = sizeof(Packet::PacketHeader);
 	header->sessionId_ = session->GetSessionId();
-	header->sequenceNo_ = session->UpdateSendSequenceNo();
+    // disconnect는 0번 보낸다.
+	header->sequenceNo_ = 0;
 	header->timestamp_ = GetRelativeTimeMs();
 
 	// 전체 패킷 사이즈 설정
@@ -340,7 +341,7 @@ void DUBU::Server::CheckSession()
 			}
 
 			// 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
-			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
+			session->RepeatMessageAll(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
 		}
 	}
 

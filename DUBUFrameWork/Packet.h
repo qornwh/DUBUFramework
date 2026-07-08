@@ -36,13 +36,21 @@ namespace DUBU
 		{
 			Uint16 totalSize_;
 			Uint8 packetCode_;
-			PacketHeaderFlag flags_;
+            Uint8 flags_; // PacketHeaderFlag
 			Uint32 sessionId_;
 			Uint32 sequenceNo_;
 			Uint32 timestamp_;
 			Uint32 checksum_;
             Uint32 chunkInfo_;
 		};
+
+        // 보내는 패킷 옵션. 지정 초기화로 사용하기
+        struct PacketOpctions
+        {
+            bool reliable_ = false;
+            bool order_ = false;
+            Uint8 channelID_ = false;
+        };
 #pragma pack(pop)
 
 		class Packet
