@@ -519,6 +519,85 @@ void DUBU::Client::CheckPending()
     RepeatMessageAll(rttMillisec_ * 2 + g_defaultRttMsDelay);
 }
 
+void DUBU::Client::SendEchoMessage()
+{
+    String str = "ECHO TEST !!!";
+    char* ptr = const_cast<char*>(str.c_str());
+    SendPacket(reinterpret_cast<Uint8*>(ptr), 0, static_cast<Uint16>(str.size()), Packet::PacketOpctions{true, true, 0});
+}
+
+void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader, Uint16 subHeaderSize)
+{
+    if (rudpSocket_ == nullptr) return;
+
+    // 패킷 메모리 할당
+    Uint32 offset = sizeof(Packet::PacketHeader);
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+
+    // 패킷 헤더 옵션 설정
+    header->flags_ = Packet::PacketHeaderFlag::NONE;
+    if (opt.reliable_)
+    {
+        header->flags_ |= Packet::PacketHeaderFlag::REPEAT;
+        if (opt.order_)
+        {
+            header->flags_ |= opt.channelID_ << 2;
+            header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
+        }
+        else
+        {
+            header->sequenceNo_ = rpsNo_.UpdateSendSequenceNo();
+        }
+    }
+    else
+    {
+        header->sequenceNo_ = rNopsNo_.UpdateSendSequenceNo();
+    }
+    header->checksum_ = 0;
+    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->sessionId_ = clientId_;
+    header->timestamp_ = GetRelativeTimeMs();
+    header->packetCode_ = code;
+
+    if (subHeader != nullptr && subHeaderSize > 0)
+    {
+        const Packet::SubheaderBase* sh = reinterpret_cast<const Packet::SubheaderBase*>(subHeader);
+        // 서브헤더 크기만큼 복사해 준다.
+        std::memcpy(opb->buffer_ + offset, subHeader, subHeaderSize);
+        offset += subHeaderSize;
+        // 서브헤더 코드 비트연산으로 체크 가능하도록
+        header->packetCode_ |= (sh->type_ << 5);
+        header->totalSize_ += subHeaderSize;
+    }
+
+    // 사이즈 지정
+    opb->size_ = header->totalSize_;
+
+    // 체크썸 계산
+    Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
+    header->checksum_ = checksum;
+
+    if (opt.reliable_)
+    {
+        rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
+
+        // pending 전송될 때까지 대기
+        if (opt.order_)
+        {
+            cacheAlreadyPackets_[opt.channelID_].reliablePacketState.AddPendingPacket(opb, opb->size_);
+        }
+        else
+        {
+            rpsNo_.AddPendingPacket(opb, opb->size_);
+        }
+    }
+    else
+    {
+        rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+    }
+}
+
 void DUBU::Client::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)
 {
     Uint32 current = rps.localWindowStart_;
