@@ -35,12 +35,9 @@ namespace DUBU
 		void SetSessionId(Int32 sessionId);
         void SetSocket(class RUDPSocket* socket);
 		void SetTimestamp(const Uint32 time);
-		//Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
         Uint32 GetSessionId() const;
-		//Uint32 GetRecvSequenceNo() const;
-		//Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
 		Uint32 GetTimestamp() const;
@@ -87,7 +84,7 @@ namespace DUBU
         ReliablePacketState rpsNo_;
 
         // 채널 번호 32개
-        CacheAlreadyPacket cacheAlreadyPackets_[1 << 6];
+        Vector<CacheAlreadyPacket> cacheAlreadyPackets_;
 
 	private:
 		// 세션 id

@@ -7,6 +7,7 @@
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
 	handlers_(handlers), sessionId_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
+    cacheAlreadyPackets_.resize(g_channelMask + 1);
 }
 
 DUBU::Session::~Session()
@@ -15,6 +16,7 @@ DUBU::Session::~Session()
     {
         Reset();
     }
+    cacheAlreadyPackets_.clear();
 }
 
 void DUBU::Session::SetSockAddr(const SOCKADDR_IN& addr)
@@ -83,7 +85,7 @@ void DUBU::Session::Reset()
 	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
 
-    for (Uint32 channelID = 0; channelID < (1 << 6); ++channelID)
+    for (Uint32 channelID = 0; channelID <= (g_channelMask); ++channelID)
     {
         CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
         ReliablePacketState& rps = cap.reliablePacketState;
@@ -306,7 +308,7 @@ void DUBU::Session::RepeatMessageAll(RUDPSocket* socket, Uint32 resendDelay)
         RepeatMessage(socket, resendDelay, rpsNo_, now);
     }
 
-    for (Uint32 channelID = 0; channelID < (1 << 6); ++channelID)
+    for (Uint32 channelID = 0; channelID <= (g_channelMask); ++channelID)
     {
         ReliablePacketState& rps = cacheAlreadyPackets_[channelID].reliablePacketState;
         if (rps.IsRepeat())

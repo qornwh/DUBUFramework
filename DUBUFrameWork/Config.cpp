@@ -11,6 +11,7 @@ namespace DUBU
     Uint32 g_defaultRttMsDelay = DEFAULT_RTT_MS_DELAY;
 	Uint32 g_defaultDisconnectTimeoutMs = DEFAULT_DISCONNECT_TIMEOUT_MS;
     Uint32 g_defaultPingTimeoutMs = DEFAULT_PING_TIMEOUT_MS;
+    Uint32 g_channelMask = DEFAULT_CHANNEL_MASK;
 
 	template <typename T>
 	static void SetNumberConfig(const json& config, const char* key, T& value)
@@ -37,6 +38,7 @@ namespace DUBU
 		g_defaultRttMsDelay = DEFAULT_RTT_MS_DELAY;
 		g_defaultDisconnectTimeoutMs = DEFAULT_DISCONNECT_TIMEOUT_MS;
 		g_defaultPingTimeoutMs = DEFAULT_PING_TIMEOUT_MS;
+        g_channelMask = DEFAULT_CHANNEL_MASK;
 
 		std::ifstream file(path);
 		if (!file.is_open())
@@ -53,6 +55,7 @@ namespace DUBU
 		SetNumberConfig(config, "DEFAULT_RTT_MS_DELAY", g_defaultRttMsDelay);
 		SetNumberConfig(config, "DEFAULT_DISCONNECT_TIMEOUT_MS", g_defaultDisconnectTimeoutMs);
 		SetNumberConfig(config, "DEFAULT_PING_TIMEOUT_MS", g_defaultPingTimeoutMs);
+        SetNumberConfig(config, "DEFAULT_CHANNEL_MASK", g_channelMask);
 
 		return true;
 	}
