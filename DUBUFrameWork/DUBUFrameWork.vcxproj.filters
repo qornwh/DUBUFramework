@@ -188,9 +188,6 @@
     <ClCompile Include="Subheader.cpp">
       <Filter>Packet\Subheader</Filter>
     </ClCompile>
-    <ClCompile Include="CachePacket.cpp">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="PacketStateBase.cpp">
       <Filter>Service\Reliable</Filter>
     </ClCompile>
