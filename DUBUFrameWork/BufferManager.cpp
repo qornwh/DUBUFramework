@@ -109,3 +109,9 @@ void DUBU::CachePacketManager::PushPacketBuffer(CachePacketBuffer* ptr)
     ZeroMemory(ptr->pos_, ptr->size_);
     ptr->size_ = 0;
 }
+
+void DUBU::CachePacketBuffer::Copy(const Uint8* ptr, const Uint16 len)
+{
+    std::memcpy(buffer_, ptr, len);
+    pos_ = buffer_;
+}
