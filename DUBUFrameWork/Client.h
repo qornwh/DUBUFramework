@@ -57,7 +57,7 @@ namespace DUBU
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
 
     private:
-        void RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
+        void RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
 
     protected:
         // 소켓만 protected로 수정
