@@ -5,7 +5,7 @@
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::Client::Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
-    handlers_(handlers), clientId_(0), recvSequenceNo_(0), sendSequenceNo_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false)
+    handlers_(handlers), clientId_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false)
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
@@ -137,11 +137,6 @@ void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 }
 
-Uint32 DUBU::Client::UpdateSendSequenceNo()
-{
-    return ++sendSequenceNo_;
-}
-
 void DUBU::Client::ConnectMessage()
 {
     if (connNo_ >= DEFAULT_REQUEST_CONNECT_NO)
@@ -196,39 +191,9 @@ void DUBU::Client::DisconnectMessage()
     rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 }
 
-void DUBU::Client::SendEchoMessage()
-{
-	OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-
-	// ECHO 메시지
-	String str = "ECHO TEST !!!";
-
-	// 헤더 작성
-	header->checksum_ = 0;
-	header->flags_ = Packet::PacketHeaderFlag::REPEAT;
-	header->totalSize_ = static_cast<Uint16>(sizeof(Packet::PacketHeader) + str.size());
-	header->sessionId_ = clientId_;
-	header->sequenceNo_ = UpdateSendSequenceNo();
-	header->timestamp_ = GetRelativeTimeMs();
-    header->packetCode_ = 0;
-
-    // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(Packet::PacketHeader), str.c_str(), str.size());
-
-	// 전체 패킷 사이즈 설정
-	opb->size_ = header->totalSize_;
-
-	// crc32 암호화
-	Uint32 checksum = Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
-	header->checksum_ = checksum;
-	rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
-    AddPendingPacket(opb, opb->size_);
-}
-
 Uint32 DUBU::Client::GetClientId() const
 {
-	return clientId_;
+    return clientId_;
 }
 
 bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
@@ -352,7 +317,7 @@ bool DUBU::Client::RecvDispatchACK(Uint8* buffer, Uint16 size)
     return true;
 }
 
-void DUBU::Client::RepeatMessage(Uint32 resendDelay)
+void DUBU::Client::RepeatMessageAll(Uint32 resendDelay)
 {
     Uint32 now = GetRelativeTimeMs();
 
@@ -364,23 +329,6 @@ void DUBU::Client::RepeatMessage(Uint32 resendDelay)
             rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
             p.timeStamp = now;
         }
-    }
-}
-
-void DUBU::Client::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
-{
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-    Uint32 timeStamp = header->timestamp_;
-    Uint32 sequenceNo = header->sequenceNo_;
-    bool isSent = false;
-
-    // ACK가져올때 까지 킵
-    pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { opb, timeStamp, sequenceNo, isSent };
-
-    // Pending 로컬 시퀀스 전진시킨다. 
-    if (sequenceNo >= localSeqence_)
-    {
-        localSeqence_ = sequenceNo + 1;
     }
 }
 
@@ -455,10 +403,5 @@ void DUBU::Client::CheckPending()
     }
 
     // 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
-    RepeatMessage(rttMillisec_ * 2 + g_defaultRttMsDelay);
-}
-
-Uint32 DUBU::Client::GetRecvSequenceNo() const
-{
-    return recvSequenceNo_;
+    RepeatMessageAll(rttMillisec_ * 2 + g_defaultRttMsDelay);
 }

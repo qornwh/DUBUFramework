@@ -3,20 +3,11 @@
 #include "Config.h"
 #include "Packet.h"
 #include "Peer.h"
-#include "PendingPacket.h"
-#include "CachePacket.h"
-#include "PacketStateBase.h"
 #include "ReliablePacketState.h"
 
 namespace DUBU
 {
     struct OverlappedPacketBuffer;
-
-    struct CacheAlreadyPacket
-    {
-        ReliablePacketState reliablePacketState;
-        CachePacket cachePackets[DEFAULT_WINDOW_COUNT];
-    };
 
 	/*
 	* Session : 베이스 클래스
@@ -82,8 +73,7 @@ namespace DUBU
         PacketStateBase rNopsNo_;
         // 순서보장 x 재전송 o 패킷 정보
         ReliablePacketState rpsNo_;
-
-        // 채널 번호 32개
+        // 채널 생성
         Vector<CacheAlreadyPacket> cacheAlreadyPackets_;
 
 	private:

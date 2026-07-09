@@ -1,6 +1,7 @@
 #pragma once
 #include "PacketStateBase.h"
 #include "PendingPacket.h"
+#include "CachePacket.h"
 
 namespace DUBU
 {
@@ -14,5 +15,11 @@ namespace DUBU
         void AddPendingPacket(struct OverlappedPacketBuffer* opb, Uint16 size);
         void AckProcess(Uint32 ackSeq, Uint32 rttMillisec_);
         bool IsRepeat() const;
+    };
+
+    struct CacheAlreadyPacket
+    {
+        ReliablePacketState reliablePacketState;
+        CachePacket cachePackets[DEFAULT_WINDOW_COUNT];
     };
 }

@@ -29,6 +29,7 @@ namespace DUBU
         bool Dispatch();
         void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
         void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
+        const Bool IsConnect() const { return isConnect_; }
         Uint32 UpdateSendSequenceNo();
 
         void ConnectMessage();
@@ -50,8 +51,6 @@ namespace DUBU
         void CheckPending();
 
         Uint32 GetRecvSequenceNo() const;
-
-        const Bool IsConnect() const { return isConnect_; }
 
         Lock& GetLock() { return lock_; }
 
