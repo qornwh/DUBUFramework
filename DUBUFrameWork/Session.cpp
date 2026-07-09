@@ -85,11 +85,14 @@ void DUBU::Session::Reset()
 	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
 
+    rNopsNo_.Reset();
+    rpsNo_.Reset();
     for (Uint32 channelID = 0; channelID <= (g_channelMask); ++channelID)
     {
         CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
         ReliablePacketState& rps = cap.reliablePacketState;
 
+        rps.Reset();
         for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
         {
             CachePacket& cachePacket = cap.cachePackets[i];
@@ -119,7 +122,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
         if (channel > 0)
         {
-            if (header->flags_ > 0b1111)
+            if (header->flags_ > g_channelMask)
             {
                 // 할당 불가 채널 ID.
                 return false;
@@ -134,7 +137,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
             // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
             if (header->sequenceNo_ <= rps.recvRepeatSeq_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > rps.recvRepeatSeq_)
             {
-                // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
+                // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다. (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
                 return true;
             }
 
@@ -145,7 +148,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                 if (del > 64)
                 {
                     // 최대 캐싱 가능크기는 64넘기면 캐싱안하고 넘어간다.
-                    false;
+                    return false;
                 }
 
                 if (header->sequenceNo_ > rps.lastRepeatSeq_)
@@ -153,6 +156,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                     // 패킷 캐싱
                     CachePacket& cachePacket = cap.cachePackets[header->sequenceNo_ % DEFAULT_WINDOW_COUNT];
                     cachePacket.buffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                    cachePacket.buffer->Copy(buffer, size);
                     cachePacket.sequenceNo = header->sequenceNo_;
                     cachePacket.timeStamp = DUBU::GetRelativeTimeMs();
                     cachePacket.isKeep = true;
@@ -199,9 +203,10 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
             {
                 // 현재 순서가 아닌 패킷인 경우
                 Uint64 del64 = header->sequenceNo_ - rpsNo_.recvRepeatSeq_;
-                if (del64 > 63)
+                if (del64 >= DEFAULT_WINDOW_COUNT)
                 {
-                    // 63초과한 미래이면 그냥 패스 - 재전송 하라고 한다.
+                    // 64이상이면(매우 큰 미래) 그냥 패스 - 재전송 하라고 한다.
+                    // 반복될시 disconnect
                     return false;
                 }
 
@@ -239,9 +244,11 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
     else
     {
         // 재전송 패킷이 아닌경우.
+        PacketParse(buffer, size);
+        return true;
     }
 
-    return false;
+    return true;
 }
 
 bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
@@ -287,6 +294,7 @@ bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
 
 void DUBU::Session::SendACK(Uint32 seqNo)
 {
+    // 서버 처리 내가보낸거 ACK만 보내줌
 }
 
 Uint32 DUBU::Session::GetLastPingSentTime() const
