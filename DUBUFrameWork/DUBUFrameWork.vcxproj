@@ -172,7 +172,6 @@
     <ClCompile Include="PacketStateBase.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Peer.cpp" />
-    <ClCompile Include="PendingPacket.cpp" />
     <ClCompile Include="Pool.cpp" />
     <ClCompile Include="ReliablePacketState.cpp" />
     <ClCompile Include="RingBuffer.cpp" />

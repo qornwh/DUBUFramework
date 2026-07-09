@@ -176,9 +176,6 @@
     <ClCompile Include="Peer.cpp">
       <Filter>Service\Server</Filter>
     </ClCompile>
-    <ClCompile Include="PendingPacket.cpp">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
     </ClCompile>

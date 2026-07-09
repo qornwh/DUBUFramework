@@ -33,7 +33,6 @@ namespace DUBU
 
         void ConnectMessage();
         void DisconnectMessage();
-        void SendEchoMessage();
         Uint32 GetClientId() const;
 
         bool RecvDispatch(Uint8* buffer, Uint16 size);

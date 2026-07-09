@@ -69,7 +69,7 @@ namespace DUBU
         Uint32 AccSequnceNo() { return ++lastPongSeq_; }
 
         // Echo 메시지 
-        //void SendEchoMessage(Uint8* buffer, Uint16 size);
+        void SendEchoMessage(Uint8* buffer, Uint16 size);
 
         // SendPacket
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);

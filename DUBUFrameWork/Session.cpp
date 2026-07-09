@@ -329,7 +329,7 @@ void DUBU::Session::PacketParse(Uint8* buffer, Uint16 size)
         Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
 
         // 에코 메시지 전달
-        //SendEchoMessage(ptr, size);
+        SendEchoMessage(ptr, size);
 
         std::string_view sv(reinterpret_cast<char*>(ptr), size);
         spdlog::info("ECHO Recv Server : {}-{}-{}", id, seq, sv);
@@ -395,6 +395,12 @@ void DUBU::Session::Disconnect()
 #ifdef _DEBUG
     spdlog::info("Disconnect : result resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
 #endif
+}
+
+void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)
+{
+    Packet::PacketOpctions opt{ true, true, 0 };
+    SendPacket(buffer, 0, size, opt);
 }
 
 void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader, Uint16 subHeaderSize)
