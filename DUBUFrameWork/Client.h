@@ -35,7 +35,7 @@ namespace DUBU
         const Bool IsConnect() const { return isConnect_; }
         Lock& GetLock() { return lock_; }
 
-        void SendAck(Uint32 seqNo);
+        void SendAck(Uint32 seqNo, const Packet::PacketOpctions& opt);
 
 		void ConnectMessage();
         void DisconnectMessage();

@@ -41,7 +41,7 @@ namespace DUBU
         void PacketParse(Uint8* buffer, Uint16 size);
 
         // ACK 리턴
-        void SendACK(Uint32 seqNo);
+        void SendACK(Uint32 seqNo, const Packet::PacketOpctions& opt);
 
 		Uint32 GetLastPingSentTime() const;
 		void SetLastPingSentTime(Uint32 time);

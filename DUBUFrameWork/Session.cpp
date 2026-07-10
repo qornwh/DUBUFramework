@@ -123,7 +123,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         if (channel > 0)
         {
             // 채널 ID
-            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
 
             if (channelID > g_channelMask)
             {
@@ -174,6 +174,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                 // 현재꺼는 실행
                 PacketParse(buffer, size);
                 rps.cacheRepeatCount_ <<= 1;
+                rps.recvRepeatSeq_ = header->sequenceNo_;
 
                 // 미리 수신된 패킷 있으면 실행해 준다.
                 for (Uint64 i = rps.recvRepeatSeq_ + 1; i < rps.lastRepeatSeq_; ++i)
@@ -266,7 +267,7 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
 
     if (ischannel)
     {
-        Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+        Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
         cacheAlreadyPackets_[channel].reliablePacketState.AckProcess(ackSeq, rttMillisec_);
     }
     else
@@ -292,7 +293,7 @@ bool DUBU::Session::RecvDispatchPong(Uint8* buffer, Uint16 size)
 	return true;
 }
 
-void DUBU::Session::SendACK(Uint32 seqNo)
+void DUBU::Session::SendACK(Uint32 seqNo, const Packet::PacketOpctions& opt)
 {
     // 서버 처리 내가보낸거 ACK만 보내줌
 }
@@ -430,7 +431,7 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
         if (opt.order_)
         {
             header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
-            header->flags_ |= opt.channelID_ << 2;
+            header->flags_ |= opt.channelID_ << 3;
             header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
         }
         else

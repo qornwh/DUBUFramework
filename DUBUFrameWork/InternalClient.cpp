@@ -154,7 +154,13 @@ void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint1
         if (result)
         {
             // ACK 전달
-            SendAck(seqNo);
+            Packet::PacketOpctions opt{ true, false, 0 };
+            if ((flag & Packet::PacketHeaderFlag::CHANNEL) == Packet::PacketHeaderFlag::CHANNEL)
+            {
+                opt.order_ = true;
+                opt.channelID_ = (flag & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
+            }
+            SendAck(seqNo, opt);
         }
     }
     else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
@@ -247,7 +253,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
             }
 
             // 채널 ID
-            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
 
             CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
             ReliablePacketState& rps = cap.reliablePacketState;
@@ -291,6 +297,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
                 // 현재꺼는 실행
                 PacketParse(buffer, size);
                 rps.cacheRepeatCount_ <<= 1;
+                rps.recvRepeatSeq_ = header->sequenceNo_;
 
                 // 미리 수신된 패킷 있으면 실행해 준다.
                 for (Uint64 i = rps.recvRepeatSeq_ + 1; i < rps.lastRepeatSeq_; ++i)
@@ -382,7 +389,7 @@ bool DUBU::InternalClient::RecvDispatchACK(Uint8* buffer, Uint16 size)
 
     if (ischannel)
     {
-        Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+        Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
         cacheAlreadyPackets_[channel].reliablePacketState.AckProcess(ackSeq, rttMillisec_);
     }
     else
@@ -481,7 +488,7 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, co
         if (opt.order_)
         {
             header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
-            header->flags_ |= opt.channelID_ << 2;
+            header->flags_ |= opt.channelID_ << 3;
             header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
         }
         else
@@ -541,7 +548,7 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, co
     }
 }
 
-void DUBU::InternalClient::SendAck(Uint32 seqNo)
+void DUBU::InternalClient::SendAck(Uint32 seqNo, const Packet::PacketOpctions& opt)
 {
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -549,6 +556,11 @@ void DUBU::InternalClient::SendAck(Uint32 seqNo)
     // 헤더 작성 (header-only, 비신뢰)
     header->checksum_ = 0;
     header->flags_ = Packet::PacketHeaderFlag::ACK;
+    if (opt.order_)
+    {
+        header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
+        header->flags_ |= opt.channelID_ << 3;
+    }
     header->totalSize_ = sizeof(Packet::PacketHeader);
     header->sessionId_ = clientId_;
     header->sequenceNo_ = seqNo;
