@@ -12,11 +12,41 @@ DUBU::InternalClient::InternalClient(const String& serverIP, Uint16 serverPort, 
     rudpSocket_->SetHandler(this);
     rudpSocket_->StartClient(serverIP, serverPort);
     rudpSocket_->RecvFrom();
+    cacheAlreadyPackets_.resize(g_channelMask + 1);
 }
 
 DUBU::InternalClient::~InternalClient()
 {
+    Reset();
+
     rudpSocket_->EndClient();
+    cacheAlreadyPackets_.clear();
+}
+
+void DUBU::InternalClient::Reset()
+{
+    isConnect_ = false;
+
+    rNopsNo_.Reset();
+    rpsNo_.Reset();
+    for (Uint32 channelID = 0; channelID <= (g_channelMask); ++channelID)
+    {
+        CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
+        ReliablePacketState& rps = cap.reliablePacketState;
+
+        rps.Reset();
+        for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
+        {
+            CachePacket& cachePacket = cap.cachePackets[i];
+            if (cachePacket.buffer != nullptr)
+            {
+                cachePacket.isKeep = false;
+                cachePacket.sequenceNo = 0;
+                cachePacket.timeStamp = 0;
+                CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+            }
+        }
+    }
 }
 
 void DUBU::InternalClient::Connect()
@@ -54,7 +84,7 @@ void DUBU::InternalClient::ConnectTimes(const Uint32 count)
 void DUBU::InternalClient::Disconnect()
 {
     DisconnectMessage();
-    isConnect_ = false;
+    Reset();
 }
 
 bool DUBU::InternalClient::Dispatch()

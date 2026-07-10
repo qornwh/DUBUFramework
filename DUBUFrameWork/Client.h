@@ -24,6 +24,7 @@ namespace DUBU
 	public:
 		Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers = nullptr);
 		virtual ~Client();
+        virtual void Reset();
 
 		void Connect();
         void ConnectTimes(Uint32 count = 5);
