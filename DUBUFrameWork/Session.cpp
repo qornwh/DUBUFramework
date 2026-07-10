@@ -429,6 +429,7 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
         header->flags_ |= Packet::PacketHeaderFlag::REPEAT;
         if (opt.order_)
         {
+            header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
             header->flags_ |= opt.channelID_ << 2;
             header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
         }
