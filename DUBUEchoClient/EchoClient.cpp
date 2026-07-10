@@ -10,7 +10,7 @@ EchoClient::~EchoClient()
 {
 }
 
-void EchoClient::SendChatMessage(const String& chat)
+void EchoClient::SendChatMessage(const String& chat, Uint8 channelId)
 {
     // 메시지 작성
     flatbuffers::FlatBufferBuilder fbb;
@@ -21,5 +21,5 @@ void EchoClient::SendChatMessage(const String& chat)
     Uint8* buffer = fbb.GetBufferPointer();
     Uint16 size = fbb.GetSize();
 
-    SendPacket(buffer, DUBU::Echo::PacketBody_Chatting, size, DUBU::Packet::PacketOpctions{ true, true, 0 });
+    SendPacket(buffer, DUBU::Echo::PacketBody_Chatting, size, DUBU::Packet::PacketOpctions{ true, true, channelId });
 }
