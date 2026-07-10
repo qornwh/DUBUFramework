@@ -440,7 +440,7 @@ void DUBU::Client::PacketParse(Uint8* buffer, Uint16 size)
         shBuffer = reinterpret_cast<Uint8*>(sh);
     }
 
-    flatbuffers::Verifier verifier(buffer + offset, size);
+    flatbuffers::Verifier verifier(buffer + offset, size - offset);
 
     if (handlers_ != nullptr)
     {
@@ -586,7 +586,7 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
         header->sequenceNo_ = rNopsNo_.UpdateSendSequenceNo();
     }
     header->checksum_ = 0;
-    header->totalSize_ = static_cast <Uint16>(sizeof(Packet::PacketHeader)) + size;
+    header->totalSize_ = static_cast<Uint16>(sizeof(Packet::PacketHeader) + size);
     header->sessionId_ = clientId_;
     header->timestamp_ = GetRelativeTimeMs();
     header->packetCode_ = code;
@@ -601,6 +601,9 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
         header->packetCode_ |= (sh->type_ << 5);
         header->totalSize_ += subHeaderSize;
     }
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + offset, buffer, size);
 
     // 사이즈 지정
     opb->size_ = header->totalSize_;

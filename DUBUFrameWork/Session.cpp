@@ -335,13 +335,13 @@ void DUBU::Session::PacketParse(Uint8* buffer, Uint16 size)
     {
         Uint32 id = header->sessionId_;
         Uint32 seq = header->sequenceNo_;
-        Int32 size = header->totalSize_ - sizeof(Packet::PacketHeader);
+        Uint32 echoSize = header->totalSize_ - sizeof(Packet::PacketHeader);
         Uint8* ptr = reinterpret_cast<Uint8*>(buffer + sizeof(Packet::PacketHeader));
 
         // 에코 메시지 전달
-        SendEchoMessage(ptr, size);
+        SendEchoMessage(ptr, echoSize);
 
-        std::string_view sv(reinterpret_cast<char*>(ptr), size);
+        std::string_view sv(reinterpret_cast<char*>(ptr), echoSize);
         spdlog::info("ECHO Recv Server : {}-{}-{}", id, seq, sv);
         return;
     }
@@ -359,7 +359,7 @@ void DUBU::Session::PacketParse(Uint8* buffer, Uint16 size)
         shBuffer = reinterpret_cast<Uint8*>(sh);
     }
 
-    flatbuffers::Verifier verifier(buffer + offset, size);
+    flatbuffers::Verifier verifier(buffer + offset, size - offset);
 
     if (handlers_ != nullptr)
     {
@@ -458,6 +458,9 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
         header->packetCode_ |= (sh->type_ << 5);
         header->totalSize_ += subHeaderSize;
     }
+
+    // 메시지 복사
+    std::memcpy(opb->buffer_ + offset, buffer, size);
     
     // 사이즈 지정
     opb->size_ = header->totalSize_;
