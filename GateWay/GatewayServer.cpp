@@ -3,6 +3,7 @@
 #include "BufferManager.h"
 #include "InternalClient.h"
 #include "../extra/dubu_echo_packet_generated.h"
+#include <Subheader.h>
 
 GatewayServer::GatewayServer() : DUBU::Server()
 {
@@ -64,7 +65,17 @@ void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
     DUBU::Packet::PacketOpctions opt{ true, true, 0 };
-    internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size, opt);
+
+    // 헤더 길이 제외한 버퍼 크기를 구함
+    Uint16 offset = sizeof(DUBU::Packet::PacketHeader);
+    Uint8 shType = header->packetCode_ >> 5;
+    if (shType > 0)
+    {
+        DUBU::Packet::SubheaderBase* sh = reinterpret_cast<DUBU::Packet::SubheaderBase*>(buffer + sizeof(DUBU::Packet::PacketHeader));
+        offset += sh->GetSize();
+    }
+
+    internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer + offset, code, size - offset, opt);
 }
 
 Bool GatewayServer::InnerDispatch()
