@@ -49,7 +49,7 @@ namespace DUBU
         {
             bool reliable_ = false;
             bool order_ = false;
-            Uint8 channelID_ = false;
+            Uint8 channelID_ = 0;
         };
 #pragma pack(pop)
 
