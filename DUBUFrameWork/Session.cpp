@@ -122,14 +122,14 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
         if (channel > 0)
         {
-            if (header->flags_ > g_channelMask)
+            // 채널 ID
+            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
+
+            if (channelID > g_channelMask)
             {
                 // 할당 불가 채널 ID.
                 return false;
             }
-
-            // 채널 ID
-            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) << 3;
 
             CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
             ReliablePacketState& rps = cap.reliablePacketState;
