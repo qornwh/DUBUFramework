@@ -36,7 +36,9 @@ int main()
             DUBU::Client client{ "127.0.0.1", DUBU::g_servicePort };
             client.ConnectTimes();
 
+            const Uint32 TimeOut = 20000;
             Uint32 time = DUBU::GetRelativeTimeMs();
+            Uint32 firstTime = time;
             Sleep(500);
             while (true)
             {
@@ -52,7 +54,7 @@ int main()
                     client.Dispatch();
                 }
 
-                if (client.GetRecvSequenceNo() >= 10)
+                if (cur - firstTime > TimeOut)
                 {
                     client.Disconnect();
                     break;

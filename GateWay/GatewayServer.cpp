@@ -63,7 +63,8 @@ void GatewayServer::Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* ha
 void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
-    internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size);
+    DUBU::Packet::PacketOpctions opt{ true, true, 0 };
+    internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer, code, size, opt);
 }
 
 Bool GatewayServer::InnerDispatch()
@@ -87,6 +88,7 @@ void GatewayServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
             continue;
         }
 
-        session->SendPacketReliable(buffer, code, size);
+        DUBU::Packet::PacketOpctions opt{true, true, 0};
+        session->SendPacket(buffer, code, size, opt);
     }
 }

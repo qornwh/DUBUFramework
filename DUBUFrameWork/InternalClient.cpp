@@ -580,3 +580,18 @@ void DUBU::InternalClient::CheckPending()
     // 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
     RepeatMessageAll(rttMillisec_ * 2 + g_defaultRttMsDelay);
 }
+
+void DUBU::InternalClient::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)
+{
+    Uint32 current = rps.localWindowStart_;
+    while (current != rps.localSeqence_)
+    {
+        PendingPacket& p = rps.pendingPackets_[current % DEFAULT_WINDOW_COUNT];
+        if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
+        {
+            rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
+            p.timeStamp = now;
+        }
+        ++current;
+    }
+}
