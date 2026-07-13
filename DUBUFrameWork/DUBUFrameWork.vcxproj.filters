@@ -126,6 +126,9 @@
     <ClInclude Include="ReliablePacketState.h">
       <Filter>Service\Reliable</Filter>
     </ClInclude>
+    <ClInclude Include="ChunkPacket.h">
+      <Filter>Service</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -190,6 +193,9 @@
     </ClCompile>
     <ClCompile Include="ReliablePacketState.cpp">
       <Filter>Service\Reliable</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkPacket.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

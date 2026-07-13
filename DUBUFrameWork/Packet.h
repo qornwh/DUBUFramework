@@ -32,6 +32,13 @@ namespace DUBU
 		};
 
 #pragma pack(push, 4)
+        // 청크 정보
+        struct ChunkInfo
+        {
+            Uint16 size_ = 0;
+            Uint16 flag_ = 0; // ob10000000000000 & 연산시 포함되면 마지막이다. 최대 1.6k정도까지 사용된다.
+        };
+
 		struct PacketHeader
 		{
 			Uint16 totalSize_;
@@ -41,7 +48,7 @@ namespace DUBU
 			Uint32 sequenceNo_;
 			Uint32 timestamp_;
 			Uint32 checksum_;
-            Uint32 chunkInfo_;
+            ChunkInfo chunkInfo_;
 		};
 
         // 보내는 패킷 옵션. 지정 초기화로 사용하기
