@@ -36,7 +36,7 @@ namespace DUBU
 		void SendPing(Session* session);
 		void CheckSession();
 
-        void SendAck(Uint32 seqNo, Session* session);
+        void SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt);
 
         const Bool IsRunning() const { return isRunning_; }
         Lock& GetSessionLock() { return sessionLock_; }

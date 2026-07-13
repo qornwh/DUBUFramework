@@ -46,6 +46,9 @@
     <Filter Include="Packet\Subheader">
       <UniqueIdentifier>{deaf8c82-4ea9-413d-abd3-49804b84d415}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Service\Reliable">
+      <UniqueIdentifier>{86932028-b533-4af6-99d7-e4f9b475b214}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -114,6 +117,15 @@
     <ClInclude Include="Subheader.h">
       <Filter>Packet\Subheader</Filter>
     </ClInclude>
+    <ClInclude Include="CachePacket.h">
+      <Filter>Service</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketStateBase.h">
+      <Filter>Service\Reliable</Filter>
+    </ClInclude>
+    <ClInclude Include="ReliablePacketState.h">
+      <Filter>Service\Reliable</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -164,9 +176,6 @@
     <ClCompile Include="Peer.cpp">
       <Filter>Service\Server</Filter>
     </ClCompile>
-    <ClCompile Include="PendingPacket.cpp">
-      <Filter>Service</Filter>
-    </ClCompile>
     <ClCompile Include="Config.cpp">
       <Filter>Config</Filter>
     </ClCompile>
@@ -175,6 +184,12 @@
     </ClCompile>
     <ClCompile Include="Subheader.cpp">
       <Filter>Packet\Subheader</Filter>
+    </ClCompile>
+    <ClCompile Include="PacketStateBase.cpp">
+      <Filter>Service\Reliable</Filter>
+    </ClCompile>
+    <ClCompile Include="ReliablePacketState.cpp">
+      <Filter>Service\Reliable</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

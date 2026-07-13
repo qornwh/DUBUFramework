@@ -11,6 +11,7 @@ namespace DUBU
 	extern Uint32 g_defaultRttMsDelay;
 	extern Uint32 g_defaultDisconnectTimeoutMs;
 	extern Uint32 g_defaultPingTimeoutMs;
+    extern Uint32 g_channelMask;
 
 	Bool LoadConfig(const String& path);
 }

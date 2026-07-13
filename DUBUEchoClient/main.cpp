@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 
         if (!chat.empty())
         {
-            client->SendChatMessage(chat);
+            client->SendChatMessage(chat, 2);
         }
 
         if (InterruptCtrlC)

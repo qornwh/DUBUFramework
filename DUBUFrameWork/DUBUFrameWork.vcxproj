@@ -169,10 +169,11 @@
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="OverlappedObj.cpp" />
     <ClCompile Include="Packet.cpp" />
+    <ClCompile Include="PacketStateBase.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Peer.cpp" />
-    <ClCompile Include="PendingPacket.cpp" />
     <ClCompile Include="Pool.cpp" />
+    <ClCompile Include="ReliablePacketState.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="RUDPSocket.cpp" />
     <ClCompile Include="RWLock.cpp" />
@@ -185,6 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="CachePacket.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionType.h" />
@@ -192,10 +194,12 @@
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="OverlappedObj.h" />
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="PacketStateBase.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Peer.h" />
     <ClInclude Include="PendingPacket.h" />
     <ClInclude Include="Pool.h" />
+    <ClInclude Include="ReliablePacketState.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="RUDPSocket.h" />
     <ClInclude Include="RWLock.h" />

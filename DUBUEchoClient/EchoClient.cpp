@@ -10,7 +10,7 @@ EchoClient::~EchoClient()
 {
 }
 
-void EchoClient::SendChatMessage(const String& chat)
+void EchoClient::SendChatMessage(const String& chat, Uint8 channelId)
 {
     // 메시지 작성
     flatbuffers::FlatBufferBuilder fbb;
@@ -19,29 +19,7 @@ void EchoClient::SendChatMessage(const String& chat)
     DUBU::Echo::FinishPacketBuffer(fbb, packet);
     // buffer, size
     Uint8* buffer = fbb.GetBufferPointer();
-    size_t size = fbb.GetSize();
+    Uint16 size = fbb.GetSize();
 
-    DUBU::OverlappedPacketBuffer* opb = DUBU::PacketManager::GetInstance().PopPacketBuffer();
-    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(opb->buffer_);
-
-    // 헤더 작성
-    header->checksum_ = 0;
-    header->flags_ = DUBU::Packet::PacketHeaderFlag::REPEAT;
-    header->totalSize_ = static_cast<Uint16>(sizeof(DUBU::Packet::PacketHeader) + size);
-    header->sessionId_ = GetClientId();
-    header->sequenceNo_ = UpdateSendSequenceNo();
-    header->timestamp_ = DUBU::GetRelativeTimeMs();
-    header->packetCode_ = DUBU::Echo::PacketBody_Chatting;
-
-    // 메시지 복사
-    std::memcpy(opb->buffer_ + sizeof(DUBU::Packet::PacketHeader), buffer, size);
-
-    // 전체 패킷 사이즈 설정
-    opb->size_ = header->totalSize_;
-
-    // crc32 암호화
-    Uint32 checksum = DUBU::Packet::Packet::CRC32(opb->buffer_, header->totalSize_);
-    header->checksum_ = checksum;
-    rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
-    AddPendingPacket(opb, opb->size_);
+    SendPacket(buffer, DUBU::Echo::PacketBody_Chatting, size, DUBU::Packet::PacketOpctions{ true, true, channelId });
 }

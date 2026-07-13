@@ -3,7 +3,7 @@
 #include "Config.h"
 #include "Packet.h"
 #include "Peer.h"
-#include "PendingPacket.h"
+#include "ReliablePacketState.h"
 
 namespace DUBU
 {
@@ -26,12 +26,9 @@ namespace DUBU
 		void SetSessionId(Int32 sessionId);
         void SetSocket(class RUDPSocket* socket);
 		void SetTimestamp(const Uint32 time);
-		Uint32 UpdateSendSequenceNo();
 
 		const SOCKADDR_IN& GetSockAddr() const;
         Uint32 GetSessionId() const;
-		Uint32 GetRecvSequenceNo() const;
-		Uint32 GetSendSequenceNo() const;
 		Uint32 GetRetryCount() const;
 		Uint32 GetRttMillisec() const;
 		Uint32 GetTimestamp() const;
@@ -40,17 +37,17 @@ namespace DUBU
 		bool RecvDispatch(Uint8* buffer, Uint16 size);
 		bool RecvDispatchACK(Uint8* buffer, Uint16 size);
 		bool RecvDispatchPong(Uint8* buffer, Uint16 size);
-		void RepeatMessage(class RUDPSocket* socket, Uint32 resendDelay);
+		void RepeatMessageAll(class RUDPSocket* socket, Uint32 resendDelay);
+        void PacketParse(Uint8* buffer, Uint16 size);
 
         // ACK 리턴
-        void SendACK(Uint32 seqNo);
+        void SendACK(Uint32 seqNo, const Packet::PacketOpctions& opt);
 
 		Uint32 GetLastPingSentTime() const;
 		void SetLastPingSentTime(Uint32 time);
 		void SetPeer(Peer& peer);
-		void AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size);
 
-		void Disconnect();
+		virtual void Disconnect();
 
         // 핑 카운트 기록
         void AddPingCount() { ++pingCount_; };
@@ -59,23 +56,29 @@ namespace DUBU
         Uint32 GetPongCount() const { return pongCount_; };
         Uint32 AccSequnceNo() { return ++lastPongSeq_; }
 
-        // Echo 메시지
+        // Echo 메시지 
         void SendEchoMessage(Uint8* buffer, Uint16 size);
 
-        void SendPacket(Uint8* buffer, Uint8 code, Uint16 size);
-        void SendPacketNoReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
-        void SendPacketReliable(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
-
+        // SendPacket
+        void SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
+        
         void SetAwaysConnect(Bool awaysConnect);
         Bool GetAwaysConnect() const { return awaysConnect_; };
+
+    private:
+        void RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
+
+    private:
+        // 순서보장 x 재전송 x 패킷 정보
+        PacketStateBase rNopsNo_;
+        // 순서보장 x 재전송 o 패킷 정보
+        ReliablePacketState rpsNo_;
+        // 채널 생성
+        Vector<CacheAlreadyPacket> cacheAlreadyPackets_;
 
 	private:
 		// 세션 id
 		Uint32 sessionId_ = 0;
-		// 수신 시퀀스 넘버
-		Uint32 recvSequenceNo_ = 0;
-		// 송신 시퀀스 넘버
-		Uint32 sendSequenceNo_ = 0;
 		// 재전송 시도 횟수
 		Uint32 retryCount_ = 0;
 
@@ -92,11 +95,6 @@ namespace DUBU
 
 		// Peer 관리
 		Peer peer_;
-
-		// 재전송 패킷 관리
-		PendingPacket pendingPackets_[DEFAULT_WINDOW_COUNT];
-		Uint32 localWindowStart_ = 0;
-		Uint32 localSeqence_ = 0;
 
 		// 패킷별 함수 분기대신 Map사용
 		const Map<Uint8, Packet::PacketHandler>* handlers_;

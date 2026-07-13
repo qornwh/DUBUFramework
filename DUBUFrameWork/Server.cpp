@@ -173,7 +173,13 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
                 if (result)
                 {
                     // ACK 전달
-                    SendAck(seqNo, session);
+                    Packet::PacketOpctions opt{ true, false, 0 };
+                    if ((flag & Packet::PacketHeaderFlag::CHANNEL) == Packet::PacketHeaderFlag::CHANNEL)
+                    {
+                        opt.order_ = true;
+                        opt.channelID_ = (flag & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
+                    }
+                    SendAck(seqNo, session, opt);
 #ifdef _DEBUG
                     sendAckCount_.fetch_add(1);
 #endif
@@ -252,7 +258,8 @@ void DUBU::Server::DisconnectMessage(Session* session)
 	header->flags_ = Packet::PacketHeaderFlag::DISCONNECT;
 	header->totalSize_ = sizeof(Packet::PacketHeader);
 	header->sessionId_ = session->GetSessionId();
-	header->sequenceNo_ = session->UpdateSendSequenceNo();
+    // disconnect는 0번 보낸다.
+	header->sequenceNo_ = 0;
 	header->timestamp_ = GetRelativeTimeMs();
 
 	// 전체 패킷 사이즈 설정
@@ -340,7 +347,7 @@ void DUBU::Server::CheckSession()
 			}
 
 			// 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
-			session->RepeatMessage(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
+			session->RepeatMessageAll(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
 		}
 	}
 
@@ -397,7 +404,7 @@ void DUBU::Server::CheckSession()
 	sessionCAS_.store(false);
 }
 
-void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
+void DUBU::Server::SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt)
 {
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
@@ -405,6 +412,11 @@ void DUBU::Server::SendAck(Uint32 seqNo, Session* session)
     // 헤더 작성 (header-only, 비신뢰)
     header->checksum_ = 0;
     header->flags_ = Packet::PacketHeaderFlag::ACK;
+    if (opt.order_)
+    {
+        header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
+        header->flags_ |= opt.channelID_ << 3;
+    }
     header->totalSize_ = sizeof(Packet::PacketHeader);
     header->sessionId_ = session->GetSessionId();
     header->sequenceNo_ = seqNo;
