@@ -7,7 +7,8 @@
       "name": "spdlog",
       "default-features": false
     },
-    "nlohmann-json"
+    "nlohmann-json",
+    "tbb"
   ],
   "overrides": [
     {
@@ -21,6 +22,10 @@
     {
       "name": "spdlog",
       "version": "1.17.0"
+    },
+    {
+      "name": "tbb",
+      "version": "2022.3.0"
     }
   ],
   "builtin-baseline": "36fb57eb3878cc3422351a91d3e87c328388dabd"
