@@ -6,7 +6,7 @@
 #include "../extra/base_flatbuffer_generated.h"
 
 DUBU::InternalClient::InternalClient(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
-    handlers_(handlers), clientId_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false)
+    handlers_(handlers), clientId_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false), chunckPakcetInj_{}
 {
     rudpSocket_ = std::make_shared<RUDPSocket>();
     rudpSocket_->SetHandler(this);
@@ -319,6 +319,29 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
         }
         else
         {
+            // 청크 패킷 처리
+            Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
+            if (chunck == Packet::PacketHeaderFlag::CHUNK)
+            {
+                Uint64 seqNo = header->sequenceNo_;
+                // 일단 chunk는 채널 사용x : 현재 시스템상 채널은 순서대로 무조건 받는다. 그럼으로 제외
+                Packet::ChunkInfo chunckInfo = header->chunkInfo_;
+                ChunkPacket& chunckPacket = chunckPakcetInj_.Update(seqNo, chunckInfo.flag_);
+                CachePacketBuffer* cachePacketBuffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                cachePacketBuffer->Copy(buffer, size);
+                chunckPacket.SetBuffer(chunckInfo.flag_, cachePacketBuffer);
+
+                if (!chunckPacket.IsPull())
+                {
+                    // 아직 모든 청크 수신전이라면 ACK리턴. 
+                    return true;
+                }
+                else
+                {
+                    // TODO : 모든 버퍼 반환 and 패킷 처리 진행.
+                }
+            }
+
             // 순서 상관 x
             if (header->sequenceNo_ <= rpsNo_.recvRepeatSeq_)
             {
