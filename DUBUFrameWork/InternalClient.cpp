@@ -280,6 +280,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
                     // 패킷 캐싱
                     CachePacket& cachePacket = cap.cachePackets[header->sequenceNo_ % DEFAULT_WINDOW_COUNT];
                     cachePacket.buffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                    cachePacket.buffer->Copy(buffer, size);
                     cachePacket.sequenceNo = header->sequenceNo_;
                     cachePacket.timeStamp = DUBU::GetRelativeTimeMs();
                     cachePacket.isKeep = true;
