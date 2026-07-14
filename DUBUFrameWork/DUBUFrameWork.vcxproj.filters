@@ -49,6 +49,9 @@
     <Filter Include="Service\Reliable">
       <UniqueIdentifier>{86932028-b533-4af6-99d7-e4f9b475b214}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Service\Sub">
+      <UniqueIdentifier>{642c3575-e104-4b3c-827f-94eceb10a752}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
