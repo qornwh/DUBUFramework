@@ -163,6 +163,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BufferManager.cpp" />
+    <ClCompile Include="ChunkPacket.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="InternalClient.cpp" />
@@ -187,6 +188,7 @@
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="CachePacket.h" />
+    <ClInclude Include="ChunkPacket.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionType.h" />

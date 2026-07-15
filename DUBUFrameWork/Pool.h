@@ -11,6 +11,12 @@
 
 namespace DUBU
 {
+    /*
+    * 풀링 코드 어쨋든 어느정도 lock으로 대체중인데.
+    *  - lockfree가능성
+    *  - 전체적으로 데이터 레이스 / 데드락 확인 필요
+    */
+
 	// 1바이트 DubuByte 생성
 	using DubuByte = unsigned char;
 	using DubuBytePtr = DubuByte*;
@@ -29,6 +35,8 @@ namespace DUBU
 	extern Lock PoolLock;
 	// 풀에 담긴 메모리 최대 크기
 	constexpr int MaxChunkSize = 1 << 10;
+    // 청크쓰는 패킷 메모리 연속적인 공간의 첫 주소 관리
+    extern Set<Uint64> BigMemoryPtrs;
 
 	struct DubuByteData : public std::enable_shared_from_this<DubuByteData>
 	{
@@ -112,4 +120,10 @@ namespace DUBU
 
 		return reinterpret_cast<T*>(ptr);
 	}
+
+    // 그냥 size만큼 할당.
+    void PushBig(Uint8* ptr);
+
+    // 그냥 size만큼 할당.
+    Uint8* PopBig(Uint16 size);
 }

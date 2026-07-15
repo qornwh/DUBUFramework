@@ -6,6 +6,8 @@
 #include "PendingPacket.h"
 #include "ReliablePacketState.h"
 
+#include "ChunkPacket.h"
+
 // 일단 최대 10번만 연결 시도
 #define DEFAULT_REQUEST_CONNECT_NO 10
 
@@ -59,6 +61,9 @@ namespace DUBU
     protected:
         // 소켓만 protected로 수정
         std::shared_ptr<RUDPSocket> rudpSocket_;
+
+        // 일단 멤버변수로 청크 패킷관리를 한다.
+        ChunkPacketInj chunckPakcetInj_;
 
     private:
         // 순서보장 x 재전송 x 패킷 정보

@@ -7,6 +7,7 @@ namespace DUBU
 	Map<int, Vector<DubuBytePtr>> PoolChunkList;
 	const int PoolSize = 10;
 	Lock PoolLock;
+    Set<Uint64> BigMemoryPtrs;
 }
 
 DUBU::DubuByteData::DubuByteData()
@@ -67,6 +68,13 @@ DUBU::DubuByteData::~DubuByteData()
 		exit(EXIT_FAILURE); 
 	}
 
+    if (!BigMemoryPtrs.empty())
+    {
+        // 프로그램 종료 => 로그로 남겨두는것도
+        fprintf(stderr, "메모리 해제 실패 !!!\n");
+        exit(EXIT_FAILURE);
+    }
+
 	printf("메모리 해제 성공 !!!\n");
 }
 
@@ -99,4 +107,30 @@ DUBU::DubuByteDataSPtr DUBU::FindBlock(DubuBytePtr ptr)
 	fprintf(stderr, "해당하는 공간이 없음 !!!\n");
 	exit(EXIT_FAILURE);
 	return nullptr;
+}
+
+void DUBU::PushBig(Uint8* ptr)
+{
+    WriteLockGuard wl(PoolLock);
+    size_t result = BigMemoryPtrs.erase(reinterpret_cast<Uint64>(&ptr));
+#ifdef _DEBUG
+    if (result <= 0) 
+    {
+        // 공간 할당된 적 없음.. 크리티컬
+        fprintf(stderr, "공간 할당된 적 없음 or 이미 지워짐 .. 크리티컬 에러 !!!\n");
+        exit(EXIT_FAILURE);
+    }
+#endif
+    free(ptr);
+}
+
+Uint8* DUBU::PopBig(Uint16 size)
+{
+    assert(size <= (8 << 10));
+
+    WriteLockGuard wl(PoolLock);
+    Uint8* ptr = reinterpret_cast<Uint8*>(malloc(size));
+    // 일단 이렇게 정수로 받는다.
+    BigMemoryPtrs.emplace(reinterpret_cast<Uint64>(&ptr));
+    return ptr;
 }
