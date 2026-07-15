@@ -6,8 +6,9 @@ void DUBU::ChunkPacket::Reset()
     for (Uint32 i = 0; i < DEFAULT_CHUNCK_MAX_SIZE; ++i)
     {
         buffers_[i] = 0;
-        isEnd = false;
     }
+    count_ = 0;
+    isEnd = false;
 }
 
 bool DUBU::ChunkPacket::SetBuffer(Uint16 flag, CachePacketBuffer* buffer)
@@ -17,6 +18,8 @@ bool DUBU::ChunkPacket::SetBuffer(Uint16 flag, CachePacketBuffer* buffer)
         return false;
     }
 
+    // 사용개수 체크
+    ++count_; 
     flag_ |= flag;
 
     Uint8 count = 0;

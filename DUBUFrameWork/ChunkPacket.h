@@ -15,6 +15,7 @@ namespace DUBU
         struct CachePacketBuffer* buffers_[DEFAULT_CHUNCK_MAX_SIZE];
         Uint16 flag_ = 0;
         Uint16 size_ = 0;
+        Uint16 count_ = 0;
         bool isEnd = false;
     };
 
