@@ -3,6 +3,7 @@
 #include "BufferManager.h"
 #include "Subheader.h"
 #include "../extra/base_flatbuffer_generated.h"
+#include "Pool.h"
 
 DUBU::Client::Client(const String& serverIP, Uint16 serverPort, const Map<Uint8, Packet::PacketHandler>* handlers) :
     handlers_(handlers), clientId_(0), timestamp_(0), rttMillisec_(g_defaultRttMs), isConnect_(false), chunckPakcetInj_{}
@@ -329,14 +330,22 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
                 cachePacketBuffer->Copy(buffer, size);
                 chunckPacket.SetBuffer(chunckInfo.flag_, cachePacketBuffer);
 
-                if (!chunckPacket.IsPull())
+                if (chunckPacket.IsPull())
                 {
-                    // 아직 모든 청크 수신전이라면 ACK리턴. 
-                    return true;
-                }
-                else
-                {
-                    // TODO : 모든 버퍼 반환 and 패킷 처리 진행.
+                    Uint16 chunckSize = 0;
+                    Uint8* ptr = DUBU::PopBig(chunckSize);
+                    for (Int32 i = 0; i < chunckPacket.count_; ++i)
+                    {
+                        CachePacketBuffer* cpb = chunckPacket.buffers_[i];
+                        memcpy(ptr + chunckSize, cpb->buffer_, cpb->size_);
+                        chunckSize += cpb->size_;
+                        CachePacketManager::GetInstance().PushPacketBuffer(cpb);
+                    }
+                    // 청크는 이때 파싱한다. 
+                    // 이유는 모든 청크를 수집해서 parse하고
+                    // 이후에는 동적할당 해제 필수.. 릭 방지
+                    PacketParse(ptr, size);
+                    DUBU::PushBig(ptr);
                 }
             }
 
@@ -366,7 +375,10 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
                 if ((rpsNo_.cacheRepeatCount_ & del) != del)
                 {
                     rpsNo_.cacheRepeatCount_ &= del;
-                    PacketParse(buffer, size);
+                    if (chunck == 0)
+                    {
+                        PacketParse(buffer, size);
+                    }
                 }
                 return true;
             }
@@ -374,8 +386,10 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
             {
                 rpsNo_.recvRepeatSeq_ = header->sequenceNo_;
                 rpsNo_.cacheRepeatCount_ <<= 1;
-                PacketParse(buffer, size);
-
+                if (chunck == 0)
+                {
+                    PacketParse(buffer, size);
+                }
                 // 이미 처리된 경우 1씩 땡긴다.
                 while ((rpsNo_.cacheRepeatCount_ & 1) == 1)
                 {
