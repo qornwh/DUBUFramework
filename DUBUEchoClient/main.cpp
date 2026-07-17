@@ -5,6 +5,7 @@
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
+#include <fstream>
 
 static bool InterruptCtrlC = false;
 
@@ -78,6 +79,36 @@ int main(int argc, char** argv)
         }
     });
 
+    // 1회 청크 테스트
+    {
+        std::ifstream file("../../../chunckTestText.txt");
+        if (file.is_open())
+        {
+            Uint16 step = PACKET_MAX_SIZE - sizeof(DUBU::Packet::PacketHeader);
+            String temp(step, 0);
+            String test;
+            int chunk_count = 1;
+
+            while (file.read(&temp[0], step) || file.gcount() > 0)
+            {
+                // 읽은 글자수
+                Uint64 readSize = file.gcount();
+                test.append(temp, readSize);
+                temp.assign(readSize, '\0');
+            }
+            file.close();
+
+            if (client != nullptr && client->IsConnect())
+            {
+                // 청크 전송
+                client->SendChatMessage(test, 2);
+            }  
+        }
+        else
+        {
+            spdlog::warn("not found file.");
+        }
+    }
     
     String chat = "";
     chat.reserve(200);

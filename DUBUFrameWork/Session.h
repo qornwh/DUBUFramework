@@ -72,6 +72,8 @@ namespace DUBU
         ChunkPacketInj chunckPakcetInj_;
 
     private:
+        // SendPacketChunck
+        void SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
         void RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
 
     private:

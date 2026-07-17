@@ -519,6 +519,12 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, co
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
+    {
+        // 이때는 청크로 나눠서 보내본다.
+        SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
+    }
+
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
     if (opt.reliable_)
@@ -664,6 +670,34 @@ void DUBU::InternalClient::CheckPending()
 
     // 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
     RepeatMessageAll(rttMillisec_ * 2 + g_defaultRttMsDelay);
+}
+
+void DUBU::InternalClient::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader, Uint16 subHeaderSize)
+{
+    Uint16 chunckSize = PACKET_MAX_SIZE - sizeof(Packet::PacketHeader) - subHeaderSize;
+    Uint16 count = (size / chunckSize);
+    if (size % chunckSize > 0)
+    {
+        ++count;
+    }
+
+    Packet::PacketOpctions opt;
+    Uint32 offset = 0;
+    for (Uint32 i = 0; i < count; ++i)
+    {
+        Uint16 sendSize = chunckSize;
+        // 마지막 처리
+        if (i == count - 1)
+        {
+            sendSize = size % chunckSize;
+        }
+
+        opt.isChunck_ = true;
+        opt.chunckNum_ = i;
+
+        SendPacket(buffer + offset, code, sendSize, opt, subHeader, subHeaderSize);
+        offset += chunckSize;
+    }
 }
 
 void DUBU::InternalClient::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)

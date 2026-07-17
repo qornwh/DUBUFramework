@@ -615,6 +615,12 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
+    {
+        // 이때는 청크로 나눠서 보내본다.
+        SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
+    }
+
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
     if (opt.reliable_)
@@ -630,6 +636,12 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
         {
             header->sequenceNo_ = rpsNo_.UpdateSendSequenceNo();
         }
+    }
+    else if (opt.isChunck_)
+    {
+        header->flags_ |= Packet::PacketHeaderFlag::REPEAT | Packet::PacketHeaderFlag::CHUNK;
+        header->chunkInfo_.flag_ = opt.chunckFlag_;
+        header->chunkInfo_.size_ = opt.chunckTotal_;
     }
     else
     {
@@ -679,6 +691,39 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
     else
     {
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
+    }
+}
+
+void DUBU::Client::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader, Uint16 subHeaderSize)
+{
+    Uint16 chunckSize = PACKET_MAX_SIZE - sizeof(Packet::PacketHeader) - subHeaderSize;
+    Uint16 count = (size / chunckSize);
+    if (size % chunckSize > 0)
+    {
+        ++count;
+    }
+
+    Uint32 offset = 0;
+    Packet::PacketOpctions opt;
+    opt.isChunck_ = true;
+    opt.chunckTotal_ = size;
+    for (Uint32 i = 0; i < count; ++i)
+    {
+        Uint16 sendSize = chunckSize;
+        
+        // 마지막 처리
+        if (i == count - 1)
+        {
+            sendSize = size % chunckSize;
+            opt.chunckFlag_ = ~0;
+        }
+        else
+        {
+            opt.chunckFlag_ = 1 << i;
+        }
+
+        SendPacket(buffer + offset, code, sendSize, opt, subHeader, subHeaderSize);
+        offset += chunckSize;
     }
 }
 
