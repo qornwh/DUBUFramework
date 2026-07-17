@@ -5,6 +5,8 @@
 #include "Peer.h"
 #include "ReliablePacketState.h"
 
+#include "ChunkPacket.h"
+
 namespace DUBU
 {
     struct OverlappedPacketBuffer;
@@ -64,6 +66,10 @@ namespace DUBU
         
         void SetAwaysConnect(Bool awaysConnect);
         Bool GetAwaysConnect() const { return awaysConnect_; };
+
+    protected:
+        // 일단 멤버변수로 청크 패킷관리를 한다.
+        ChunkPacketInj chunckPakcetInj_;
 
     private:
         void RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);

@@ -3,9 +3,10 @@
 #include "BufferManager.h"
 #include "Subheader.h"
 #include "../extra/base_flatbuffer_generated.h"
+#include "Pool.h"
 
 DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
-	handlers_(handlers), sessionId_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(g_defaultRttMs), isConnect_(false)
+	handlers_(handlers), sessionId_(0), timestamp_(0), lastPingSentTime_(0), addr_(), rttMillisec_(g_defaultRttMs), isConnect_(false), chunckPakcetInj_{}
 {
     cacheAlreadyPackets_.resize(g_channelMask + 1);
 }
@@ -195,6 +196,37 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
         }
         else
         {
+            // 청크 패킷 처리
+            Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
+            if (chunck == Packet::PacketHeaderFlag::CHUNK)
+            {
+                Uint64 seqNo = header->sequenceNo_;
+                // 일단 chunk는 채널 사용x : 현재 시스템상 채널은 순서대로 무조건 받는다. 그럼으로 제외
+                Packet::ChunkInfo chunckInfo = header->chunkInfo_;
+                ChunkPacket& chunckPacket = chunckPakcetInj_.Update(seqNo, chunckInfo.flag_);
+                CachePacketBuffer* cachePacketBuffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                cachePacketBuffer->Copy(buffer, size);
+                chunckPacket.SetBuffer(chunckInfo.flag_, cachePacketBuffer);
+
+                if (chunckPacket.IsPull())
+                {
+                    Uint16 chunckSize = 0;
+                    Uint8* ptr = DUBU::PopBig(chunckSize);
+                    for (Int32 i = 0; i < chunckPacket.count_; ++i)
+                    {
+                        CachePacketBuffer* cpb = chunckPacket.buffers_[i];
+                        memcpy(ptr + chunckSize, cpb->buffer_, cpb->size_);
+                        chunckSize += cpb->size_;
+                        CachePacketManager::GetInstance().PushPacketBuffer(cpb);
+                    }
+                    // 청크는 이때 파싱한다. 
+                    // 이유는 모든 청크를 수집해서 parse하고
+                    // 이후에는 동적할당 해제 필수.. 릭 방지
+                    PacketParse(ptr, size);
+                    DUBU::PushBig(ptr);
+                }
+            }
+
             // 순서 상관 x
             if (header->sequenceNo_ <= rpsNo_.recvRepeatSeq_)
             {
@@ -222,7 +254,10 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                 if ((rpsNo_.cacheRepeatCount_ & del) != del)
                 {
                     rpsNo_.cacheRepeatCount_ &= del;
-                    PacketParse(buffer, size);
+                    if (chunck == 0)
+                    {
+                        PacketParse(buffer, size);
+                    }
                 }
                 return true;
             }
@@ -230,7 +265,10 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
             { 
                 rpsNo_.recvRepeatSeq_ = header->sequenceNo_;
                 rpsNo_.cacheRepeatCount_ <<= 1;
-                PacketParse(buffer, size);
+                if (chunck == 0)
+                {
+                    PacketParse(buffer, size);
+                }
 
                 // 이미 처리된 경우 1씩 땡긴다.
                 while ((rpsNo_.cacheRepeatCount_ & 1) == 1)
