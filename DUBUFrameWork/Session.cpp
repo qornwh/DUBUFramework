@@ -465,6 +465,7 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
     {
         // 이때는 청크로 나눠서 보내본다.
         SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
+        return;
     }
 
     // 패킷 헤더 옵션 설정
