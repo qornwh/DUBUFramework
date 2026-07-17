@@ -555,6 +555,7 @@ void DUBU::Session::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, cons
     for (Uint32 i = 0; i < count; ++i)
     {
         Uint16 sendSize = chunckSize;
+        opt.isChunck_ = true;
 
         // 마지막 처리
         if (i == count - 1)

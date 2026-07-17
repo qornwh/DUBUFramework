@@ -686,14 +686,18 @@ void DUBU::InternalClient::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 siz
     for (Uint32 i = 0; i < count; ++i)
     {
         Uint16 sendSize = chunckSize;
+        opt.isChunck_ = true;
+
         // 마지막 처리
         if (i == count - 1)
         {
             sendSize = size % chunckSize;
+            opt.chunckFlag_ = ~0;
         }
-
-        opt.isChunck_ = true;
-        opt.chunckNum_ = i;
+        else
+        {
+            opt.chunckFlag_ = 1 << i;
+        }
 
         SendPacket(buffer + offset, code, sendSize, opt, subHeader, subHeaderSize);
         offset += chunckSize;
