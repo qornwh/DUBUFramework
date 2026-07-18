@@ -105,7 +105,7 @@ int main(int argc, char** argv)
             if (client != nullptr && client->IsConnect())
             {
                 // 청크 전송
-                client->SendDumpChatMessage(test, 2);
+                client->SendDumpChatMessage(test);
             }  
         }
         else
