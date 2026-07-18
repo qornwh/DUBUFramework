@@ -11,7 +11,7 @@ public:
     virtual ~EchoClient();
 
     void SendChatMessage(const String& chat, Uint8 channelId = 1);
-
+    void SendDumpChatMessage(const String& chat, Uint8 channelId = 0);
 private:
 
 };
