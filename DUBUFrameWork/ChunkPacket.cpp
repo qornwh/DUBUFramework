@@ -22,6 +22,11 @@ bool DUBU::ChunkPacket::SetBuffer(Uint16 flag, CachePacketBuffer* buffer)
     ++count_; 
     flag_ |= flag;
 
+    if ((flag & DEFAULT_CHUNK_END_MASK) == DEFAULT_CHUNK_END_MASK)
+    {
+        isEnd = true;
+    }
+
     Uint8 count = 0;
     while (flag > 0)
     {
@@ -31,11 +36,7 @@ bool DUBU::ChunkPacket::SetBuffer(Uint16 flag, CachePacketBuffer* buffer)
             break;
         }
         flag >>= 1;
-    }
-
-    if ((flag & DEFAULT_CHUNK_END_MASK) == DEFAULT_CHUNK_END_MASK)
-    {
-        isEnd = true;
+        ++count;
     }
     return true;
 }
@@ -43,7 +44,7 @@ bool DUBU::ChunkPacket::SetBuffer(Uint16 flag, CachePacketBuffer* buffer)
 bool DUBU::ChunkPacket::IsPull()
 {
     // 0b1111'1111 + 1 == 0 이다.
-    if (isEnd && 0 == (flag_ + 1))
+    if (isEnd && (0 == static_cast<Uint16>(flag_ + 1)))
     {
         return true;
     }
