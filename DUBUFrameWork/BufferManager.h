@@ -42,7 +42,7 @@ namespace DUBU
         Uint16 size_ = 0;
         Uint8 buffer_[PACKET_MAX_SIZE];
 
-        void Copy(const Uint8* ptr, const Uint16 len);
+        void Copy(const Uint8* ptr, const Uint16 size);
     };
 
     class CachePacketManager : public Singleton<CachePacketManager>
