@@ -653,16 +653,16 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
             header->flags_ |= opt.channelID_ << 3;
             header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
         }
+        else if (opt.isChunck_)
+        {
+            header->flags_ |= Packet::PacketHeaderFlag::CHUNK;
+            header->chunkInfo_.flag_ = opt.chunckFlag_;
+            header->chunkInfo_.size_ = opt.chunckTotal_;
+        }
         else
         {
             header->sequenceNo_ = rpsNo_.UpdateSendSequenceNo();
         }
-    }
-    else if (opt.isChunck_)
-    {
-        header->flags_ |= Packet::PacketHeaderFlag::REPEAT | Packet::PacketHeaderFlag::CHUNK;
-        header->chunkInfo_.flag_ = opt.chunckFlag_;
-        header->chunkInfo_.size_ = opt.chunckTotal_;
     }
     else
     {
@@ -726,6 +726,7 @@ void DUBU::Client::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const
 
     Uint32 offset = 0;
     Packet::PacketOpctions opt;
+    opt.reliable_ = true;
     opt.isChunck_ = true;
     opt.chunckTotal_ = size;
     Uint16 lastBit = ~0;
