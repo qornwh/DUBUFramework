@@ -35,5 +35,5 @@ void EchoClient::SendDumpChatMessage(const String& chat, Uint8 channelId)
     Uint8* buffer = fbb.GetBufferPointer();
     Uint16 size = fbb.GetSize();
 
-    SendPacket(buffer, DUBU::Echo::PacketBody_Chatting, size, DUBU::Packet::PacketOpctions{ true, 0, channelId });
+    SendPacket(buffer, DUBU::Echo::PacketBody_Chatting, size, DUBU::Packet::PacketOpctions{ true, false, channelId });
 }
