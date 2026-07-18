@@ -56,6 +56,8 @@ namespace DUBU
         void SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Packet::PacketOpctions& opt, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
 
     private:
+        // 청크 패킷용 처리
+        void RecvChunckPacket(Uint8* buffer, Uint16 size);
         // SendPacketChunck
         void SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader = nullptr, Uint16 subHeaderSize = 0);
         void RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
