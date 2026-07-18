@@ -80,6 +80,7 @@ Uint64 DUBU::ChunkPacketInj::StartSequnceNum(Uint64 seq, Uint16 flag)
             break;
         }
         flag >>= 1;
+        ++count;
     }
 
     // 시작 0번째의 시퀀스 넘버가 나온다.
