@@ -129,7 +129,9 @@
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
-if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"</Command>
+if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\config.json"
+xcopy /y /d "$(VCInstallDir)Tools\MSVC\$(VCToolsVersion)\bin\HostX64\x64\clang_rt.asan_dynamic-x86_64.dll" "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
