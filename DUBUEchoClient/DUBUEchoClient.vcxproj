@@ -44,6 +44,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -122,6 +123,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <HeapCommitSize>104857600</HeapCommitSize>
+      <HeapReserveSize>104857600</HeapReserveSize>
+      <StackReserveSize>50485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,6 +146,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <HeapCommitSize>104857600</HeapCommitSize>
+      <HeapReserveSize>104857600</HeapReserveSize>
+      <StackReserveSize>50485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

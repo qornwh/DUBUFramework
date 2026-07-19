@@ -45,6 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -121,6 +122,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <HeapReserveSize>104857600</HeapReserveSize>
+      <HeapCommitSize>104857600</HeapCommitSize>
+      <StackReserveSize>50485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
@@ -144,6 +149,10 @@ if exist "$(ProjectDir)config.json" copy /Y "$(ProjectDir)config.json" "$(Soluti
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)x64\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>DUBUFrameWork.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <HeapReserveSize>104857600</HeapReserveSize>
+      <HeapCommitSize>104857600</HeapCommitSize>
+      <StackReserveSize>50485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\" mkdir "$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\"
