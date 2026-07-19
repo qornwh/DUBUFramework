@@ -112,16 +112,16 @@ DUBU::DubuByteDataSPtr DUBU::FindBlock(DubuBytePtr ptr)
 void DUBU::PushBig(Uint8* ptr)
 {
     WriteLockGuard wl(PoolLock);
-    size_t result = BigMemoryPtrs.erase(reinterpret_cast<Uint64>(&ptr));
+    size_t result = BigMemoryPtrs.erase(reinterpret_cast<Uint64>(&(*ptr)));
 #ifdef _DEBUG
-    if (result <= 0) 
+    if (result <= 0 || ptr == nullptr) 
     {
         // 공간 할당된 적 없음.. 크리티컬
         fprintf(stderr, "공간 할당된 적 없음 or 이미 지워짐 .. 크리티컬 에러 !!!\n");
         exit(EXIT_FAILURE);
     }
 #endif
-    free(ptr);
+        free(ptr);
 }
 
 Uint8* DUBU::PopBig(Uint16 size)
@@ -131,6 +131,6 @@ Uint8* DUBU::PopBig(Uint16 size)
     WriteLockGuard wl(PoolLock);
     Uint8* ptr = reinterpret_cast<Uint8*>(malloc(size));
     // 일단 이렇게 정수로 받는다.
-    BigMemoryPtrs.emplace(reinterpret_cast<Uint64>(&ptr));
+    BigMemoryPtrs.emplace(reinterpret_cast<Uint64>(&(*ptr)));
     return ptr;
 }

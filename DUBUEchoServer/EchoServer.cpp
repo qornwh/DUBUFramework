@@ -32,6 +32,12 @@ void EchoServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
             session->GetSessionId()
         };
 
-        session->SendPacket(buffer, code, size, DUBU::Packet::PacketOpctions{true, true, haeder->packetCode_}, reinterpret_cast<Uint8*>(&sh), sh.GetSize());
+        DUBU::Packet::PacketOpctions opt{ true, true, haeder->packetCode_ };
+        if (size + sh.GetSize() + sizeof(DUBU::Packet::PacketHeader) > PACKET_MAX_SIZE)
+        {
+            // 너무 길면 순서는 버린다.
+            opt.order_ = false;
+        }
+        session->SendPacket(buffer, code, size, opt, reinterpret_cast<Uint8*>(&sh), sh.GetSize());
     }
 }

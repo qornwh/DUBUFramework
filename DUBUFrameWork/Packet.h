@@ -57,6 +57,9 @@ namespace DUBU
             bool reliable_ = false;
             bool order_ = false;
             Uint8 channelID_ = 0;
+            bool isChunck_ = false;
+            Uint16 chunckFlag_ = 0;
+            Uint16 chunckTotal_ = 0;
         };
 #pragma pack(pop)
 

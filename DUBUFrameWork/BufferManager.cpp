@@ -110,8 +110,9 @@ void DUBU::CachePacketManager::PushPacketBuffer(CachePacketBuffer* ptr)
     ptr->size_ = 0;
 }
 
-void DUBU::CachePacketBuffer::Copy(const Uint8* ptr, const Uint16 len)
+void DUBU::CachePacketBuffer::Copy(const Uint8* ptr, const Uint16 size)
 {
-    std::memcpy(buffer_, ptr, len);
+    std::memcpy(buffer_, ptr, size);
     pos_ = buffer_;
+    size_ = size;
 }

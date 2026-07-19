@@ -5,6 +5,7 @@
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
+#include <fstream>
 
 static bool InterruptCtrlC = false;
 
@@ -39,19 +40,20 @@ int main(int argc, char** argv)
         }
     );
 
-    if (argc < 2 || argv == nullptr)
-    {
-        spdlog::error("Add Param Ip !!!");
-        return 0;
-    }
-    else
-    {
-        spdlog::info("Connect Server Ip {}", argv[0]);
-    }
+    //if (argc < 2 || argv == nullptr)
+    //{
+    //    spdlog::error("Add Param Ip !!!");
+    //    return 0;
+    //}
+    //else
+    //{
+    //    spdlog::info("Connect Server Ip {}", argv[0]);
+    //}
 
     // 클라이언트
     EchoClient* client;
-    client = new EchoClient(argv[1], 12346, &handlers);
+    //client = new EchoClient(argv[1], 12346, &handlers);
+    client = new EchoClient("127.0.0.1", 12346, &handlers);
     EchoClientHander::GetInstance().SetOwner(client);
     
     // 5회 연결 요청
@@ -78,6 +80,39 @@ int main(int argc, char** argv)
         }
     });
 
+    // 1회 청크 테스트
+    {
+        std::ifstream file("../../../chunckTestText.txt");
+        if (file.is_open())
+        {
+            Uint16 step = PACKET_MAX_SIZE - sizeof(DUBU::Packet::PacketHeader);
+            String temp(step, 0);
+            String test;
+            int chunk_count = 1;
+
+            Uint16 offset = 0;
+            while (file.read(&temp[0], step) || file.gcount() > 0)
+            {
+                // 읽은 글자수
+                Uint64 readSize = file.gcount();
+                test.append(temp, 0, readSize);
+                temp.assign(readSize, 0);
+
+                offset += readSize;
+            }
+            file.close();
+
+            if (client != nullptr && client->IsConnect())
+            {
+                // 청크 전송
+                client->SendDumpChatMessage(test);
+            }  
+        }
+        else
+        {
+            spdlog::warn("not found file.");
+        }
+    }
     
     String chat = "";
     chat.reserve(200);

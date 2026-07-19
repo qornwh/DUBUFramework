@@ -320,37 +320,7 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
         }
         else
         {
-            // 청크 패킷 처리
             Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
-            if (chunck == Packet::PacketHeaderFlag::CHUNK)
-            {
-                Uint64 seqNo = header->sequenceNo_;
-                // 일단 chunk는 채널 사용x : 현재 시스템상 채널은 순서대로 무조건 받는다. 그럼으로 제외
-                Packet::ChunkInfo chunckInfo = header->chunkInfo_;
-                ChunkPacket& chunckPacket = chunckPakcetInj_.Update(seqNo, chunckInfo.flag_);
-                CachePacketBuffer* cachePacketBuffer = CachePacketManager::GetInstance().PopPacketBuffer();
-                cachePacketBuffer->Copy(buffer, size);
-                chunckPacket.SetBuffer(chunckInfo.flag_, cachePacketBuffer);
-
-                if (chunckPacket.IsPull())
-                {
-                    Uint16 chunckSize = 0;
-                    Uint8* ptr = DUBU::PopBig(chunckSize);
-                    for (Int32 i = 0; i < chunckPacket.count_; ++i)
-                    {
-                        CachePacketBuffer* cpb = chunckPacket.buffers_[i];
-                        memcpy(ptr + chunckSize, cpb->buffer_, cpb->size_);
-                        chunckSize += cpb->size_;
-                        CachePacketManager::GetInstance().PushPacketBuffer(cpb);
-                    }
-                    // 청크는 이때 파싱한다. 
-                    // 이유는 모든 청크를 수집해서 parse하고
-                    // 이후에는 동적할당 해제 필수.. 릭 방지
-                    PacketParse(ptr, size);
-                    DUBU::PushBig(ptr);
-                }
-            }
-
             // 순서 상관 x
             if (header->sequenceNo_ <= rpsNo_.recvRepeatSeq_)
             {
@@ -381,6 +351,10 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
                     {
                         PacketParse(buffer, size);
                     }
+                    else
+                    {
+                        RecvChunckPacket(buffer, size);
+                    }
                 }
                 return true;
             }
@@ -392,7 +366,10 @@ bool DUBU::InternalClient::RecvDispatch(Uint8* buffer, Uint16 size)
                 {
                     PacketParse(buffer, size);
                 }
-
+                else
+                {
+                    RecvChunckPacket(buffer, size);
+                }
                 // 이미 처리된 경우 1씩 땡긴다.
                 while ((rpsNo_.cacheRepeatCount_ & 1) == 1)
                 {
@@ -519,6 +496,13 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, co
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
+    {
+        // 이때는 청크로 나눠서 보내본다.
+        SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
+        return;
+    }
+
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
     if (opt.reliable_)
@@ -529,6 +513,13 @@ void DUBU::InternalClient::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, co
             header->flags_ |= Packet::PacketHeaderFlag::CHANNEL;
             header->flags_ |= opt.channelID_ << 3;
             header->sequenceNo_ = cacheAlreadyPackets_[opt.channelID_].reliablePacketState.UpdateSendSequenceNo();
+        }
+        else if (opt.isChunck_)
+        {
+            header->flags_ |= Packet::PacketHeaderFlag::CHUNK;
+            header->chunkInfo_.flag_ = opt.chunckFlag_;
+            header->chunkInfo_.size_ = opt.chunckTotal_;
+            header->sequenceNo_ = rpsNo_.UpdateSendSequenceNo();
         }
         else
         {
@@ -664,6 +655,99 @@ void DUBU::InternalClient::CheckPending()
 
     // 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
     RepeatMessageAll(rttMillisec_ * 2 + g_defaultRttMsDelay);
+}
+
+void DUBU::InternalClient::RecvChunckPacket(Uint8* buffer, Uint16 size)
+{
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
+
+    // 청크 패킷 처리
+    Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
+    if (chunck == Packet::PacketHeaderFlag::CHUNK)
+    {
+        Uint64 seqNo = header->sequenceNo_;
+        // 일단 chunk는 채널 사용x : 현재 시스템상 채널은 순서대로 무조건 받는다. 그럼으로 제외
+        Packet::ChunkInfo chunckInfo = header->chunkInfo_;
+        ChunkPacket& chunckPacket = chunckPakcetInj_.Update(seqNo, chunckInfo.flag_);
+        CachePacketBuffer* cachePacketBuffer = CachePacketManager::GetInstance().PopPacketBuffer();
+        cachePacketBuffer->Copy(buffer, size);
+        chunckPacket.SetBuffer(chunckInfo.flag_, cachePacketBuffer);
+        chunckPacket.size_ = chunckInfo.size_;
+
+        if (chunckPacket.IsPull())
+        {
+            Uint16 headerSize = sizeof(Packet::PacketHeader);
+
+            // 서브헤더 패킷  체크
+            Uint8 shType = header->packetCode_ >> 5;
+            if (shType > 0)
+            {
+                Packet::SubheaderBase* sh = reinterpret_cast<Packet::SubheaderBase*>(buffer + headerSize);
+                headerSize += sh->GetSize();
+            }
+
+            Uint16 chunckOffset = 0;
+            Uint8* ptr = DUBU::PopBig(chunckPacket.size_ + headerSize);
+            for (Int32 i = 0; i < chunckPacket.count_; ++i)
+            {
+                CachePacketBuffer* cpb = chunckPacket.buffers_[i];
+                if (i > 0)
+                {
+                    memcpy(ptr + chunckOffset, cpb->buffer_ + headerSize, cpb->size_ - headerSize);
+                    chunckOffset += (cpb->size_ - headerSize);
+                }
+                else
+                {
+                    // 첫번째 헤더는 그대로 가져간다.ㅇ
+                    memcpy(ptr + chunckOffset, cpb->buffer_, cpb->size_);
+                    chunckOffset += cpb->size_;
+                }
+                CachePacketManager::GetInstance().PushPacketBuffer(cpb);
+            }
+            // 청크는 이때 파싱한다. 
+            // 이유는 모든 청크를 수집해서 parse하고
+            // 이후에는 동적할당 해제 필수.. 릭 방지
+            PacketParse(ptr, chunckOffset); // 1개의 헤더가 더해진 사이즈
+            DUBU::PushBig(ptr);
+        }
+    }
+}
+
+void DUBU::InternalClient::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const Uint8* subHeader, Uint16 subHeaderSize)
+{
+    Uint16 chunckSize = PACKET_MAX_SIZE - sizeof(Packet::PacketHeader) - subHeaderSize;
+    Uint16 count = (size / chunckSize);
+    if (size % chunckSize > 0)
+    {
+        ++count;
+    }
+
+    Uint32 offset = 0;
+    Packet::PacketOpctions opt;
+    opt.reliable_ = true;
+    opt.isChunck_ = true;
+    opt.chunckTotal_ = size;
+    Uint16 lastBit = ~0;
+    for (Uint32 i = 0; i < count; ++i)
+    {
+        Uint16 sendSize = chunckSize;
+
+        // 마지막 처리
+        if (i == count - 1)
+        {
+            sendSize = size % chunckSize;
+            opt.chunckFlag_ = lastBit;
+        }
+        else
+        {
+            opt.chunckFlag_ = 1 << i;
+            // 마지막 체크용 하나씩 끈다.
+            lastBit <<= 1;
+        }
+
+        SendPacket(buffer + offset, code, sendSize, opt, subHeader, subHeaderSize);
+        offset += chunckSize;
+    }
 }
 
 void DUBU::InternalClient::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)
