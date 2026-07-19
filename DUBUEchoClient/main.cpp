@@ -40,20 +40,20 @@ int main(int argc, char** argv)
         }
     );
 
-    //if (argc < 2 || argv == nullptr)
-    //{
-    //    spdlog::error("Add Param Ip !!!");
-    //    return 0;
-    //}
-    //else
-    //{
-    //    spdlog::info("Connect Server Ip {}", argv[0]);
-    //}
+    if (argc < 2 || argv == nullptr)
+    {
+        spdlog::error("Add Param Ip !!!");
+        return 0;
+    }
+    else
+    {
+        spdlog::info("Connect Server Ip {}", argv[0]);
+    }
 
     // 클라이언트
     EchoClient* client;
-    //client = new EchoClient(argv[1], 12346, &handlers);
-    client = new EchoClient("127.0.0.1", 12346, &handlers);
+    client = new EchoClient(argv[1], 12346, &handlers);
+    //client = new EchoClient("127.0.0.1", 12346, &handlers);
     EchoClientHander::GetInstance().SetOwner(client);
     
     // 5회 연결 요청
