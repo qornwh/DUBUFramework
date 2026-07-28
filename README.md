@@ -115,3 +115,45 @@ cacheAlreadyPackets_[채널 id]            // 채널별 독립 상태
 - 시퀀스 번호를 활용한 중복 및 순서 관리
 - 채널(channel) 단위 순서 보장 — 채널별 독립 시퀀스/재정렬 버퍼
 - 청크 단위 패킷 구현 - 동작 확인 필요
+
+---
+
+### vcpkg 환경 셋팅
+
+프로젝트 내부에 독립적인 vcpkg에서 라이브러리 모듈 로드
+
+- `externals/vcpkg` (submodule) + 매니페스트 모드로 독립적 종속성 관리
+- `vcpkg.json` 에 라이브러리 등록 → MSBuild 빌드 시 자동 복원
+- 라이브러리 버전을 고정해서 누가 언제 클론해도 동일한 빌드
+- 
+#### 빌드 순서
+
+- git submodule init
+- git submodule sync
+- git submodule update --init --recursive
+
+- 위 명령어가 안될시 직접한다
+  - mkdir externals & mkdir externals\vcpkg
+  - cd externals\vcpkg
+  - git init
+  - git remote add origin https://github.com/microsoft/vcpkg.git
+  - git fetch origin
+  - git checkout master
+  - cd ..\..
+
+- externals\vcpkg\bootstrap-vcpkg.bat : vcpkg 빌드
+- externals\vcpkg\vcpkg.exe integrate install : 비주얼 스튜디오 연동 (금지 전역으로 묶임) -
+```
+<ImportGroup Label="ExtensionSettings">
+  <Import Project="$(MSBuildThisFileDirectory)..\externals\vcpkg\scripts\buildsystems\msbuild\vcpkg.props" />
+</ImportGroup>
+
+<ImportGroup Label="ExtensionTargets">
+  <Import Project="$(MSBuildThisFileDirectory)..\externals\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets" />
+</ImportGroup>
+
+위 코드를
+(프로젝트이름).vcxproj 해당파일에 입력
+```
+
+- sln파일 열어서 빌드하고 vcpkg_installed 폴더 생기면 성공
