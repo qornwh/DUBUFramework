@@ -242,7 +242,6 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
 
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
-
     if (isRepeat)
     {
         Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
@@ -250,7 +249,6 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         {
             // 채널 ID
             Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
-
             if (channelID > g_channelMask)
             {
                 // 할당 불가 채널 ID.
@@ -270,7 +268,6 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
             {
                 // 캐싱
                 Uint64 del = header->sequenceNo_ - rps.recvRepeatSeq_;
-
                 if (del >= DEFAULT_WINDOW_COUNT)
                 {
                     // 최대 캐싱 가능크기는 64넘기면 캐싱안하고 넘어간다.
@@ -332,8 +329,8 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         }
         else
         {
-            Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
             // 순서 상관 x인 패킷
+            Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
 
             // ACK 못받은거 처리
             if (rpsNo_.recvRepeatSeq_ - header->sequenceNo_ < DEFAULT_WINDOW_COUNT)
@@ -348,7 +345,6 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
 
                 if (del >= DEFAULT_WINDOW_COUNT)
                 {
-                    // 64이상이면(매우 큰 미래) 그냥 패스 - 재전송 하라고 한다.
                     // TODO : 반복될시 disconnect
                     return false;
                 }
@@ -414,8 +410,16 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
     }
     else
     {
+        Uint64 del = header->sequenceNo_ - rNopsNo_.recvRepeatSeq_;
+        if (del == 0 || del >= NO_REPEAT_ACCEPT_RANGE)
+        {
+            // TODO : NO_REPEAT_ACCEPT_RANGE <- 이거 넘어가면 문제있는거다.
+            return false;
+        }
+
         // 재전송 패킷이 아닌경우.
         PacketParse(buffer, size);
+        rNopsNo_.recvRepeatSeq_ = header->sequenceNo_;
         return true;
     }
 

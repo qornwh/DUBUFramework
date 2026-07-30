@@ -79,7 +79,7 @@ namespace DUBU
         void RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now);
 
     private:
-        // 순서보장 x 재전송 x 패킷 정보
+        // 순서보장 x 재전송 x 패킷 정보 (lastRepeatSeq_는 사용하지 않는다)
         PacketStateBase rNopsNo_;
         // 순서보장 x 재전송 o 패킷 정보
         ReliablePacketState rpsNo_;
