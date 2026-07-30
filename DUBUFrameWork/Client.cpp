@@ -237,6 +237,9 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
+    // 현재 시간 설정 <- 일단 수신은 된다는 뜻 그래서 갱신함. (중복, 헤더 깨짐 이런건 상관 x)
+    timestamp_ = DUBU::GetRelativeTimeMs();
+
     // 이전 패킷 중복 넘김 (REAPET인 경우만)
     bool isRepeat = ((header->flags_ & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT);
 
@@ -245,22 +248,21 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         Uint8 channel = header->flags_ & Packet::PacketHeaderFlag::CHANNEL;
         if (channel > 0)
         {
-            if (header->flags_ > 0b1111)
+            // 채널 ID
+            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
+
+            if (channelID > g_channelMask)
             {
                 // 할당 불가 채널 ID.
                 return false;
             }
 
-            // 채널 ID
-            Uint8 channelID = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
-
             CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
             ReliablePacketState& rps = cap.reliablePacketState;
 
-            // 순서 체크 (recvSequenceNo_ + 1 이어야 통과)
-            if (header->sequenceNo_ <= rps.recvRepeatSeq_ && header->sequenceNo_ + DEFAULT_WINDOW_COUNT > rps.recvRepeatSeq_)
+            // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다. (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
+            if (rps.recvRepeatSeq_ - header->sequenceNo_ < DEFAULT_WINDOW_COUNT)
             {
-                // 수신측에 recv받고 ack를 못받은 상태에서는 다시 ack를 넘겨줘야 된다 (일단 이전 DEFAULT_WINDOW_COUNT개까지 적용 시킨다. 파싱 필요x 이미 함)
                 return true;
             }
 
@@ -268,42 +270,52 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
             {
                 // 캐싱
                 Uint64 del = header->sequenceNo_ - rps.recvRepeatSeq_;
-                if (del > 64)
+
+                if (del >= DEFAULT_WINDOW_COUNT)
                 {
                     // 최대 캐싱 가능크기는 64넘기면 캐싱안하고 넘어간다.
-                    false;
+                    return false;
                 }
 
-                if (header->sequenceNo_ > rps.lastRepeatSeq_)
+                // 마지막 갱신
+                Uint32 fwd = header->sequenceNo_ - rps.lastRepeatSeq_;
+                if (fwd < DEFAULT_WINDOW_COUNT)
                 {
-                    // 패킷 캐싱
-                    CachePacket& cachePacket = cap.cachePackets[header->sequenceNo_ % DEFAULT_WINDOW_COUNT];
-                    cachePacket.buffer = CachePacketManager::GetInstance().PopPacketBuffer();
-                    cachePacket.buffer->Copy(buffer, size);
-                    cachePacket.sequenceNo = header->sequenceNo_;
-                    cachePacket.timeStamp = DUBU::GetRelativeTimeMs();
-                    cachePacket.isKeep = true;
-
                     rps.lastRepeatSeq_ = header->sequenceNo_;
-                    rps.cacheRepeatCount_ &= static_cast<Uint64>(1) << (del);
                 }
+
+                // 패킷 캐싱
+                CachePacket& cachePacket = cap.cachePackets[header->sequenceNo_ % DEFAULT_WINDOW_COUNT];
+                if (cachePacket.isKeep && cachePacket.sequenceNo == header->sequenceNo_)
+                {
+                    // 이미 캐싱된 패킷의 재전송이라 다시 저장할 필요 없음
+                    return true;
+                }
+                cachePacket.buffer = CachePacketManager::GetInstance().PopPacketBuffer();
+                cachePacket.buffer->Copy(buffer, size);
+                cachePacket.sequenceNo = header->sequenceNo_;
+                cachePacket.timeStamp = DUBU::GetRelativeTimeMs();
+                cachePacket.isKeep = true;
+
+                rps.cacheRepeatCount_ |= static_cast<Uint64>(1) << (del - 1);
+
                 return true;
             }
             else
             {
-                CacheAlreadyPacket& cap = cacheAlreadyPackets_[channelID];
-                ReliablePacketState& rps = cap.reliablePacketState;
-
                 // 현재꺼는 실행
                 PacketParse(buffer, size);
-                rps.cacheRepeatCount_ <<= 1;
+                rps.cacheRepeatCount_ >>= 1;
                 rps.recvRepeatSeq_ = header->sequenceNo_;
 
                 // 미리 수신된 패킷 있으면 실행해 준다.
-                for (Uint64 i = rps.recvRepeatSeq_ + 1; i < rps.lastRepeatSeq_; ++i)
+                Uint32 count = rps.lastRepeatSeq_ - rps.recvRepeatSeq_;
+                for (Uint32 i = 1; i <= count; ++i)
                 {
-                    CachePacket& cachePacket = cap.cachePackets[i % DEFAULT_WINDOW_COUNT];
-                    if (!cachePacket.isKeep)
+                    // 변수 캐싱안하고 그냥 1씩 더해지므로 +1을 한다.
+                    Uint32 idx = 1 + rps.recvRepeatSeq_;
+                    CachePacket& cachePacket = cap.cachePackets[idx % DEFAULT_WINDOW_COUNT];
+                    if (!cachePacket.isKeep || cachePacket.sequenceNo != idx)
                     {
                         break;
                     }
@@ -312,6 +324,8 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
                     PacketParse(cachePacket.buffer->buffer_, cachePacket.buffer->size_);
                     cachePacket.isKeep = false;
                     CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+                    ++rps.recvRepeatSeq_;
+                    rps.cacheRepeatCount_ >>= 1;
                 }
                 return true;
             }
@@ -319,32 +333,38 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
         else
         {
             Uint8 chunck = header->flags_ & Packet::PacketHeaderFlag::CHUNK;
-            // 순서 상관 x
-            if (header->sequenceNo_ <= rpsNo_.recvRepeatSeq_)
+            // 순서 상관 x인 패킷
+
+            // ACK 못받은거 처리
+            if (rpsNo_.recvRepeatSeq_ - header->sequenceNo_ < DEFAULT_WINDOW_COUNT)
             {
                 return true;
             }
-            else if (header->sequenceNo_ > rpsNo_.recvRepeatSeq_ + 1)
+
+            if (header->sequenceNo_ != rpsNo_.recvRepeatSeq_ + 1)
             {
                 // 현재 순서가 아닌 패킷인 경우
-                Uint64 del64 = header->sequenceNo_ - rpsNo_.recvRepeatSeq_;
-                if (del64 > 63)
+                Uint64 del = header->sequenceNo_ - rpsNo_.recvRepeatSeq_;
+
+                if (del >= DEFAULT_WINDOW_COUNT)
                 {
-                    // 63초과한 미래이면 그냥 패스 - 재전송 하라고 한다.
+                    // 64이상이면(매우 큰 미래) 그냥 패스 - 재전송 하라고 한다.
+                    // TODO : 반복될시 disconnect
                     return false;
                 }
 
                 // 마지막 갱신
-                if (header->sequenceNo_ > rpsNo_.lastRepeatSeq_)
+                Uint32 fwd = header->sequenceNo_ - rpsNo_.lastRepeatSeq_;
+                if (fwd < DEFAULT_WINDOW_COUNT)
                 {
-                    header->sequenceNo_ = rpsNo_.lastRepeatSeq_;
+                    rpsNo_.lastRepeatSeq_ = header->sequenceNo_;
                 }
 
-                // 실행여부 확인후 넘긴다.
-                Uint8 del = static_cast<Uint8>(1 << del64);
-                if ((rpsNo_.cacheRepeatCount_ & del) != del)
+                // 실행여부 확인후 넘긴다. (1차이가 나는경우는 없다, 그래서 1뺀다)
+                Uint64 bit = static_cast<Uint64>(1) << (del - 1);
+                if ((rpsNo_.cacheRepeatCount_ & bit) != bit)
                 {
-                    rpsNo_.cacheRepeatCount_ &= del;
+                    rpsNo_.cacheRepeatCount_ |= bit;
                     if (chunck == 0)
                     {
                         PacketParse(buffer, size);
@@ -358,8 +378,15 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
             }
             else
             {
+                // 현재 수신된 시퀀스 넘버 == 가장높은 last가 같은지 체크
+                bool isLastUpdate = false;
+                if (rpsNo_.recvRepeatSeq_ == rpsNo_.lastRepeatSeq_)
+                {
+                    isLastUpdate = true;
+                }
+
                 rpsNo_.recvRepeatSeq_ = header->sequenceNo_;
-                rpsNo_.cacheRepeatCount_ <<= 1;
+                rpsNo_.cacheRepeatCount_ >>= 1;
                 if (chunck == 0)
                 {
                     PacketParse(buffer, size);
@@ -368,12 +395,19 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
                 {
                     RecvChunckPacket(buffer, size);
                 }
+
                 // 이미 처리된 경우 1씩 땡긴다.
                 while ((rpsNo_.cacheRepeatCount_ & 1) == 1)
                 {
-                    rpsNo_.cacheRepeatCount_ <<= 1;
+                    rpsNo_.cacheRepeatCount_ >>= 1;
                     ++rpsNo_.recvRepeatSeq_;
                 }
+
+                if (isLastUpdate)
+                {
+                    rpsNo_.lastRepeatSeq_ = rpsNo_.recvRepeatSeq_;
+                }
+
                 return true;
             }
         }
