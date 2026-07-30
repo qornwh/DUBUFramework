@@ -90,7 +90,7 @@ int main(int argc, char** argv)
             String test;
             int chunk_count = 1;
 
-            Uint16 offset = 0;
+            Uint64 offset = 0;
             while (file.read(&temp[0], step) || file.gcount() > 0)
             {
                 // 읽은 글자수
