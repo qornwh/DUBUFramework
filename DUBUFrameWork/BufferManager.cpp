@@ -1,5 +1,7 @@
 #include "BufferManager.h"
 #include "Pool.h"
+#include "CachePacket.h"
+#include "ChunkPacket.h"
 
 DUBU::PacketManager::~PacketManager()
 {
@@ -47,6 +49,7 @@ DUBU::OverlappedPacketBuffer* DUBU::PacketManager::PopPacketBuffer()
 	ptr->size_ = sizeof(OverlappedPacketBuffer);
 	OverlappedObj* ptr2 = static_cast<OverlappedObj*>(ptr);
 	ptr2->Initialize();
+    useList_.insert(ptr);
 	return ptr;
 }
 
@@ -97,6 +100,7 @@ DUBU::CachePacketBuffer* DUBU::CachePacketManager::PopPacketBuffer()
     CachePacketBuffer* ptr = DUBU::Pop<CachePacketBuffer>();
     ptr->pos_ = ptr->buffer_;
     ptr->size_ = 0;
+    useList_.insert(ptr);
     return ptr;
 }
 
@@ -108,6 +112,11 @@ void DUBU::CachePacketManager::PushPacketBuffer(CachePacketBuffer* ptr)
 
     ZeroMemory(ptr->pos_, ptr->size_);
     ptr->size_ = 0;
+}
+
+const Set<DUBU::CachePacketBuffer*>& DUBU::CachePacketManager::GetUseList()
+{
+	return useList_;
 }
 
 void DUBU::CachePacketBuffer::Copy(const Uint8* ptr, const Uint16 size)
