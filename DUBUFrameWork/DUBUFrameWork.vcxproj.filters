@@ -132,6 +132,9 @@
     <ClInclude Include="ChunkPacket.h">
       <Filter>Service</Filter>
     </ClInclude>
+    <ClInclude Include="CrashDump.h">
+      <Filter>Config</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -199,6 +202,9 @@
     </ClCompile>
     <ClCompile Include="ChunkPacket.cpp">
       <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="CrashDump.cpp">
+      <Filter>Config</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

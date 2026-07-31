@@ -168,6 +168,7 @@
     <ClCompile Include="ChunkPacket.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="CrashDump.cpp" />
     <ClCompile Include="InternalClient.cpp" />
     <ClCompile Include="ObjectPool.cpp" />
     <ClCompile Include="OverlappedObj.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="Client.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ConnectionType.h" />
+    <ClInclude Include="CrashDump.h" />
     <ClInclude Include="InternalClient.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="OverlappedObj.h" />
