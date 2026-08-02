@@ -565,11 +565,11 @@ void DUBU::Client::SendAck(Uint32 seqNo, const Packet::PacketOpctions& opt)
 void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
 {
     // 기존 버퍼 헤더
-    Packet::PacketHeader* header_org = reinterpret_cast<Packet::PacketHeader*>(ptr);
+    Packet::PacketHeader* headerOrg = reinterpret_cast<Packet::PacketHeader*>(ptr);
 
     OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
-    auto sequenceNo = header_org->sequenceNo_;
+    auto sequenceNo = headerOrg->sequenceNo_;
 
     // 최근 ping메시지 수신확인
     if (lastPongSeq_ <= sequenceNo)
