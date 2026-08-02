@@ -19,7 +19,9 @@ namespace DUBU
 
     struct CacheAlreadyPacket
     {
+        // 수신쪽
         ReliablePacketState reliablePacketState;
+        // 수신후 순서대로 키핑
         CachePacket cachePackets[DEFAULT_WINDOW_COUNT];
     };
 }
