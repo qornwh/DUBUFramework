@@ -19,6 +19,8 @@ Bool EchoSessionHander::ChatVerifier(flatbuffers::Verifier& verifier)
 
 void EchoSessionHander::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
 {
+    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
+    const Uint8 channelId = (header->flags_ & DUBU::Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
     const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + sizeof(DUBU::Packet::PacketHeader));
 
     if (packet->body_type() == DUBU::Echo::PacketBody_Chatting)
@@ -38,7 +40,7 @@ void EchoSessionHander::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32
                 flatbuffers::Offset<DUBU::Echo::Packet> packetOffset = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chattingOffset.Union());
                 DUBU::Echo::FinishPacketBuffer(fbb, packetOffset);
 
-                owner_->Broadcast(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()));
+                owner_->Broadcast(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()), session->GetSessionId(), channelId);
                 // fbb 스코프 나갈시 메모리 헤제 RAII
             }
         }

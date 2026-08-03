@@ -10,7 +10,7 @@ EchoServer::~EchoServer()
 {
 }
 
-void EchoServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
+void EchoServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size, Uint32 senderSessionId, Uint8 channelId)
 {
     DUBU::ReadLockGuard rl(GetSessionLock());
 
@@ -21,18 +21,16 @@ void EchoServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
             continue;
         }
 
-        DUBU::Packet::PacketHeader* haeder = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
-
         // 서브헤더 확인 코드(스택에 두고 send시 복사함)
         GatewaySubHeader sh
         {
-            // 클라이언트의 id
-            haeder->sessionId_,
+            // 보낸 클라이언트의 세션 id
+            senderSessionId,
             // 지금 세션 id
             session->GetSessionId()
         };
 
-        DUBU::Packet::PacketOpctions opt{ true, true, haeder->packetCode_ };
+        DUBU::Packet::PacketOpctions opt{ true, true, channelId };
         if (size + sh.GetSize() + sizeof(DUBU::Packet::PacketHeader) > PACKET_MAX_SIZE)
         {
             // 너무 길면 순서는 버린다.
