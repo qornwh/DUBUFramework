@@ -151,6 +151,9 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 				return;
 			}
 
+            // 수신시 시간 갱신
+            session->SetTimestamp(DUBU::GetRelativeTimeMs());
+
 			// PING/PONG 비트는 ACK 비트를 포함하므로 equality로 먼저 분기해야 함
 			if (flag == Packet::PacketHeaderFlag::PONG)
 			{
