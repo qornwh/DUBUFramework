@@ -747,6 +747,7 @@ void DUBU::InternalClient::RecvChunckPacket(Uint8* buffer, Uint16 size)
             // 이후에는 동적할당 해제 필수.. 릭 방지
             PacketParse(ptr, chunckOffset); // 1개의 헤더가 더해진 사이즈
             DUBU::PushBig(ptr);
+            chunckPakcetInj_.Remove(seqNo, chunckInfo.flag_);
         }
     }
 }
