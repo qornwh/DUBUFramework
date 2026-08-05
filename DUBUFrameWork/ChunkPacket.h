@@ -26,11 +26,11 @@ namespace DUBU
     class ChunkPacketInj
     {
     public:
-        ChunkPacket& Update(Uint64 seq, Uint16 flag = 0);
-        bool Remove(Uint64 seq, Uint16 flag = 0);
+        ChunkPacket& Update(Uint32 seq, Uint16 flag = 0);
+        bool Remove(Uint32 seq, Uint16 flag = 0);
 
     private:
-        Uint64 StartSequnceNum(Uint64 seq, Uint16 flag);
-        Map<Uint64, ChunkPacket> chunckPackets_;
+        Uint32 StartSequnceNum(Uint32 seq, Uint16 flag);
+        Map<Uint32, ChunkPacket> chunckPackets_;
     };
 }

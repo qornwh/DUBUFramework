@@ -51,20 +51,20 @@ bool DUBU::ChunkPacket::IsPull()
     return false;
 }
 
-DUBU::ChunkPacket& DUBU::ChunkPacketInj::Update(Uint64 seq, Uint16 flag)
+DUBU::ChunkPacket& DUBU::ChunkPacketInj::Update(Uint32 seq, Uint16 flag)
 {
     seq = StartSequnceNum(seq, flag);
     auto [it, inserted] = chunckPackets_.emplace(seq, ChunkPacket{});
     return it->second;
 }
 
-bool DUBU::ChunkPacketInj::Remove(Uint64 seq, Uint16 flag)
+bool DUBU::ChunkPacketInj::Remove(Uint32 seq, Uint16 flag)
 {
     seq = StartSequnceNum(seq, flag);
     return chunckPackets_.erase(seq) > 0;
 }
 
-Uint64 DUBU::ChunkPacketInj::StartSequnceNum(Uint64 seq, Uint16 flag)
+Uint32 DUBU::ChunkPacketInj::StartSequnceNum(Uint32 seq, Uint16 flag)
 {
     Uint8 count = 0;
     while (flag > 0)
