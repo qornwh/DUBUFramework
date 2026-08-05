@@ -300,17 +300,23 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
             }
             else
             {
+                // 현재 수신된 시퀀스 넘버 == 가장높은 last가 같은지 체크
+                bool isLastUpdate = false;
+                if (rps.recvRepeatSeq_ == rps.lastRepeatSeq_)
+                {
+                    isLastUpdate = true;
+                }
+
                 // 현재꺼는 실행
                 PacketParse(buffer, size);
                 rps.cacheRepeatCount_ >>= 1;
                 rps.recvRepeatSeq_ = header->sequenceNo_;
 
                 // 미리 수신된 패킷 있으면 실행해 준다.
-                Uint32 count = rps.lastRepeatSeq_ - rps.recvRepeatSeq_;
-                for (Uint32 i = 1; i <= count; ++i)
+                Uint32 idx = rps.recvRepeatSeq_;
+                while (idx != rps.lastRepeatSeq_)
                 {
-                    // 변수 캐싱안하고 그냥 1씩 더해지므로 +1을 한다.
-                    Uint32 idx = 1 + rps.recvRepeatSeq_;
+                    ++idx;
                     CachePacket& cachePacket = cap.cachePackets[idx % DEFAULT_WINDOW_COUNT];
                     if (!cachePacket.isKeep || cachePacket.sequenceNo != idx)
                     {
@@ -323,6 +329,11 @@ bool DUBU::Client::RecvDispatch(Uint8* buffer, Uint16 size)
                     CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
                     ++rps.recvRepeatSeq_;
                     rps.cacheRepeatCount_ >>= 1;
+                }
+
+                if (isLastUpdate)
+                {
+                    rps.lastRepeatSeq_ = rps.recvRepeatSeq_;
                 }
                 return true;
             }
