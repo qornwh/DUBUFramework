@@ -61,13 +61,7 @@ DUBU::ChunkPacket& DUBU::ChunkPacketInj::Update(Uint64 seq, Uint16 flag)
 bool DUBU::ChunkPacketInj::Remove(Uint64 seq, Uint16 flag)
 {
     seq = StartSequnceNum(seq, flag);
-    auto it = chunckPackets_.find(seq);
-    if (it != chunckPackets_.end())
-    {
-        chunckPackets_.erase(seq);
-    }
-    // 지우기 실패
-    return false;
+    return chunckPackets_.erase(seq) > 0;
 }
 
 Uint64 DUBU::ChunkPacketInj::StartSequnceNum(Uint64 seq, Uint16 flag)
