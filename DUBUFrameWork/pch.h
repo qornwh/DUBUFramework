@@ -30,24 +30,8 @@
 
 namespace DUBU
 {
-	static void LogAsset(const char* str, bool ret)
-	{
-		if (!ret)
-		{
-			printf("%s", str);
-			assert(ret);
-		}
-	}
-
-	static Uint64 GetCurrentTimeMs() 
-    {
-		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	}
-
-    static Uint32 GetRelativeTimeMs() 
-    {
-        static const auto start = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::steady_clock::now() - start;
-        return static_cast<Uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
-    }
+    // 공통 전역 함수
+    void LogAsset(const char* str, bool ret);
+    Uint64 GetCurrentTimeMs();
+    Uint32 GetRelativeTimeMs();
 }
