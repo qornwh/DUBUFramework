@@ -13,7 +13,7 @@ namespace DUBU
 
         void Reset() override;
         void AddPendingPacket(struct OverlappedPacketBuffer* opb, Uint16 size);
-        void AckProcess(Uint32 ackSeq, Uint32 rttMillisec_);
+        void AckProcess(Uint32 ackSeq, Uint32& rttMillisec_);
         bool IsRepeat() const;
     };
 

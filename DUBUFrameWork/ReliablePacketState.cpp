@@ -32,7 +32,7 @@ void DUBU::ReliablePacketState::AddPendingPacket(OverlappedPacketBuffer* opb, Ui
     }
 }
 
-void DUBU::ReliablePacketState::AckProcess(Uint32 ackSeq, Uint32 rttMillisec_)
+void DUBU::ReliablePacketState::AckProcess(Uint32 ackSeq, Uint32& rttMillisec_)
 {
     Uint32 idx = ackSeq % DEFAULT_WINDOW_COUNT;
 
