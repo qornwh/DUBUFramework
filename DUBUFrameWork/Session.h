@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "Packet.h"
 #include "Peer.h"
+#include "RWLock.h"
 #include "ReliablePacketState.h"
 
 #include "ChunkPacket.h"
@@ -124,6 +125,9 @@ namespace DUBU
 
         // RUDP소켓은 raw pointer로 관리
         RUDPSocket* rudpSocket_;
+
+        // SendPacket 전용 lock
+        Lock sendLock_;
 
         // 상시 세션
         Bool awaysConnect_ = false;

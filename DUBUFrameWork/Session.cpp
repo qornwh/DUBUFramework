@@ -478,17 +478,21 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
 {
     if (rudpSocket_ == nullptr) return;
 
-    // 패킷 메모리 할당
     Uint32 offset = sizeof(Packet::PacketHeader);
-    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 크기 초과면 청크로 분할
     if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
     {
-        // 이때는 청크로 나눠서 보내본다.
         SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
         return;
     }
+
+    // 여러 스레드가 동시에 보낼 수 있어 SendPacket만 lock
+    WriteLockGuard wl(sendLock_);
+
+    // 패킷 메모리 할당
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
