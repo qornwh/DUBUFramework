@@ -47,7 +47,7 @@ namespace DUBU
 		void SendTo(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb);
 		void SendToReliable(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb);
 		void SendToRepeat(const SOCKADDR_IN& targetAddr, OverlappedPacketBuffer* opb);
-		void RecvFromComplete(OVERLAPPED* ptr, Uint16 size);
+		void RecvFromComplete(OVERLAPPED* ptr, Int32 size);
 		void SendToComplete(OVERLAPPED* ptr, Uint16 size);
 
 	private:

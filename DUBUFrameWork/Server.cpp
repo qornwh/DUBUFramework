@@ -55,7 +55,7 @@ void DUBU::Server::RecvLoop()
 		OverlappedObj* obj = reinterpret_cast<OverlappedObj*>(ptr);
 		if ((obj->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
 		{
-			rudpSocket_->RecvFromComplete(ptr, static_cast<Uint16>(size));
+			rudpSocket_->RecvFromComplete(ptr, size);
 #ifdef _DEBUG
 			recvPacketCount_.fetch_add(1);
 #endif

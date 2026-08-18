@@ -291,23 +291,33 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, OverlappedPac
 	}
 }
 
-void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
+void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Int32 size)
 {
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+
+	// 실패/취소된 완료 - 음수 : 버퍼만 반환하고 다시 재등록
+	if (size < 0)
+	{
+		PacketManager::GetInstance().PushPacketBuffer(opb);
+		RecvFrom();
+		return;
+	}
+
+	Uint16 recvSize = static_cast<Uint16>(size);
 	bool handOff = false;
 
-	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opb->buffer_), size))
+	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opb->buffer_), recvSize))
 	{
 		Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 		Uint32 checksum = header->checksum_;
 
 		// 보낼때 체크썸은 0으로 초기화 된 상태라 롤백
 		header->checksum_ = 0;
-		if (checksum == Packet::Packet::CRC32(opb->buffer_, size))
+		if (checksum == Packet::Packet::CRC32(opb->buffer_, recvSize))
 		{
 			if (handler_)
 			{
-				handler_->OnRecvFrom(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), size);
+				handler_->OnRecvFrom(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), recvSize);
 				handOff = true;
 			}
 		}
