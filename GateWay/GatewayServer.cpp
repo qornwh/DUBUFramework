@@ -24,7 +24,7 @@ GatewayServer::~GatewayServer()
             client->Disconnect();
         }
 
-        delete client;
+        DUBU::Push<DUBU::InternalClient>(client);
     }
 
     internalClientList_.clear();
