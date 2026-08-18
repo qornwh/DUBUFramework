@@ -15,6 +15,7 @@ DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), s
 
 DUBU::Server::~Server()
 {
+    Stop();
 	rudpSocket_->EndServer();
 }
 
@@ -72,9 +73,10 @@ void DUBU::Server::RecvLoop()
 
 void DUBU::Server::Stop()
 {
-    isRunning_.store(false);
+    if (!isRunning_.exchange(false))
+        return;
 
-    // 세션 워커 정지 (잔여 큐는 워커 루프 종료시 ReturnBuffers로 반환)
+    // 세션 워커 정지
     for (auto& worker : g_sessionWorkers)
     {
         worker.Stop();

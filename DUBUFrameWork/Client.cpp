@@ -812,7 +812,11 @@ void DUBU::Client::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const
         // 마지막 처리
         if (i == count - 1)
         {
-            sendSize = size % chunckSize;
+            Uint16 rest = size % chunckSize;
+            if (rest > 0)
+            {
+                sendSize = rest;
+            }
             opt.chunckFlag_ = lastBit;
         }
         else
