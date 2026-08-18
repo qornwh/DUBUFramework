@@ -325,6 +325,9 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
         return false;
     }
 
+    // pending 슬롯 접근이라 송신(SendPacket)과 같은 lock
+    WriteLockGuard wl(sendLock_);
+
     if (ischannel)
     {
         Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
@@ -673,6 +676,9 @@ void DUBU::Session::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, cons
 
 void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)
 {
+    // pending 슬롯 접근이라 송신(SendPacket)과 같은 lock
+    WriteLockGuard wl(sendLock_);
+
     Uint32 current = rps.localWindowStart_;
     while (current != rps.localSeqence_)
     {
