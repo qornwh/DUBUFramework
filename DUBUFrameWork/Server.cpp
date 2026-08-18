@@ -91,22 +91,22 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	auto buffer = opb->buffer_;
+	Uint8* buffer = opb->buffer_;
 	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
 
-	auto sessionId = header->sessionId_;
-	auto flag = header->flags_;
-    auto seqNo = header->sequenceNo_;
+	Uint32 sessionId = header->sessionId_;
+	Uint8 flag = header->flags_;
+    Uint32 seqNo = header->sequenceNo_;
 	Uint64 key = PeerKey(addr);
-	auto it = peerMap_.find(key);
 	Bool result = false;
 
 	if (flag == Packet::PacketHeaderFlag::SESSION)
 	{
+        WriteLockGuard wl(sessionLock_);
+        auto it = peerMap_.find(key);
 		if (it == peerMap_.end())
 		{
 			// 세션 추가
-			WriteLockGuard wl(sessionLock_);
 			Session* session = CreateSession(addr);
 			header->sessionId_ = session->GetSessionId();
 			// 세션 추가 완료 응답
@@ -124,7 +124,6 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 		else
 		{
 			// 중복으로 오는경우 재전송
-			ReadLockGuard rl(sessionLock_);
 			Session* session = it->second.session_;
 			ConnectMessage(session);
 		}
@@ -366,6 +365,9 @@ void DUBU::Server::CheckSession()
 				// 세션 연결 해제
                 DisconnectMessage(session);
 				session->Disconnect();
+            
+                Uint64 key = PeerKey(session->GetSockAddr());
+                peerMap_.erase(key);
 			}
             sessionManager_.RemoveSession(sessionId);
 		}
