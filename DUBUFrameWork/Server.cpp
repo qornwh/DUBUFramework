@@ -143,6 +143,7 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 
 void DUBU::Server::DestroySession(Session* session)
 {
+	session->Reset();
 	Push<Session>(session);
 }
 

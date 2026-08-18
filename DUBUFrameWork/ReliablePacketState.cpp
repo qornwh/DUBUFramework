@@ -9,6 +9,9 @@ void DUBU::ReliablePacketState::Reset()
     localWindowStart_ = 0;
     localSeqence_ = 0;
 
+    // 미ACK pending 버퍼 반환까지 포함
+    ReturnBuffers();
+
     for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
     {
         pendingPackets_[i] = { nullptr, 0, 0, false };
@@ -65,4 +68,23 @@ void DUBU::ReliablePacketState::AckProcess(Uint32 ackSeq, Uint32& rttMillisec_)
 bool DUBU::ReliablePacketState::IsRepeat() const
 {
     return localWindowStart_ != localSeqence_;
+}
+
+void DUBU::ReliablePacketState::ReturnBuffers()
+{
+    for (Uint32 i = 0; i < DEFAULT_WINDOW_COUNT; ++i)
+    {
+        OverlappedPacketBuffer* buffer = pendingPackets_[i].buffer;
+        if (buffer == nullptr)
+        {
+            continue;
+        }
+        pendingPackets_[i].buffer = nullptr;
+
+        Uint32 old = buffer->type_.fetch_and(~OverlappedObjType::RELIABLE);
+        if ((old & OverlappedObjType::SENDING) == 0)
+        {
+            PacketManager::GetInstance().PushPacketBuffer(buffer);
+        }
+    }
 }

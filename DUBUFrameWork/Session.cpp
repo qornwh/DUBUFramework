@@ -13,10 +13,7 @@ DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
 
 DUBU::Session::~Session()
 {
-    if (isConnect_)
-    {
-        Reset();
-    }
+    Reset();
     cacheAlreadyPackets_.clear();
 }
 
