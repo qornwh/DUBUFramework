@@ -51,6 +51,7 @@ void DUBU::SessionWorker::Process(Uint32 num)
 
 void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKADDR_IN& addr)
 {
+    // TODO : 이후 server의 세션 여기도 가지고 있기.
     assert(server_ != nullptr);
 
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
@@ -162,6 +163,7 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
 
 void DUBU::SessionWorker::CheckSessions(Uint32 num)
 {
+    // TODO : 이후 server의 세션 여기도 가지고 있기.
     assert(server_ != nullptr);
 
     const Uint32 workerCount = static_cast<Uint32>(g_sessionWorkers.size());
