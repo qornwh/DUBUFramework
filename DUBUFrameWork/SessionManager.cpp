@@ -14,7 +14,6 @@ DUBU::Session* DUBU::SessionManager::AddSession()
     Uint32 sessionId = GenerateId();
     sessionCount_.fetch_add(1);
     Session* session = Pop<Session>(handlers_);
-    session->Reset();
     session->SetSessionId(sessionId);
     sessionMap_.insert({ sessionId, session });
 
