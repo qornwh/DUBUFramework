@@ -27,7 +27,7 @@ namespace DUBU
         freeList_.reserve(count);
         for (int i = 0; i < count; ++i)
         {
-            freeList_[i] = new T();
+            freeList_.push_back(new T());
         }
     }
 
@@ -35,9 +35,9 @@ namespace DUBU
     template<typename... Args>
     inline T* ObjectPool<T>::Pop(Args&& ...args)
     {
+        WriteLockGuard wl(lk_);
         if (!freeList_.empty())
         {
-            WriteLockGuard wl(lk_);
             T* ptr = freeList_.back();
             freeList_.pop_back();
             return new(ptr) T(std::forward<Args>(args)...);
