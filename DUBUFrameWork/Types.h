@@ -8,6 +8,7 @@
 #include <string>
 #include <chrono>
 #include <flatbuffers/flatbuffer_builder.h>
+#include <tbb/concurrent_queue.h>
 
 #pragma region BaseTypes
 using Bool = bool;
@@ -60,6 +61,9 @@ using MultiMap = std::multimap<T, K>;
 
 template <typename T>
 using Function = std::function<T>;
+
+template <typename T>
+using ConcurrentQueue = tbb::concurrent_bounded_queue<T>;
 #pragma endregion
 
 #pragma region CustomTypes
