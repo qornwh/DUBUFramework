@@ -68,12 +68,13 @@ void DUBU::InternalClient::Connect()
 
 void DUBU::InternalClient::ConnectTimes(const Uint32 count)
 {
-    // 기본값 5회 연결
-    while (!isConnect_)
+    int time = 0;
+    while (!isConnect_ && time < count)
     {
         Connect();
         Sleep(500);
         Dispatch();
+        ++time;
     }
 
     if (!isConnect_)
