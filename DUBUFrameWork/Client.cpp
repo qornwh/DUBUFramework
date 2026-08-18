@@ -113,6 +113,8 @@ bool DUBU::Client::Dispatch()
 
 void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
+	WriteLockGuard wl(lock_);
+
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
 	auto buffer = opb->buffer_;
@@ -614,6 +616,8 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
 
 void DUBU::Client::CheckPending()
 {
+    WriteLockGuard wl(lock_);
+
     // 시간체크
     Uint32 now = GetRelativeTimeMs();
 
@@ -640,17 +644,20 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
 {
     if (rudpSocket_ == nullptr) return;
 
-    // 패킷 메모리 할당
     Uint32 offset = sizeof(Packet::PacketHeader);
-    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 크기 초과면 청크로 분할
     if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
     {
-        // 이때는 청크로 나눠서 보내본다.
         SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
         return;
     }
+
+    WriteLockGuard wl(lock_);
+
+    // 패킷 메모리 할당
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
