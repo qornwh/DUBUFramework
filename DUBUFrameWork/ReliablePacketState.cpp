@@ -44,8 +44,15 @@ void DUBU::ReliablePacketState::AckProcess(Uint32 ackSeq, Uint32& rttMillisec_)
 
         // 수신 성공 버퍼 지운다.
         OverlappedPacketBuffer* pandingbuffer = pendingPackets_[idx].buffer;
-        PacketManager::GetInstance().PushPacketBuffer(pandingbuffer);
         pendingPackets_[idx].buffer = nullptr;
+
+        // RELIABLE을 끈다, "이 버퍼는 ACK 처리 끝남" 표시
+        Uint32 old = pandingbuffer->type_.fetch_and(~OverlappedObjType::RELIABLE);
+        if ((old & OverlappedObjType::SENDING) == 0)
+        {
+            // 커널이 손 뗀 상태이면 바로 반환
+            PacketManager::GetInstance().PushPacketBuffer(pandingbuffer);
+        }
 
         // pandding된 버퍼가 있는곳 까지 지운다, 단 localSeqence_까지만
         while (localWindowStart_ != localSeqence_ && pendingPackets_[localWindowStart_ % DEFAULT_WINDOW_COUNT].buffer == nullptr)

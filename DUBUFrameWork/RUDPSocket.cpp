@@ -250,8 +250,8 @@ void DUBU::RUDPSocket::SendToReliable(const SOCKADDR_IN& targetAddr, OverlappedP
 	DWORD flags = 0;
 	DWORD bytesSent = opb->size_;
 
-    // overalapped 타입 설정
-    opb->SetType(OverlappedObjType::SENDTO | OverlappedObjType::RELIABLE);
+    // overalapped 타입 설정, SENDING : 완료 올때까지 재전송 금지 표시
+    opb->SetType(OverlappedObjType::SENDTO | OverlappedObjType::RELIABLE | OverlappedObjType::SENDING);
 
 	wsabuf.buf = static_cast<char*>(opb->pos_);
 	wsabuf.len = opb->size_;
@@ -271,6 +271,9 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, OverlappedPac
 {
 	// overlapped 재사용 전 초기화 (ZeroMemory)
     opb->Initialize();
+
+    // 재전송도 SENDING 표시 (호출측이 SENDING 꺼진것만 넘겨준다)
+    opb->SetType(opb->type_ | OverlappedObjType::SENDING);
 
 	// 패킷 복사는 없다, 기존꺼 그대로 보내는 함수
 	WSABUF wsabuf;
@@ -351,8 +354,11 @@ void DUBU::RUDPSocket::SendToComplete(OVERLAPPED* ptr, Uint16 size)
 		handler_->OnSendTo(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), size);
 	}
 
-	// 재전송 패킷이 아니면 할당 해제 
-	if ((opb->type_ & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
+	// 커널이 손 뗐으니 SENDING 끔
+	Uint32 prev = opb->type_.fetch_and(~OverlappedObjType::SENDING);
+
+	// 재전송 패킷이 아니면 할당 해제
+	if ((prev & OverlappedObjType::RELIABLE) != OverlappedObjType::RELIABLE)
 	{
 		PacketManager::GetInstance().PushPacketBuffer(opb);
 	}

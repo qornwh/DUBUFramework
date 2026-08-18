@@ -10,6 +10,7 @@ namespace DUBU
 		NONE = 0x0000'0000,
 		RECVEFROM = 0x0000'0001,
 		SENDTO = 0x0000'0002,
+		SENDING = 0x0000'0004,
 		RELIABLE = 0xFFFF'0000
 	};
 
@@ -17,7 +18,8 @@ namespace DUBU
 	struct OverlappedObj
 	{
 		WSAOVERLAPPED overlapped_;
-		Uint32 type_ = OverlappedObjType::NONE;
+		// 워커(재전송 체크)와 수신 스레드(완료)가 같이 보므로 atomic
+		Atomic<Uint32> type_ = OverlappedObjType::NONE;
 		struct sockaddr_in remoteAddr_;
 		Int32 addrSize_ = sizeof(remoteAddr_);
 		OverlappedPacketBuffer* ptr_ = nullptr;

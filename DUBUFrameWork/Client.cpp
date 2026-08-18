@@ -833,7 +833,8 @@ void DUBU::Client::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, U
     while (current != rps.localSeqence_)
     {
         PendingPacket& p = rps.pendingPackets_[current % DEFAULT_WINDOW_COUNT];
-        if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
+        // SENDING이면 이전 송신이 아직 커널에 있음, 이번 주기 스킵
+        if (p.buffer != nullptr && (p.buffer->type_ & OverlappedObjType::SENDING) == 0 && now - p.timeStamp >= resendDelay)
         {
             rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
             p.timeStamp = now;
