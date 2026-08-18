@@ -53,6 +53,7 @@ namespace DUBU
     inline void ObjectPool<T>::Push(T* ptr)
     {
         WriteLockGuard wl(lk_);
+        ptr->~T();
         freeList_.push_back(ptr);
     }
 }
