@@ -74,19 +74,7 @@ namespace DUBU
 		DubuByteDataSPtr pool_ptr = FindBlock(ptr);
 		pool_ptr->useCnt_.fetch_sub(1);
 
-		if (pool_ptr->useCnt_.load() == 0 && PoolList.size() > PoolSize)
-		{
-			auto it = PoolList.begin() + PoolSize;
-			for (; it != PoolList.end(); ++it)
-			{
-				if (it->get()->ptr_ == pool_ptr->ptr_)
-				{
-					PoolList.erase(it);
-					pool_ptr.reset();
-					break;
-				}
-			}
-		}
+		// TODO : 일단 메모리는 회수 하지 않는다. 추후 개발 목록, 현재 MAP풀스캔 해결 방안 필요
 	}
 
 	// 구조체/클래스 단위

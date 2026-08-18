@@ -5,7 +5,7 @@ namespace DUBU
 {
 	Vector<DubuByteDataSPtr> PoolList;
 	Map<int, Vector<DubuBytePtr>> PoolChunkList;
-	const int PoolSize = 10;
+	const int PoolSize = 1;
 	Lock PoolLock;
     Set<Uint64> BigMemoryPtrs;
 }
