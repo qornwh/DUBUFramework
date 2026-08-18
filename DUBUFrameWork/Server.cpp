@@ -16,6 +16,16 @@ DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), s
 DUBU::Server::~Server()
 {
     Stop();
+
+    // 서버 종료전, 남은 세션 전부 반환
+    for (auto& [id, session] : sessionManager_.GetSessions())
+    {
+        if (session != nullptr)
+        {
+            DestroySession(session);
+        }
+    }
+
 	rudpSocket_->EndServer();
 }
 
@@ -129,6 +139,24 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 #endif // _DEBUG
 
 	return session;
+}
+
+void DUBU::Server::DestroySession(Session* session)
+{
+	Push<Session>(session);
+}
+
+void DUBU::Server::RemoveSession(Uint32 sessionId)
+{
+	Session* session = sessionManager_.GetSession(sessionId);
+	if (session == nullptr)
+	{
+		return;
+	}
+
+	peerMap_.erase(PeerKey(session->GetSockAddr()));
+	sessionManager_.RemoveSession(sessionId);
+	DestroySession(session);
 }
 
 void DUBU::Server::ConnectMessage(Session* session)

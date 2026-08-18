@@ -236,11 +236,9 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
             {
                 server_->DisconnectMessage(session);
                 session->Disconnect();
-
-                Uint64 key = server_->PeerKey(session->GetSockAddr());
-                server_->peerMap_.erase(key);
             }
-            server_->sessionManager_.RemoveSession(sessionId);
+
+            server_->RemoveSession(sessionId);
         }
     }
 }

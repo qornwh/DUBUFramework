@@ -35,6 +35,8 @@ namespace DUBU
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
+		virtual void DestroySession(Session* session);
+		void RemoveSession(Uint32 sessionId);
 		void ConnectMessage(Session* session);
 		void DisconnectMessage(Session* session);
 		void SendPing(Session* session);

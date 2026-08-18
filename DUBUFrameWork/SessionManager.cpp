@@ -5,13 +5,7 @@ DUBU::SessionManager::SessionManager()
 }
 
 DUBU::SessionManager::~SessionManager()
-{
-    for (auto [id, session] : sessionMap_)
-    {
-        // 전부다 할당 해제 
-        Push<Session>(session);
-    }
-    // 비우기
+{    
     sessionMap_.clear();
 }
 
@@ -29,12 +23,7 @@ DUBU::Session* DUBU::SessionManager::AddSession()
 
 void DUBU::SessionManager::RemoveSession(Uint32 sessionId)
 {
-    auto it = sessionMap_.find(sessionId);
-    if (it != sessionMap_.end())
-    {
-        Push<Session>(it->second);
-        sessionMap_.erase(sessionId);
-    }
+    sessionMap_.erase(sessionId);
 }
 
 DUBU::Session* DUBU::SessionManager::GetSession(Uint32 sessionId)
