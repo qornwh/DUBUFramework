@@ -7,7 +7,7 @@
 
 DUBU::Server* g_server = nullptr;
 
-DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
+DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);

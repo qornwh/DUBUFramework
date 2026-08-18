@@ -62,17 +62,11 @@ namespace DUBU
         // Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;
 
-        // CheckSession 1스레드만 작동되도록 CAS연산
-		Atomic<Bool> sessionCAS_;
-
 		// Ping전달 시간 체크
 		const Uint32 PingTimeout = g_defaultPingTimeoutMs;
 
 		// 세션 타임아웃 설정
 		const Uint32 SessionTimeout = g_defaultDisconnectTimeoutMs;
-
-		// 끊을 세션 캐시로 저장
-		Uint32 removeListCache_[MAX_CLIENT_COUNT];
 
     protected:
 #ifdef _DEBUG
