@@ -1,0 +1,450 @@
+<title>DUBU 스레드 안전성 리포트</title>
+<style>
+  :root {
+    --paper: #FAFBFC;
+    --surface: #FFFFFF;
+    --ink: #1B222B;
+    --ink-soft: #4A5866;
+    --muted: #7A8794;
+    --line: #DDE3E9;
+    --accent: #2E6E8E;
+    --accent-soft: #EAF2F6;
+    --mono-bg: #EEF2F5;
+    --crit: #B23A3A;
+    --crit-bg: #F9ECEC;
+    --high: #A96A1F;
+    --high-bg: #F8F0E2;
+    --mid: #56687A;
+    --mid-bg: #EBF0F4;
+    --now-bg: #FDF6E3;
+    --now-ink: #8A6D1B;
+    --ok: #2E7D4F;
+    --ok-bg: #E7F3EC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181D;
+      --surface: #1B2129;
+      --ink: #E4E9ED;
+      --ink-soft: #AEB9C3;
+      --muted: #7E8A96;
+      --line: #2C343E;
+      --accent: #6FA8C4;
+      --accent-soft: #1E2B34;
+      --mono-bg: #232B34;
+      --crit: #E08585;
+      --crit-bg: #332224;
+      --high: #D9A55C;
+      --high-bg: #322A1C;
+      --mid: #93A5B5;
+      --mid-bg: #232C34;
+      --now-bg: #2E2A1A;
+      --now-ink: #D9C06A;
+      --ok: #7BC49A;
+      --ok-bg: #1E3128;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14181D;
+    --surface: #1B2129;
+    --ink: #E4E9ED;
+    --ink-soft: #AEB9C3;
+    --muted: #7E8A96;
+    --line: #2C343E;
+    --accent: #6FA8C4;
+    --accent-soft: #1E2B34;
+    --mono-bg: #232B34;
+    --crit: #E08585;
+    --crit-bg: #332224;
+    --high: #D9A55C;
+    --high-bg: #322A1C;
+    --mid: #93A5B5;
+    --mid-bg: #232C34;
+    --now-bg: #2E2A1A;
+    --now-ink: #D9C06A;
+    --ok: #7BC49A;
+    --ok-bg: #1E3128;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-size: 15.5px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  header.doc { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 8px; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 30px; line-height: 1.3; margin: 0 0 14px; font-weight: 700;
+    letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .meta { color: var(--muted); font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .meta b { color: var(--ink-soft); font-weight: 600; }
+
+  h2 {
+    font-size: 20px; margin: 56px 0 6px; font-weight: 700; letter-spacing: -0.005em;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h2 .sec { color: var(--accent); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
+  .sec-desc { color: var(--ink-soft); font-size: 14px; margin: 0 0 20px; }
+
+  p { margin: 0 0 14px; }
+
+  code, .mono {
+    font-family: Consolas, "Cascadia Mono", ui-monospace, monospace;
+    font-size: 0.86em;
+    background: var(--mono-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* 요약 표 */
+  .tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; margin: 24px 0 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 700px; }
+  th {
+    text-align: left; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+  .cap { color: var(--muted); font-size: 12.5px; margin: 6px 2px 0; }
+
+  /* 칩 */
+  .chip {
+    display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 1px 9px; border-radius: 20px; white-space: nowrap; line-height: 1.7;
+  }
+  .chip.crit { color: var(--crit); background: var(--crit-bg); }
+  .chip.high { color: var(--high); background: var(--high-bg); }
+  .chip.mid  { color: var(--mid);  background: var(--mid-bg); }
+  .chip.now  { color: var(--now-ink); background: var(--now-bg); }
+  .chip.done { color: var(--ok); background: var(--ok-bg); }
+
+  /* 이슈 카드 */
+  .issue {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px 22px 16px; margin: 0 0 14px;
+  }
+  .issue-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .issue-no {
+    font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent);
+    font-size: 15px; flex: none;
+  }
+  .issue-title { font-weight: 700; font-size: 16px; letter-spacing: -0.005em; }
+  .issue .loc { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; }
+  .issue .loc code { background: transparent; padding: 0; color: var(--ink-soft); }
+  .issue p { font-size: 14.5px; color: var(--ink-soft); }
+  .issue p strong { color: var(--ink); }
+  .issue ul { margin: 0 0 12px; padding-left: 20px; font-size: 14.5px; color: var(--ink-soft); }
+  .issue li { margin-bottom: 6px; }
+  .issue li::marker { color: var(--accent); }
+
+  .scenario {
+    border-left: 3px solid var(--line);
+    padding: 2px 0 2px 14px; margin: 12px 0;
+    font-size: 13.8px; color: var(--ink-soft);
+  }
+  .scenario .lbl {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; display: block; margin-bottom: 2px;
+  }
+
+  .callout {
+    background: var(--accent-soft); border-radius: 8px; padding: 16px 20px;
+    font-size: 14.5px; margin: 20px 0; color: var(--ink-soft);
+  }
+  .callout strong { color: var(--ink); }
+
+  /* 부록 */
+  .appx { border-top: 1px dashed var(--line); margin-top: 56px; padding-top: 8px; }
+  .appx .issue { padding: 16px 20px 12px; }
+
+  footer { margin-top: 64px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <header class="doc">
+    <div class="eyebrow">Code Review · Concurrency</div>
+    <h1>DUBUFramework 멀티스레드 이슈 정리</h1>
+    <div class="meta">
+      <span><b>대상</b> DUBUFrameWork 전체 + GateWay / DUBUEchoServer 앱 코드</span>
+      <span><b>기준 커밋</b> <span class="mono" style="background:transparent;padding:0">c60431e</span></span>
+      <span><b>작성일</b> 2026-08-18 (1번 수정 반영, 신규 N1–N5 추가)</span>
+      <span><b>이슈</b> 15건(1건 수정됨) + 신규 5건 + 부록 5건 + 보류 3건</span>
+    </div>
+  </header>
+
+  <div class="callout">
+    <strong>전제.</strong> 현재 EchoServer / GateWay는 디스패치 스레드가 1개라서 대부분의 이슈는 잠재 상태다.
+    다만 <code>sessionCAS_</code>(CheckSession 1스레드 제한), <code>sessionLock_</code> 같은 장치는 다중 디스패치 스레드를 전제로
+    한 설계이므로, <code>Server::Dispatch()</code> / <code>Run()</code>을 2개 이상 스레드에서 돌리는 순간 아래 이슈들이 실제로 발화한다.
+    지금 1스레드 구성에서도 밟을 수 있는 항목은 <span class="chip now">1스레드도 발생</span>으로 표시했다.
+    RingBuffer는 알고리즘 검토 결과 프로토콜이 올바르고, 사용처가 아직 미정이라 이 문서에서 제외했다.
+  </div>
+
+  <h2><span class="sec">요약</span> 이슈 한눈에 보기</h2>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr><th>#</th><th>구간</th><th>요약</th><th>심각도</th><th>현재 발생</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="mono">Server.cpp:101</td><td>peerMap_ 락 없이 find + 세션 이중 생성 + 제거 시 peer 미삭제 → UAF</td><td><span class="chip done">수정됨</span></td><td>—</td></tr>
+        <tr><td class="num">2</td><td class="mono">Server.cpp:140</td><td>같은 세션에 동시 RecvDispatch — ReadLock은 세션을 직렬화하지 못함</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">3</td><td class="mono">ReliablePacketState.cpp:47</td><td>ACK의 버퍼 해제 vs 재전송의 버퍼 사용 — 해제된 버퍼로 송신</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">4</td><td class="mono">PacketStateBase.cpp:13</td><td>비원자 <code>++sendRepeatSeq_</code> — 시퀀스 중복 발급, pending 슬롯 덮어쓰기</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">5</td><td class="mono">Session.h:91–129</td><td>timestamp_ / isConnect_ / rttMillisec_ 등 비원자 공유 필드</td><td><span class="chip mid">중</span></td><td>—</td></tr>
+        <tr><td class="num">6</td><td class="mono">RUDPSocket.cpp:273</td><td>미완료 송신의 OVERLAPPED를 재전송이 ZeroMemory + 재사용</td><td><span class="chip crit">상</span></td><td><span class="chip now">1스레드도 발생</span></td></tr>
+        <tr><td class="num">7</td><td class="mono">BufferManager.cpp:63</td><td>useList_ 참조를 락 없이 반환 — EndServer 순회 중 수정</td><td><span class="chip high">중상</span></td><td>—</td></tr>
+        <tr><td class="num">8</td><td class="mono">RUDPSocket.cpp:67</td><td>종료 시 디스패치 스레드 합류(join) 규약 부재 — 닫힌 소켓에 I/O</td><td><span class="chip high">중상</span></td><td>—</td></tr>
+        <tr><td class="num">9</td><td class="mono">ObjectPool.h:38</td><td>락 밖 empty 체크 → 빈 vector pop_back / Initialize의 범위 밖 쓰기</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">10</td><td class="mono">Pool.cpp:83</td><td>Initialize() 이중 초기화 가드가 비원자</td><td><span class="chip mid">중</span></td><td>—</td></tr>
+        <tr><td class="num">11</td><td class="mono">RWLock.cpp:46</td><td>writer 기아 — reader가 끊이지 않으면 WriteLock 무한 대기</td><td><span class="chip high">중상</span></td><td>—</td></tr>
+        <tr><td class="num">12</td><td class="mono">Server.cpp:140 → Broadcast</td><td>재귀 ReadLock — 기아(#11) 수정 시 데드락으로 전환</td><td><span class="chip high">중상</span></td><td>—</td></tr>
+        <tr><td class="num">13</td><td class="mono">Client.h:111</td><td>Client / InternalClient — lock_ 선언만 있고 사용처 0건</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">14</td><td class="mono">GatewayServer.cpp:78</td><td>여러 스레드가 같은 InternalClient::SendPacket 동시 호출</td><td><span class="chip crit">상</span></td><td>—</td></tr>
+        <tr><td class="num">15</td><td class="mono">GatewayServer.cpp:93</td><td>Broadcast가 ReadLock으로 전 세션 SendPacket — 직렬화 가정 붕괴</td><td><span class="chip high">중상</span></td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">심각도: <b>상</b> = 크래시·메모리 오염(UAF/이중 반환), <b>중상</b> = 행(hang)·종료 크래시·오염 확산 경로, <b>중</b> = C++ 기준 UB이나 실제 증상은 간헐적.</p>
+
+  <h2><span class="sec">A</span> Server 수신 경로</h2>
+  <p class="sec-desc">디스패치 스레드가 2개 이상일 때 <code>OnRecvFrom</code>이 동시에 실행되는 구간.</p>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">1</span><span class="issue-title">peerMap_ — 락 없는 find, 세션 이중 생성, 제거 시 peer 미삭제</span><span class="chip done">수정됨</span></div>
+    <div class="loc"><code>Server.cpp:101, 115, 128, 370</code></div>
+    <ul>
+      <li><code>peerMap_.find(key)</code>가 락 없이 실행되고, 삽입(<code>peerMap_.emplace</code>)은 WriteLock 안에서 실행된다. <code>std::map</code>은 삽입 중 리밸런싱하므로 동시 find는 크래시 가능한 데이터 레이스.</li>
+      <li>같은 주소의 SESSION 패킷 2개가 두 스레드에 동시에 오면 둘 다 <code>it == peerMap_.end()</code>를 통과 → <code>CreateSession()</code> 2회 → 한쪽 세션은 <code>sessionMap_</code>에 영구히 남는다(누수 + 유령 세션).</li>
+      <li><code>RemoveSession</code>은 세션을 풀로 반환하지만 <strong>peerMap_ 엔트리는 지우지 않는다.</strong> 같은 주소에서 SESSION 패킷이 다시 오면 <code>it-&gt;second.session_</code>이 해제된 세션을 가리킨다.</li>
+    </ul>
+    <div class="scenario"><span class="lbl">시나리오</span>
+      세션 타임아웃(30초) → RemoveSession → 같은 클라이언트 재접속 → peerMap_에 남은 옛 포인터로 ConnectMessage → use-after-free. 풀 재활용으로 그 메모리가 다른 세션이 된 경우, 남의 세션 ID로 응답이 나간다.
+    </div>
+    <div class="scenario" style="border-left-color: var(--ok);"><span class="lbl">수정 내용 (2026-08-18)</span>
+      <code>peerMap_.find</code>가 SESSION 분기 안 WriteLock 아래로 이동(find+생성 직렬화 → 이중 생성 해소), CheckSession의 타임아웃 제거 경로에 <code>peerMap_.erase(key)</code> 추가(<code>Server.cpp:369</code>). peerMap_ 접근 3곳(find/emplace/erase) 전부 <code>sessionLock_</code> 아래로 확인됨. 남은 후속 항목은 아래 「보류」 참조.
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">2</span><span class="issue-title">같은 세션에 대한 동시 RecvDispatch — ReadLock은 공유 락</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>Server.cpp:140</code> → <code>Session.cpp:111–313</code></div>
+    <p><code>ReadLockGuard</code>만 잡고 <code>session-&gt;RecvDispatch()</code>를 호출하므로, 같은 세션의 패킷 2개가 두 스레드에서 동시에 세션 내부로 진입한다. 세션 상태는 전부 일반 필드다: <code>recvRepeatSeq_</code>, <code>cacheRepeatCount_</code>, <code>lastRepeatSeq_</code>, <code>cachePackets[]</code>.</p>
+    <div class="scenario"><span class="lbl">시나리오</span>
+      두 스레드가 <code>Session.cpp:187–206</code>(순서 복원 루프)을 동시에 실행 → 같은 캐시 패킷에 대해 <code>PushPacketBuffer(cachePacket.buffer)</code>를 각각 호출 → 같은 포인터가 CachePacketManager의 <code>list_</code>에 2번 들어감 → 이후 서로 다른 두 세션이 같은 버퍼에 동시에 쓴다.
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">3</span><span class="issue-title">ACK 처리 vs 재전송 — 재전송 중인 버퍼를 풀로 반환</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>ReliablePacketState.cpp:47–54</code> vs <code>Session.cpp:672</code>, <code>Server.cpp:320</code></div>
+    <p><code>CheckSession</code>은 ReadLock만 잡고 <code>RepeatMessageAll</code>을 돌리므로 다른 스레드의 ACK 처리와 완전히 동시 실행된다.</p>
+    <div class="scenario"><span class="lbl">시나리오</span>
+      재전송 스레드가 <code>if (p.buffer != nullptr)</code> 체크를 통과한 직후, ACK 스레드가 <code>PushPacketBuffer(...); buffer = nullptr;</code> 실행 → 풀에 반환된 버퍼로 <code>WSASendTo</code>. 그 버퍼를 제3의 스레드가 Pop해서 내용을 덮으면 깨진 패킷 송신 또는 크래시. <code>localWindowStart_++</code> 루프와 재전송 순회가 겹치면 윈도우 경계도 어긋난다.
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">4</span><span class="issue-title">SendPacket 동시 호출 — 시퀀스 중복 발급</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>PacketStateBase.cpp:13</code>, <code>ReliablePacketState.cpp:26</code></div>
+    <p><code>UpdateSendSequenceNo()</code>는 <code>return ++sendRepeatSeq_;</code> 비원자 증가다. 같은 세션에 두 스레드가 동시에 송신하면 같은 시퀀스 번호가 2개 발급되고, <code>pendingPackets_[seq % 64]</code> 같은 슬롯에 두 번 대입된다. 먼저 들어간 <code>OverlappedPacketBuffer</code>는 덮여서 영구 누수, ACK는 하나만 처리된다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">5</span><span class="issue-title">비원자 공유 필드 — timestamp_, isConnect_, rttMillisec_ 등</span><span class="chip mid">중</span></div>
+    <div class="loc"><code>Session.h:91–129</code>, <code>Session.cpp:116, 322, 465</code></div>
+    <p>수신 스레드가 쓰고(<code>SetTimestamp</code>, <code>Disconnect</code>) CheckSession 스레드가 읽는(<code>GetTimestamp</code>, <code>IsConnection</code>, <code>GetRttMillisec</code>) 일반 <code>Uint32</code>/<code>Bool</code> 필드. C++ 기준 데이터 레이스(UB)이며, 실제로는 낡은 값을 읽어 타임아웃 오판 정도로 나타난다. <code>lastPingSentTime_</code>, <code>pingCount_</code>도 동일.</p>
+  </div>
+
+  <h2><span class="sec">B</span> RUDPSocket / IOCP</h2>
+  <p class="sec-desc">OVERLAPPED 수명과 종료 경로. 6번은 스레드 1개인 지금도 발생 가능.</p>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">6</span><span class="issue-title">미완료 송신의 OVERLAPPED 재사용</span><span class="chip crit">상</span> <span class="chip now">1스레드도 발생</span></div>
+    <div class="loc"><code>RUDPSocket.cpp:273</code>, <code>341–344</code></div>
+    <ul>
+      <li><code>SendToRepeat</code>가 재전송 전에 <code>opb-&gt;Initialize()</code>로 OVERLAPPED를 ZeroMemory 하는데, 직전 <code>WSASendTo</code>가 아직 완료 전이면 커널이 소유한 구조체를 덮는 것이다. 재전송 주기가 <code>rtt×2 + 20ms</code>라 부하 시 이전 송신이 미완료인 채 겹치는 건 충분히 일어난다.</li>
+      <li>신뢰 패킷은 <code>SendToComplete</code>에서 반환하지 않고 ACK 시점에 반환하는데, 디스패치 스레드가 여럿이면 송신 완료 통지보다 ACK가 먼저 처리될 수 있다. 그러면 송신이 pending인 버퍼가 풀로 돌아가고, <code>RecvFrom()</code>이 그걸 뽑아 같은 OVERLAPPED에 <code>WSARecvFrom</code>을 건다 — 한 OVERLAPPED에 pending I/O 2개.</li>
+    </ul>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">7</span><span class="issue-title">GetUseList — 내부 Set 참조를 락 없이 반환</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>BufferManager.cpp:63–66</code>, <code>RUDPSocket.cpp:57–64</code></div>
+    <p><code>EndServer</code>가 <code>useList_</code>를 순회하는 동안 다른 디스패치 스레드가 <code>PopPacketBuffer</code>/<code>PushPacketBuffer</code>로 같은 set을 수정하면 순회 중 컨테이너 변경으로 UB. 또 <code>EXIT_SIGNAL</code>을 completionKey로 넣지만 <code>Run()</code>/<code>Dispatch()</code>는 completionKey를 확인하지 않아 종료 신호가 일반 패킷처럼 처리된다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">8</span><span class="issue-title">종료 경로 — 디스패치 스레드 합류 규약 부재</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>Server.cpp:85–88</code>, <code>RUDPSocket.cpp:67–95, 241</code></div>
+    <p><code>Stop()</code>은 <code>isRunning_</code>만 내리고, <code>~Server</code> → <code>EndServer</code>가 곧바로 <code>CancelIoEx</code> / <code>closesocket</code> / <code>CloseHandle</code>을 한다. 디스패치 스레드가 여럿이면 다른 스레드가 아직 <code>RecvFrom()</code> 재등록이나 <code>WSASendTo</code> 중일 수 있고, 닫힌 소켓에 I/O를 걸어 <code>assert(false)</code>로 죽는다. EndServer가 사용 중 버퍼를 회수하는 동안 그 버퍼를 쥔 스레드가 계속 쓰면 이중 반환. "모든 디스패치 스레드 join 후 EndServer"를 프레임워크가 강제할 방법이 필요하다.</p>
+  </div>
+
+  <h2><span class="sec">C</span> 메모리 풀</h2>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">9</span><span class="issue-title">ObjectPool::Pop — 락 밖의 empty 체크</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>ObjectPool.h:38–44</code>, <code>24–32</code></div>
+    <p><code>if (!freeList_.empty())</code>를 락 밖에서 체크하고 락 안에서 <code>pop_back</code>한다. 원소가 1개일 때 두 스레드가 모두 통과하면 두 번째는 빈 vector에 <code>pop_back</code> → UB. 부수적으로 <code>Initialize</code>는 <code>reserve(count)</code> 후 <code>freeList_[i] = new T()</code>라 size가 0인 채 범위 밖 쓰기이고, 풀이 실제로 채워지지도 않는다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">10</span><span class="issue-title">DUBU::Initialize() — 이중 초기화 가드가 비원자</span><span class="chip mid">중</span></div>
+    <div class="loc"><code>Pool.cpp:83–87</code></div>
+    <p><code>static Bool initialized</code> 체크-후-설정이 비원자라 동시 호출 시 둘 다 통과해 <code>PoolList</code>가 이중으로 채워질 수 있다. 호출 시점을 main 초입으로 통제 중이면 낮은 우선순위.</p>
+  </div>
+
+  <h2><span class="sec">D</span> RWLock</h2>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">11</span><span class="issue-title">writer 기아 — 대기 비트 없음</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>RWLock.cpp:46–48</code></div>
+    <p><code>WriteLock</code>은 <code>count_ == EMPTY</code>일 때만 성공한다. 패킷마다 ReadLock을 잡는 구조라 부하 시 reader 카운트가 0으로 떨어지지 않으면 세션 생성·제거(WriteLock)가 무한 대기한다. writer-대기 비트(신규 reader 차단)가 없다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">12</span><span class="issue-title">재귀 ReadLock — #11을 고치는 순간 데드락으로 전환</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>Server.cpp:140</code> → 핸들러 → <code>GatewayServer.cpp:93</code> / <code>EchoServer.cpp:17</code></div>
+    <p><code>OnRecvFrom</code>이 ReadLock을 쥔 채 핸들러를 부르고, 핸들러가 <code>Broadcast</code>에서 같은 <code>sessionLock_</code>의 ReadLock을 다시 잡는다. 지금은 대기 비트가 없어 재귀 read가 우연히 성공하지만, #11을 고치려고 "writer 대기 중이면 신규 reader 차단"을 넣는 순간 이 재귀 read가 자기 자신을 기다리는 데드락이 된다. <strong>#11과 이 호출 구조는 반드시 같이 수정해야 한다.</strong></p>
+  </div>
+
+  <h2><span class="sec">E</span> Client / InternalClient</h2>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">13</span><span class="issue-title">lock_ 선언만 있고 사용처 0건</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>Client.h:111</code>, <code>InternalClient.h:106</code></div>
+    <p>게임 루프 스레드에서 <code>SendPacket</code>, 별도 스레드에서 <code>Dispatch()</code>를 돌리는 일반적인 사용이면 #3(재전송 vs ACK 해제), #4(시퀀스 중복)와 동일한 레이스가 락 없이 그대로 발생한다. <code>InternalClient</code>는 <code>Client</code>와 구조가 같다(816줄 대조 확인).</p>
+  </div>
+
+  <h2><span class="sec">F</span> 앱 코드 (GateWay / EchoServer)</h2>
+  <p class="sec-desc">프레임워크 내부가 아니라 앱의 정상 경로에서 위 레이스들이 발화하는 지점.</p>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">14</span><span class="issue-title">SendToEcho — 같은 InternalClient에 여러 스레드가 동시 SendPacket</span><span class="chip crit">상</span></div>
+    <div class="loc"><code>GatewayServer.cpp:78</code>, <code>81–89</code></div>
+    <p>세션 핸들러(<code>ChatHandler</code> → <code>SendToEcho</code>)가 <code>internalClientList_[sessionId % echoCount_]</code>로 라우팅하므로, 디스패치 스레드가 2개 이상이면 서로 다른 세션의 패킷이 같은 InternalClient로 몰려 #4가 바로 발화한다. 여기에 <code>InnerDispatch</code> 스레드의 <code>CheckPending()</code> 재전송이 겹치면 #3도 함께 발생한다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">15</span><span class="issue-title">Broadcast — ReadLock으로 전 세션 SendPacket</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>GatewayServer.cpp:93–105</code>, <code>EchoServer.cpp:15–29</code></div>
+    <p>ReadLock은 공유 락이므로 Broadcast가 도는 동안 다른 디스패치 스레드가 같은 세션의 <code>RecvDispatch</code>/<code>SendPacket</code>을 실행할 수 있다. "한 세션은 한 스레드만 만진다"는 가정이 앱 레벨에서 이미 깨져 있으므로, 세션 직렬화를 설계할 때 이 경로까지 포함해야 한다. <code>SessionManager::GetSessions()</code>가 map 참조를 그대로 반환하는 것도 이런 락 우회 순회를 유도하는 API 형태다.</p>
+  </div>
+
+  <h2><span class="sec">G</span> 신규 확인 (2026-08-18 추가)</h2>
+  <p class="sec-desc">1번 검증 과정에서 추가 확인된 수명·프로토콜 버그. 멀티스레드와 무관하게 발생한다.</p>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">N1</span><span class="issue-title">청크 전송 시 버퍼 1개씩 누수</span><span class="chip crit">상</span> <span class="chip now">1스레드도 발생</span></div>
+    <div class="loc"><code>Session.cpp:483–491</code> · <code>Client.cpp:642–650</code> · InternalClient 동일</div>
+    <p><code>SendPacket</code>이 <code>PopPacketBuffer()</code>로 <code>opb</code>를 먼저 뽑은 뒤, 크기 초과면 <code>SendPacketChunk(...)</code> 호출 후 <code>return</code>하는데 뽑아둔 <code>opb</code>를 반환하지 않는다. 1KB를 넘는 패킷을 보낼 때마다 <code>OverlappedPacketBuffer</code> 1개 영구 누수.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">N2</span><span class="issue-title">청크 크기가 정확히 나누어떨어지면 마지막 청크 유실</span><span class="chip crit">상</span> <span class="chip now">1스레드도 발생</span></div>
+    <div class="loc"><code>Session.cpp:644–652</code> · <code>Client.cpp:798–806</code></div>
+    <p><code>size % chunckSize == 0</code>이면 <code>count</code>에 +1이 없어 마지막 반복에서 <code>sendSize = size % chunckSize = 0</code>. 예: chunckSize 1,000에 size 2,000이면 첫 청크 1,000바이트 + 마지막 청크 0바이트 — 뒤쪽 1,000바이트가 전송되지 않고, 수신측은 <code>chunckPacket.size_</code>(2,000) 기준으로 조립하다 깨진 데이터를 파싱한다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">N3</span><span class="issue-title">실패한 IOCP 완료 처리 시 버퍼 밖 65,535바이트 읽기</span><span class="chip crit">상</span> <span class="chip now">1스레드도 발생</span></div>
+    <div class="loc"><code>RUDPSocket.cpp:184–192</code> · <code>Server.cpp:35</code> · <code>Packet.cpp:5</code></div>
+    <p><code>Dispatch</code>의 <code>ptr == nullptr</code> 체크는 out-파라미터의 주소라 항상 거짓이고, 호출부는 반환값 -1을 무시한 채 로컬 <code>ptr</code>만 본다. 취소·오류로 완료가 실패하면 <code>ptr</code>은 non-null, <code>size</code>는 -1 → <code>Uint16</code>으로 잘려 65,535 → <code>PacketHeaderCheck(buffer, 65535)</code>는 <code>24 &lt;= 65535</code>라 통과 → <code>CRC32</code>가 1,024바이트 버퍼에서 65,535바이트를 읽는다. 크래시 가능.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">N4</span><span class="issue-title">청크 개수·크기 상한 미검증</span><span class="chip high">중상</span></div>
+    <div class="loc"><code>Session.cpp:656</code> · <code>Pool.cpp:129</code> · <code>ChunkPacket.h:15</code></div>
+    <p><code>SendPacketChunk</code>에 개수 제한이 없다. 15번째 청크(<code>1 &lt;&lt; 15 = 0x8000</code>)는 <code>DEFAULT_CHUNK_END_MASK</code>와 겹쳐 마지막이 아닌데 END로 표시되고, 16개 초과면 <code>Uint16</code> 시프트가 잘려 0이 된다. 수신측 <code>PopBig</code>의 <code>assert(size &lt;= 8192)</code> 때문에 디버그 빌드는 약 8KB부터 죽는다. 실질 상한(~8KB 디버그 / 15청크)이 어디서도 검증되지 않는다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">N5</span><span class="issue-title">(잠재) AddSession&lt;T&gt;와 RemoveSession의 풀 불일치</span><span class="chip mid">중</span></div>
+    <div class="loc"><code>SessionManager.h:50</code> · <code>SessionManager.cpp:35</code></div>
+    <p>템플릿 <code>AddSession&lt;T&gt;</code>는 <code>Pop&lt;T&gt;</code>(= <code>ObjectPool&lt;T&gt;</code>)에서 꺼내는데 <code>RemoveSession</code>/소멸자는 항상 <code>Push&lt;Session&gt;</code>으로 반환한다. 파생 세션(<code>GatewaySession</code> 정의됨)을 템플릿으로 만들기 시작하면 다른 타입 풀에 섞여 재사용 시 타입·크기가 어긋난다. 현재 템플릿 호출처 0건이라 잠재 상태.</p>
+  </div>
+
+  <h2><span class="sec">보류</span> 추후 작업 (결정 사항 포함)</h2>
+  <p class="sec-desc">1번 수정 후 남겨두기로 결정한 항목. 지금은 수정하지 않고, 명시된 조건이 생길 때 처리한다.</p>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">B1</span><span class="issue-title">"세션 제거 = peer 제거" 불변식이 CheckSession에만 존재</span><span class="chip mid">보류</span></div>
+    <div class="loc"><code>Server.cpp:369</code> · <code>SessionManager.cpp:30</code></div>
+    <p>현재 <code>RemoveSession</code> 호출처는 <code>CheckSession</code> 하나뿐이라 문제없다. <strong>단, DISCONNECT 즉시 처리나 강제 킥 API를 추가해 호출처가 늘어나는 순간</strong> <code>peerMap_.erase</code>를 빼먹기 쉬우므로, 그때 세션+peer 제거를 한 함수로 묶는다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">B2</span><span class="issue-title">클라이언트 DISCONNECT는 타임아웃 정리로 결정</span><span class="chip mid">보류</span></div>
+    <div class="loc"><code>Server.cpp:171</code></div>
+    <p><code>DISCONNECT</code>(0b11111111)는 세션이 살아 있으면 <code>flag &amp; REPEAT</code> 분기로 흘러(채널 7 → <code>g_channelMask</code> 초과 → false) 사실상 무시되고, 세션·peer는 30초 타임아웃까지 남는다. <strong>결정: 별도 분기를 만들지 않고 타임아웃 정리에 맡긴다.</strong> 즉시 정리가 필요해지면 세션 존재 시 DISCONNECT 분기를 추가하고, 그때 B1과 함께 처리한다.</p>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head"><span class="issue-no">B3</span><span class="issue-title">같은 Client 객체 재접속 시 옛 세션 수신 — 좀비 세션 가능</span><span class="chip high">보류</span></div>
+    <div class="loc"><code>Server.cpp:124–130</code> · <code>Session.cpp:299</code></div>
+    <p>B2 결정의 부작용. 같은 <code>Client</code> 객체로 Disconnect 후 재접속하면(소켓 유지 = 같은 포트 = 같은 <code>PeerKey</code>) 중복 SESSION 분기가 옛 세션을 그대로 돌려준다. 클라이언트 시퀀스는 0부터, 서버 <code>recvRepeatSeq_</code>는 옛 값이라 신뢰 패킷이 전부 <code>del &gt;= DEFAULT_WINDOW_COUNT</code>로 버려지고, PING–PONG으로 <code>timestamp_</code>가 계속 갱신되면 타임아웃도 안 걸리는 좀비 세션이 된다. 프로세스 재시작(새 포트)은 해당 없음. <strong>추후: 중복 SESSION 분기에서 서버측 세션 상태(rps 계열) 리셋.</strong></p>
+  </div>
+
+  <div class="appx">
+    <h2><span class="sec">부록</span> 멀티스레드는 아니지만 크리티컬</h2>
+    <p class="sec-desc">조사 중 확인된 항목. 멀티스레드 부하에서 더 빨리 밟게 되는 수명·논리 버그.</p>
+
+    <div class="issue">
+      <div class="issue-head"><span class="issue-no">A1</span><span class="issue-title">Pool 블록 회수 — 해제된 블록의 청크가 풀에 잔류</span><span class="chip crit">상</span> <span class="chip now">1스레드도 발생</span></div>
+      <div class="loc"><code>Pool.h:77–89</code></div>
+      <p><code>useCnt_ == 0</code>인 블록을 <code>PoolList</code>에서 지우면 소멸자가 <code>free(ptr_)</code>를 호출하는데, 그 블록 소속 청크 포인터 수만 개(4바이트 청크만 10,000개)가 <code>PoolChunkList</code>에 그대로 남는다. 다음 <code>Pop</code>이 해제된 메모리를 나눠주거나 <code>FindBlock</code> 실패로 <code>exit</code>한다.</p>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head"><span class="issue-no">A2</span><span class="issue-title">ObjectPool — 소멸자 미호출 재활용 + 반환 규약 불일치</span><span class="chip high">중상</span> <span class="chip now">1스레드도 발생</span></div>
+      <div class="loc"><code>ObjectPool.h:53–57</code>, <code>GatewayServer.cpp:27</code></div>
+      <p><code>Push</code>는 소멸자 호출 없이 보관하고 <code>Pop</code>이 그 위에 placement new를 한다. <code>Session</code>처럼 <code>Vector</code> 멤버를 가진 타입은 재활용될 때마다 기존 vector의 힙이 통째로 누수된다. 그리고 <code>Pop</code>으로 받은 <code>InternalClient</code>를 <code>delete</code>로 해제해 규약이 어긋나 있다.</p>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head"><span class="issue-no">A3</span><span class="issue-title">세션 재활용 시 pending 송신 버퍼 미반환</span><span class="chip high">중상</span> <span class="chip now">1스레드도 발생</span></div>
+      <div class="loc"><code>Session.cpp:75–109</code>, <code>ReliablePacketState.cpp:12–15</code></div>
+      <p><code>Session::Reset</code>은 <code>cachePackets</code>의 버퍼는 <code>PushPacketBuffer</code>로 반환하지만, <code>ReliablePacketState::Reset</code>은 <code>pendingPackets_[i]</code>를 <code>nullptr</code>로 밀기만 한다. ACK를 못 받은 채 세션이 끊기면 그 <code>OverlappedPacketBuffer</code>들은 영구 누수다(세션당 최대 65×64개 슬롯).</p>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head"><span class="issue-no">A4</span><span class="issue-title">ConnectTimes — 서버 부재 시 무한 루프</span><span class="chip high">중상</span> <span class="chip now">1스레드도 발생</span></div>
+      <div class="loc"><code>Client.cpp:68–82</code></div>
+      <p><code>connNo_</code> 10회 소진 후에도 <code>while (!isConnect_)</code>를 계속 돈다. GateWay의 <code>Initialize</code>가 여기서 멈추면 서버 기동 자체가 정지한다. 인자 <code>count</code>도 사용되지 않는다.</p>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head"><span class="issue-no">A5</span><span class="issue-title">기타 소소한 것들</span><span class="chip mid">중</span></div>
+      <div class="loc"><code>Server.cpp:308, 386</code> · <code>main.cpp:12</code></div>
+      <ul>
+        <li><code>removeListCache_</code> 인덱스가 <code>Uint8</code>인데 <code>MAX_CLIENT_COUNT</code>는 500 — 한 번에 256개 이상 타임아웃 시 오버플로.</li>
+        <li>CheckSession의 DEBUG 통계 블록이 WriteLock 스코프 밖에서 <code>GetSessions()</code>를 순회 — 락 없는 map 순회.</li>
+        <li>EchoServer/GateWay의 <code>static bool InterruptCtrlC</code> — 콘솔 핸들러는 별도 스레드에서 실행되므로 <code>Atomic&lt;Bool&gt;</code>이어야 하고, 대기 루프가 sleep 없는 busy-wait.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>수정 우선순위 제안.</strong> (#1은 수정 완료 — 심각도 「상」부터 진행)
+    ① 세션 단위 직렬화(#2·#3·#4·#13·#14·#15 — 세션별 락 또는 세션별 스레드 고정 없이는 다중 디스패치 자체가 불가) →
+    ② 수명·프로토콜 크리티컬(N1·N2·N3 — 청크 사용 시 즉시 발생) →
+    ③ OVERLAPPED/버퍼 수명(#6, A1·A3) →
+    ④ ObjectPool·RWLock(#9·#11·#12, #11과 #12는 한 세트로).
+  </div>
+
+  <footer>DUBUFrameWork 5,454줄 전수 검토 + GateWay·DUBUEchoServer·DUBUEchoClient 앱 코드 확인 · RingBuffer(MPMC)는 프로토콜 검토 결과 이상 없음(사용처 미정으로 목록 제외)</footer>
+</div>

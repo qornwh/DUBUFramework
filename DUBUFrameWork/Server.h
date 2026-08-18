@@ -4,6 +4,7 @@
 #include "RWLock.h"
 #include "RUDPSocket.h"
 #include "SessionManager.h"
+#include "SessionWorker.h"
 
 namespace DUBU 
 {
@@ -16,6 +17,9 @@ namespace DUBU
 
 	class Server : public ISocketHandler
 	{
+		// 패킷 처리/세션 체크가 SessionWorker로 이동하여 내부 접근 허용
+		friend class SessionWorker;
+
 	public:
 		Server();
 		virtual ~Server();
@@ -24,7 +28,7 @@ namespace DUBU
         // 계속실행
 		void Run();
         // 1회 실행
-        void Dispatch();
+		void RecvLoop();
 		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
@@ -34,7 +38,6 @@ namespace DUBU
 		void ConnectMessage(Session* session);
 		void DisconnectMessage(Session* session);
 		void SendPing(Session* session);
-		void CheckSession();
 
         void SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt);
 
@@ -98,7 +101,11 @@ namespace DUBU
 
         // 마지막 로그 출력 시간
         Atomic<Uint32> lastStatsTickMs_;
+
+        // 세션 워커 추가
+        Vector<SessionWorker> sessionWorkers;
 #endif
 	};
 }
 
+extern DUBU::Server* g_server;

@@ -294,6 +294,7 @@ void DUBU::RUDPSocket::SendToRepeat(const SOCKADDR_IN& targetAddr, OverlappedPac
 void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
+	bool handOff = false;
 
 	if (Packet::Packet::PacketHeaderCheck(static_cast<Uint8*>(opb->buffer_), size))
 	{
@@ -304,10 +305,10 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 		header->checksum_ = 0;
 		if (checksum == Packet::Packet::CRC32(opb->buffer_, size))
 		{
-			// 핸들러 통해서 처리 넘겨버린다
 			if (handler_)
 			{
 				handler_->OnRecvFrom(opb->remoteAddr_, reinterpret_cast<Uint8*>(opb), size);
+				handOff = true;
 			}
 		}
 		else
@@ -322,8 +323,11 @@ void DUBU::RUDPSocket::RecvFromComplete(OVERLAPPED* ptr, Uint16 size)
 		spdlog::warn("RecvFromComplete: header failed");
 	}
 
-	// 반환, 다시 재등록
-	PacketManager::GetInstance().PushPacketBuffer(opb);
+	// 해당 obp는 워커세션으로 전달하는 방식 변경으로 파싱 실패시만 반환 
+	if (!handOff)
+	{
+		PacketManager::GetInstance().PushPacketBuffer(opb);
+	}
 	RecvFrom();
 }
 

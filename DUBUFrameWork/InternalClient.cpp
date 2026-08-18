@@ -169,6 +169,9 @@ void DUBU::InternalClient::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint1
         // ACK 수신 pendingpacket 지움
         RecvDispatchACK(buffer, size);
     }
+
+    // 기존 RUDPSocket에서 반환했지만, 직접 반환으로 변경
+    PacketManager::GetInstance().PushPacketBuffer(opb);
 }
 
 void DUBU::InternalClient::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
