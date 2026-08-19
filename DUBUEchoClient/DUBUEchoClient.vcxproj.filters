@@ -2,11 +2,24 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="EchoClient.cpp" />
-    <ClCompile Include="EchoClientHander.cpp" />
+    <ClCompile Include="EchoClient.cpp">
+      <Filter>EchoClient</Filter>
+    </ClCompile>
+    <ClCompile Include="EchoClientHander.cpp">
+      <Filter>EchoClient</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EchoClient.h" />
-    <ClInclude Include="EchoClientHander.h" />
+    <ClInclude Include="EchoClientHander.h">
+      <Filter>EchoClient</Filter>
+    </ClInclude>
+    <ClInclude Include="EchoClient.h">
+      <Filter>EchoClient</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="EchoClient">
+      <UniqueIdentifier>{f6dab4d1-7304-4f5c-811d-95e98f01df3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
