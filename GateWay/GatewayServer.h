@@ -22,16 +22,24 @@ public:
     void Initialize(const Map<Uint8, DUBU::Packet::PacketHandler>* handlers) override;
 
     // 에코 서버로 전송
+    void SendToResgister(Uint8* buffer, Uint8 code, Uint16 size);
+
+    // 에코 서버로 전송
     void SendToEcho(Uint8* buffer, Uint8 code, Uint16 size);
+
+    // 에코 회신을 해당 클라 세션으로 단일 전송
+    void SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Uint16 size);
 
     // 내부 서버 dispatch
     Bool InnerDispatch();
 
     void Broadcast(Uint8* buffer, Uint8 code, Uint16 size);
 
+    Uint64 GatewayKey(const SOCKADDR_IN& addr);
+
 private:
-    // 임시로 일단 1개 테스트
-    const Uint64 echoCount_ = 1;
+    // 임시로 일단 10개 테스트
+    const Uint64 echoCount_ = 10;
     Vector<DUBU::InternalClient*> internalClientList_;
 };
 

@@ -2,13 +2,19 @@ namespace DUBU.Echo;
 
 // 채팅 메시지
 table Chatting {
-  id:uint64;
+  id:uint32;
   message:string;
+}
+
+// 클라이언트 등록 (게이트웨이 뒤 클라의 PeerKey : ip << 16 | port)
+table Register {
+  id:uint32;
 }
 
 // 패킷 종류 나열
 union PacketBody {
   Chatting,
+  Register,
 }
 
 table Packet {

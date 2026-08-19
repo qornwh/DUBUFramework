@@ -10,6 +10,20 @@ EchoClient::~EchoClient()
 {
 }
 
+void EchoClient::SendRegisterMessage()
+{
+    // 키는 게이트웨이가 생성하므로 id는 클라 구분용 값만 넣는다
+    flatbuffers::FlatBufferBuilder fbb;
+    auto regist = DUBU::Echo::CreateRegister(fbb, GetClientId());
+    auto packet = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Register, regist.Union());
+    DUBU::Echo::FinishPacketBuffer(fbb, packet);
+
+    Uint8* buffer = fbb.GetBufferPointer();
+    Uint16 size = fbb.GetSize();
+
+    SendPacket(buffer, DUBU::Echo::PacketBody_Register, size, DUBU::Packet::PacketOpctions{ true, true, 0 });
+}
+
 void EchoClient::SendChatMessage(const String& chat, Uint8 channelId)
 {
     // 메시지 작성

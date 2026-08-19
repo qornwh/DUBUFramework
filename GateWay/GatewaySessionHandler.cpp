@@ -13,6 +13,37 @@ GatewaySessionHandler::~GatewaySessionHandler()
 {
 }
 
+Bool GatewaySessionHandler::RegisterVerifier(flatbuffers::Verifier& verifier)
+{
+    return DUBU::Echo::VerifyPacketBuffer(verifier);
+}
+
+void GatewaySessionHandler::RegisterHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
+{
+    const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + sizeof(DUBU::Packet::PacketHeader));
+
+    if (packet != nullptr && packet->body_type() == DUBU::Echo::PacketBody_Register)
+    {
+        const DUBU::Echo::Register* reg = packet->body_as_Register();
+        if (reg)
+        {
+            if (owner_ != nullptr)
+            {
+                if (session != nullptr)
+                {
+                    // 게이트 웨이서버 수신 성공 -> 에코서버 전송
+                    spdlog::info("Resgister response");
+                    owner_->SendToResgister(buffer, DUBU::Echo::PacketBody_Register, static_cast<Uint16>(size));
+                }
+            }
+        }
+    }
+}
+
+void GatewaySessionHandler::RegisterHandler2(DUBU::Session* session, Uint8* buffer, Int32 size, Uint8* subBuf, Uint8 type)
+{
+}
+
 Bool GatewaySessionHandler::ChatVerifier(flatbuffers::Verifier& verifier)
 {
     return DUBU::Echo::VerifyPacketBuffer(verifier);
@@ -35,13 +66,6 @@ void GatewaySessionHandler::ChatHandler(DUBU::Session* session, Uint8* buffer, I
                     // 게이트 웨이서버 수신 성공 -> 에코서버 전송
                     spdlog::info("Gateway to Echo");
                     owner_->SendToEcho(buffer, DUBU::Echo::PacketBody_Chatting, size);
-                }
-                else
-                {
-                    // 에코 서버 -> 게이트 웨이
-                    const Uint16 payloadSize = static_cast<Uint16>(size - sizeof(DUBU::Packet::PacketHeader));
-                    spdlog::info("Echo to Gateway");
-                    owner_->Broadcast(buffer + sizeof(DUBU::Packet::PacketHeader), DUBU::Echo::PacketBody_Chatting, payloadSize);
                 }
             }
         }
@@ -71,7 +95,7 @@ void GatewaySessionHandler::ChatHandler2(DUBU::Session* session, Uint8* buffer, 
                     // 에코 서버 -> 게이트 웨이
                     const Uint16 payloadSize = static_cast<Uint16>(size - offset);
                     spdlog::info("Echo to Gateway {} - {}", serverSessionID, GatewaySessionID);
-                    owner_->Broadcast(buffer + offset, DUBU::Echo::PacketBody_Chatting, payloadSize);
+                    owner_->SendToClient(GatewaySessionID, buffer + offset, DUBU::Echo::PacketBody_Chatting, payloadSize);
                 }
             }
         }

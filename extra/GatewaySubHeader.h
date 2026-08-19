@@ -4,7 +4,10 @@
 // 2번 타입으로 설정
 struct GatewaySubHeader : public DUBU::Packet::Subheader<GatewaySubHeader, 2>
 {
-    GatewaySubHeader(Uint32 depthId1, Uint32 depthId2) : DUBU::Packet::Subheader<GatewaySubHeader, 2>{}, depthId1_(depthId1), depthId2_(depthId2) {};
+    GatewaySubHeader(Uint32 depthId1, Uint32 depthId2) : DUBU::Packet::Subheader<GatewaySubHeader, 2>{}, depthId1_(depthId1), depthId2_(depthId2)
+    {
+        size_ = sizeof(GatewaySubHeader);
+    };
 
     // 초기 클라이언트에서 게이트웨이로 생성된 세션 id
     Uint32 depthId1_ = 0;

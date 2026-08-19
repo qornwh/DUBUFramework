@@ -14,6 +14,11 @@ public:
     GatewaySessionHandler();
     ~GatewaySessionHandler();
 
+    // echo 등록
+    Bool RegisterVerifier(flatbuffers::Verifier& verifier);
+    void RegisterHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
+    void RegisterHandler2(DUBU::Session* session, Uint8* buffer, Int32 size, Uint8* subBuf, Uint8 type);
+
     // echo 테스트
     Bool ChatVerifier(flatbuffers::Verifier& verifier);
     void ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size);

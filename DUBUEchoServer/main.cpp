@@ -44,6 +44,19 @@ int main()
             }
         }
     );
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Register,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return EchoSessionHander::GetInstance().RegisterVerifier(v);
+            },
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                EchoSessionHander::GetInstance().RegisterHandler(session, buf, len);
+            }
+        }
+    );
 
     {
         EchoServer* server = new EchoServer();
