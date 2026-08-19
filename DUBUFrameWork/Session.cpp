@@ -100,6 +100,7 @@ void DUBU::Session::Reset()
                 cachePacket.sequenceNo = 0;
                 cachePacket.timeStamp = 0;
                 CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+                cachePacket.buffer = nullptr;
             }
         }
     }
@@ -199,6 +200,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                     PacketParse(cachePacket.buffer->buffer_, cachePacket.buffer->size_);
                     cachePacket.isKeep = false;
                     CachePacketManager::GetInstance().PushPacketBuffer(cachePacket.buffer);
+                    cachePacket.buffer = nullptr;
                     ++rps.recvRepeatSeq_;
                     rps.cacheRepeatCount_ >>= 1;
                 }
