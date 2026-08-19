@@ -20,6 +20,115 @@ BOOL WINAPI KeyBoarHandler(DWORD signal)
     return FALSE;
 }
 
+// 스트레스 테스트(AI 생성)
+void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPerThread, const Map<Uint8, DUBU::Packet::PacketHandler>* handlers)
+{
+    // 스레드는 4개
+    constexpr Uint32 BotThreadCount = 4;
+    spdlog::info("BOT mode : {}:{} {} thread x {} client, interval {}ms", ip, port, BotThreadCount, countPerThread, intervalMs);
+
+    Atomic<Uint64> totalSent = 0;
+    Atomic<Uint32> totalConnected = 0;
+    // 통계 합산용 : 스레드별 클라 목록 (접속 완료 후 readyThreads로 읽기 허용)
+    Vector<Vector<EchoClient*>> botClients(BotThreadCount);
+    Atomic<Uint32> readyThreads = 0;
+
+    Vector<std::thread> threads;
+    threads.reserve(BotThreadCount);
+    for (Uint32 t = 0; t < BotThreadCount; ++t)
+    {
+        threads.emplace_back([&, t]() {
+            Vector<EchoClient*>& clients = botClients[t];
+            clients.reserve(countPerThread);
+            for (Uint32 i = 0; i < countPerThread; ++i)
+            {
+                EchoClient* client = new EchoClient(ip, port, handlers);
+                client->ConnectTimes(5);
+                if (!client->IsConnect())
+                {
+                    spdlog::error("BOT connect fail : thread {} idx {}", t, i);
+                    delete client;
+                    continue;
+                }
+                client->SendRegisterMessage();
+                clients.push_back(client);
+            }
+            totalConnected.fetch_add(static_cast<Uint32>(clients.size()));
+            readyThreads.fetch_add(1);
+            spdlog::info("BOT thread {} : {}/{} connected", t, clients.size(), countPerThread);
+
+            const size_t count = clients.size();
+            if (count == 0)
+            {
+                return;
+            }
+
+            // 전송 시점 분산 (전원이 같은 틱에 몰리지 않게)
+            Vector<Uint32> lastSend(count, 0);
+            Vector<Uint32> sendNo(count, 0);
+            Uint32 now = DUBU::GetRelativeTimeMs();
+            for (size_t i = 0; i < count; ++i)
+            {
+                lastSend[i] = now - static_cast<Uint32>((Uint64)intervalMs * i / count);
+            }
+
+            while (true)
+            {
+                for (size_t i = 0; i < count; ++i)
+                {
+                    // 수신 핸들러가 내 에코를 매칭할 수 있게 현재 클라 지정
+                    EchoClient::SetCurrentBotClient(clients[i]);
+
+                    while (clients[i]->Dispatch(0)) {}
+
+                    Uint32 cur = DUBU::GetRelativeTimeMs();
+                    if (cur - lastSend[i] >= intervalMs)
+                    {
+                        clients[i]->SendBotMessage(++sendNo[i]);
+                        lastSend[i] = cur;
+                        totalSent.fetch_add(1);
+                    }
+                }
+                std::this_thread::yield();
+            }
+        });
+    }
+
+    // 10초마다 요약 출력 (전 클라 집계 합산)
+    while (true)
+    {
+        Sleep(10000);
+
+        if (readyThreads.load() < BotThreadCount)
+        {
+            spdlog::info("[BOT-STATS] connecting... {}", totalConnected.load());
+            continue;
+        }
+
+        Uint64 recv = 0;
+        Uint64 rttSum = 0;
+        Uint64 rttSamples = 0;
+        Uint32 rttMax = 0;
+        for (auto& clients : botClients)
+        {
+            for (EchoClient* client : clients)
+            {
+                recv += client->GetBotRecvCount();
+                rttSum += client->GetBotRttSumMs();
+                rttSamples += client->GetBotRttSamples();
+                if (client->GetBotRttMaxMs() > rttMax)
+                {
+                    rttMax = client->GetBotRttMaxMs();
+                }
+            }
+        }
+        Uint64 rttAvg = (rttSamples > 0) ? (rttSum / rttSamples) : 0;
+
+        spdlog::info("[BOT-STATS] connected={} sent={} recv={} rtt_avg={}ms rtt_max={}ms",
+            totalConnected.load(), totalSent.load(), recv, rttAvg, rttMax);
+    }
+}
+
 int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
@@ -39,6 +148,27 @@ int main(int argc, char** argv)
             }
         }
     );
+
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Bot,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return EchoClientHander::GetInstance().BotVerifier(v);
+            },
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                EchoClientHander::GetInstance().BotHandler(session, buf, len);
+            }
+        }
+    );
+
+    // 스트레스 테스트 모드 : DUBUEchoClient.exe <ip> <port> <간격ms> <스레드당 클라수>  (총 클라수 = 클라수 x 4)
+    if (argc >= 5)
+    {
+        RunBotMode(argv[1], static_cast<Uint16>(std::atoi(argv[2])), static_cast<Uint32>(std::atoi(argv[3])), static_cast<Uint32>(std::atoi(argv[4])), &handlers);
+        return 0;
+    }
 
     if (argc < 2 || argv == nullptr)
     {

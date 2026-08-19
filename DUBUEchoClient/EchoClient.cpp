@@ -24,6 +24,61 @@ void EchoClient::SendRegisterMessage()
     SendPacket(buffer, DUBU::Echo::PacketBody_Register, size, DUBU::Packet::PacketOpctions{ true, true, 0 });
 }
 
+void EchoClient::SendBotMessage(Uint32 count)
+{
+    // 에코 수신 시 왕복 지연 계산용 송신 시각 기록
+    Uint32 idx = count % BotRingSize;
+    botSendNo_[idx] = count;
+    botSendTimeMs_[idx] = DUBU::GetRelativeTimeMs();
+
+    flatbuffers::FlatBufferBuilder fbb;
+    auto bot = DUBU::Echo::CreateBot(fbb, GetClientId(), count);
+    auto packet = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Bot, bot.Union());
+    DUBU::Echo::FinishPacketBuffer(fbb, packet);
+
+    Uint8* buffer = fbb.GetBufferPointer();
+    Uint16 size = fbb.GetSize();
+
+    SendPacket(buffer, DUBU::Echo::PacketBody_Bot, size, DUBU::Packet::PacketOpctions{ true, false, 0 });
+}
+
+void EchoClient::RecvBotMessage(Uint32 id, Uint32 count)
+{
+    botRecvCount_.fetch_add(1);
+
+    // 내가 보낸 메시지의 에코만 왕복 지연 집계
+    if (id != GetClientId())
+    {
+        return;
+    }
+
+    Uint32 idx = count % BotRingSize;
+    if (botSendNo_[idx] != count)
+    {
+        return;
+    }
+
+    Uint32 rtt = DUBU::GetRelativeTimeMs() - botSendTimeMs_[idx];
+    botRttSumMs_.fetch_add(rtt);
+    botRttSamples_.fetch_add(1);
+
+    Uint32 prev = botRttMaxMs_.load();
+    while (rtt > prev && !botRttMaxMs_.compare_exchange_weak(prev, rtt));
+}
+
+// 현재 Dispatch 중인 클라 (스레드마다 자기 담당 클라)
+static thread_local EchoClient* t_currentBotClient = nullptr;
+
+void EchoClient::SetCurrentBotClient(EchoClient* client)
+{
+    t_currentBotClient = client;
+}
+
+EchoClient* EchoClient::GetCurrentBotClient()
+{
+    return t_currentBotClient;
+}
+
 void EchoClient::SendChatMessage(const String& chat, Uint8 channelId)
 {
     // 메시지 작성

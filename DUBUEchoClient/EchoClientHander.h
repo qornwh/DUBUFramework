@@ -19,10 +19,13 @@ public:
     Bool ChatVerifier(flatbuffers::Verifier& verifier);
     void ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
 
+    // bot
+    Bool BotVerifier(flatbuffers::Verifier& verifier);
+    void BotHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
+
     void SetOwner(EchoClient* owner);
 private:
 
     // EchoClient 참조
-    EchoClient* owner_; 
+    EchoClient* owner_;
 };
-
