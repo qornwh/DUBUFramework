@@ -28,14 +28,16 @@ public:
     void SendToEcho(Uint8* buffer, Uint8 code, Uint16 size);
 
     // 에코 회신을 해당 클라 세션으로 단일 전송
-    void SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Uint16 size);
+    void SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Uint16 size, const DUBU::Packet::PacketOpctions& opt);
+
+    // 봇 중계 전용
+    void SendBotToEcho(Uint8* buffer, Uint16 size);
 
     // 내부 서버 dispatch
     Bool InnerDispatch();
 
     void Broadcast(Uint8* buffer, Uint8 code, Uint16 size);
 
-    Uint64 GatewayKey(const SOCKADDR_IN& addr);
 
 private:
     // 임시로 일단 10개 테스트

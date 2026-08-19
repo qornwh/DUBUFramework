@@ -69,6 +69,23 @@ int main(int argc, char** argv)
             }
         }
     );
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Bot,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return GatewaySessionHandler::GetInstance().BotVerifier(v);
+            },
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                GatewaySessionHandler::GetInstance().BotHandler(session, buf, len);
+            },
+            // handler2_
+            [](DUBU::Session* session, Uint8* buf, Int32 len, Uint8* subBuf, Uint8 type) {
+                GatewaySessionHandler::GetInstance().BotHandler2(session, buf, len, subBuf, type);
+            }
+        }
+    );
 
     {
         GatewayServer* server = new GatewayServer();
