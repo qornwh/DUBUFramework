@@ -20,11 +20,11 @@ public:
     // 봇 수신 집계 — 내 에코면 왕복 지연 계산 (담당 스레드에서만 호출)
     void RecvBotMessage(Uint32 id, Uint32 count);
 
-    // 봇 집계 조회 (통계 출력 스레드에서 읽음)
-    Uint64 GetBotRecvCount() const { return botRecvCount_.load(); }
-    Uint64 GetBotRttSumMs() const { return botRttSumMs_.load(); }
-    Uint64 GetBotRttSamples() const { return botRttSamples_.load(); }
-    Uint32 GetBotRttMaxMs() const { return botRttMaxMs_.load(); }
+    // 봇 구간 집계 조회 (호출시 0 초기화)
+    Uint64 ExchangeBotRecvCount() { return botRecvCount_.exchange(0); }
+    Uint64 ExchangeBotRttSumMs() { return botRttSumMs_.exchange(0); }
+    Uint64 ExchangeBotRttSamples() { return botRttSamples_.exchange(0); }
+    Uint32 ExchangeBotRttMaxMs() { return botRttMaxMs_.exchange(0); }
 
     // 수신 핸들러가 현재 Dispatch 중인 클라를 찾기 위한 지정 (thread_local)
     static void SetCurrentBotClient(EchoClient* client);

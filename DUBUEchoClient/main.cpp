@@ -113,19 +113,20 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
         {
             for (EchoClient* client : clients)
             {
-                recv += client->GetBotRecvCount();
-                rttSum += client->GetBotRttSumMs();
-                rttSamples += client->GetBotRttSamples();
-                if (client->GetBotRttMaxMs() > rttMax)
+                recv += client->ExchangeBotRecvCount();
+                rttSum += client->ExchangeBotRttSumMs();
+                rttSamples += client->ExchangeBotRttSamples();
+                Uint32 max = client->ExchangeBotRttMaxMs();
+                if (max > rttMax)
                 {
-                    rttMax = client->GetBotRttMaxMs();
+                    rttMax = max;
                 }
             }
         }
         Uint64 rttAvg = (rttSamples > 0) ? (rttSum / rttSamples) : 0;
 
         spdlog::info("[BOT-STATS] connected={} sent={} recv={} rtt_avg={}ms rtt_max={}ms",
-            totalConnected.load(), totalSent.load(), recv, rttAvg, rttMax);
+            totalConnected.load(), totalSent.exchange(0), recv, rttAvg, rttMax);
     }
 }
 
