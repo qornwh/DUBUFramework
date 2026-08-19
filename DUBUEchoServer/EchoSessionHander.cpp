@@ -41,7 +41,7 @@ Bool EchoSessionHander::ChatVerifier(flatbuffers::Verifier& verifier)
 void EchoSessionHander::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
 {
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
-    const Uint8 channelId = (header->flags_ & DUBU::Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
+    DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(header);
     Uint64 offset = sizeof(DUBU::Packet::PacketHeader);
 
     const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + offset);
@@ -62,10 +62,28 @@ void EchoSessionHander::ChatHandler(DUBU::Session* session, Uint8* buffer, Int32
                 flatbuffers::Offset<DUBU::Echo::Packet> packetOffset = DUBU::Echo::CreatePacket(fbb, DUBU::Echo::PacketBody_Chatting, chattingOffset.Union());
                 DUBU::Echo::FinishPacketBuffer(fbb, packetOffset);
 
-                owner_->Broadcast(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()), channelId);
+                owner_->Broadcast(fbb.GetBufferPointer(), DUBU::Echo::PacketBody_Chatting, static_cast<Uint16>(fbb.GetSize()), opt);
                 // fbb 스코프 나갈시 메모리 헤제 RAII
             }
         }
+    }
+}
+
+Bool EchoSessionHander::BotVerifier(flatbuffers::Verifier& verifier)
+{
+    return DUBU::Echo::VerifyPacketBuffer(verifier);
+}
+
+void EchoSessionHander::BotHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
+{
+    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
+    DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(header);
+    const Uint16 offset = sizeof(DUBU::Packet::PacketHeader);
+
+    const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + offset);
+    if (packet->body_type() == DUBU::Echo::PacketBody_Bot && owner_ != nullptr)
+    {
+        owner_->Broadcast(buffer + offset, DUBU::Echo::PacketBody_Bot, static_cast<Uint16>(size - offset), opt);
     }
 }
 

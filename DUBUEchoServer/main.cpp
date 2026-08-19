@@ -27,6 +27,7 @@ int main()
 {
     SetConsoleOutputCP(CP_UTF8);
 
+    DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
 
     // 메시지 핸들러
@@ -54,6 +55,19 @@ int main()
             // handler_
             [](DUBU::Session* session, Uint8* buf, Int32 len) {
                 EchoSessionHander::GetInstance().RegisterHandler(session, buf, len);
+            }
+        }
+    );
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Bot,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return EchoSessionHander::GetInstance().BotVerifier(v);
+            },
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                EchoSessionHander::GetInstance().BotHandler(session, buf, len);
             }
         }
     );
