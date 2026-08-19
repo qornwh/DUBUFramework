@@ -87,8 +87,7 @@ namespace DUBU
         
         // 10초
         const Uint32 logTimeOut_ = 10000;
-        // 이전시간
-        Uint32 preTime_ = 0;
+
         // 타임아웃된 세션 개수
         Atomic<Uint64> timeoutSessionCount_;
 

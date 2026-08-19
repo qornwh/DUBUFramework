@@ -38,7 +38,7 @@ void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 	isRunning_.store(true);
 
 #ifdef _DEBUG
-    preTime_ = GetRelativeTimeMs();
+    lastStatsTickMs_.store(GetRelativeTimeMs());
 #endif
 }
 
@@ -53,16 +53,11 @@ void DUBU::Server::Run()
 
 void DUBU::Server::Dispatch()
 {
-	while (isRunning_.load())
+	LPOVERLAPPED ptr = nullptr;
+	Int32 size = rudpSocket_->Dispatch(&ptr, 1);
+
+	if (ptr != nullptr)
 	{
-		LPOVERLAPPED ptr = nullptr;
-		Int32 size = rudpSocket_->Dispatch(&ptr, 1);
-
-		if (ptr == nullptr)
-		{
-			continue;
-		}
-
 		OverlappedObj* obj = reinterpret_cast<OverlappedObj*>(ptr);
 		if ((obj->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
 		{
@@ -79,6 +74,42 @@ void DUBU::Server::Dispatch()
 #endif
 		}
 	}
+
+#ifdef _DEBUG
+    Uint32 now = GetRelativeTimeMs();
+    Uint32 last = lastStatsTickMs_.load();
+    // 수신 스레드 여러 개 중 CAS 성공한 한 스레드만 통계 출력
+    if (now - last >= logTimeOut_ && lastStatsTickMs_.compare_exchange_strong(last, now))
+    {
+        Uint32 activeCount = 0;
+        Uint32 rttSum = 0;
+        Uint32 rttMax = 0;
+
+        {
+            ReadLockGuard rl(sessionLock_);
+            for (auto& [sessionId, session] : sessionManager_.GetSessions())
+            {
+                if (session != nullptr)
+                {
+                    Uint32 rtt = session->GetRttMillisec();
+                    if (rtt > rttMax)
+                    {
+                        rttMax = rtt;
+                    }
+                    rttSum += rtt;
+                    activeCount++;
+                }
+            }
+        }
+
+        float rttAvg = 0.0f;
+        if (activeCount > 0)
+        {
+            rttAvg = static_cast<float>(rttSum) / activeCount;
+        }
+        PrintStats(activeCount, rttAvg, rttMax);
+    }
+#endif
 }
 
 void DUBU::Server::Stop()
