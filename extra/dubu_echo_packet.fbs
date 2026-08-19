@@ -11,10 +11,17 @@ table Register {
   id:uint32;
 }
 
+// 부하 테스트 봇 메시지
+table Bot {
+  id:uint32;
+  count:uint32;
+}
+
 // 패킷 종류 나열
 union PacketBody {
   Chatting,
   Register,
+  Bot,
 }
 
 table Packet {

@@ -22,6 +22,9 @@ struct ChattingBuilder;
 struct Register;
 struct RegisterBuilder;
 
+struct Bot;
+struct BotBuilder;
+
 struct Packet;
 struct PacketBuilder;
 
@@ -29,31 +32,34 @@ enum PacketBody : uint8_t {
   PacketBody_NONE = 0,
   PacketBody_Chatting = 1,
   PacketBody_Register = 2,
+  PacketBody_Bot = 3,
   PacketBody_MIN = PacketBody_NONE,
-  PacketBody_MAX = PacketBody_Register
+  PacketBody_MAX = PacketBody_Bot
 };
 
-inline const PacketBody (&EnumValuesPacketBody())[3] {
+inline const PacketBody (&EnumValuesPacketBody())[4] {
   static const PacketBody values[] = {
     PacketBody_NONE,
     PacketBody_Chatting,
-    PacketBody_Register
+    PacketBody_Register,
+    PacketBody_Bot
   };
   return values;
 }
 
 inline const char * const *EnumNamesPacketBody() {
-  static const char * const names[4] = {
+  static const char * const names[5] = {
     "NONE",
     "Chatting",
     "Register",
+    "Bot",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNamePacketBody(PacketBody e) {
-  if (::flatbuffers::IsOutRange(e, PacketBody_NONE, PacketBody_Register)) return "";
+  if (::flatbuffers::IsOutRange(e, PacketBody_NONE, PacketBody_Bot)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPacketBody()[index];
 }
@@ -68,6 +74,10 @@ template<> struct PacketBodyTraits<DUBU::Echo::Chatting> {
 
 template<> struct PacketBodyTraits<DUBU::Echo::Register> {
   static const PacketBody enum_value = PacketBody_Register;
+};
+
+template<> struct PacketBodyTraits<DUBU::Echo::Bot> {
+  static const PacketBody enum_value = PacketBody_Bot;
 };
 
 bool VerifyPacketBody(::flatbuffers::Verifier &verifier, const void *obj, PacketBody type);
@@ -177,6 +187,57 @@ inline ::flatbuffers::Offset<Register> CreateRegister(
   return builder_.Finish();
 }
 
+struct Bot FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef BotBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ID = 4,
+    VT_COUNT = 6
+  };
+  uint32_t id() const {
+    return GetField<uint32_t>(VT_ID, 0);
+  }
+  uint32_t count() const {
+    return GetField<uint32_t>(VT_COUNT, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ID, 4) &&
+           VerifyField<uint32_t>(verifier, VT_COUNT, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct BotBuilder {
+  typedef Bot Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_id(uint32_t id) {
+    fbb_.AddElement<uint32_t>(Bot::VT_ID, id, 0);
+  }
+  void add_count(uint32_t count) {
+    fbb_.AddElement<uint32_t>(Bot::VT_COUNT, count, 0);
+  }
+  explicit BotBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Bot> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Bot>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Bot> CreateBot(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t id = 0,
+    uint32_t count = 0) {
+  BotBuilder builder_(_fbb);
+  builder_.add_count(count);
+  builder_.add_id(id);
+  return builder_.Finish();
+}
+
 struct Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -196,6 +257,9 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const DUBU::Echo::Register *body_as_Register() const {
     return body_type() == DUBU::Echo::PacketBody_Register ? static_cast<const DUBU::Echo::Register *>(body()) : nullptr;
   }
+  const DUBU::Echo::Bot *body_as_Bot() const {
+    return body_type() == DUBU::Echo::PacketBody_Bot ? static_cast<const DUBU::Echo::Bot *>(body()) : nullptr;
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_BODY_TYPE, 1) &&
@@ -211,6 +275,10 @@ template<> inline const DUBU::Echo::Chatting *Packet::body_as<DUBU::Echo::Chatti
 
 template<> inline const DUBU::Echo::Register *Packet::body_as<DUBU::Echo::Register>() const {
   return body_as_Register();
+}
+
+template<> inline const DUBU::Echo::Bot *Packet::body_as<DUBU::Echo::Bot>() const {
+  return body_as_Bot();
 }
 
 struct PacketBuilder {
@@ -255,6 +323,10 @@ inline bool VerifyPacketBody(::flatbuffers::Verifier &verifier, const void *obj,
     }
     case PacketBody_Register: {
       auto ptr = reinterpret_cast<const DUBU::Echo::Register *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case PacketBody_Bot: {
+      auto ptr = reinterpret_cast<const DUBU::Echo::Bot *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;
