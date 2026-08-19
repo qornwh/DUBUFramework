@@ -31,7 +31,7 @@ namespace DUBU
 		void Connect();
         void ConnectTimes(Uint32 count = 5);
 		void Disconnect();
-		bool Dispatch();
+		bool Dispatch(Uint32 timeout = 10);
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size);
         const Bool IsConnect() const { return isConnect_; }

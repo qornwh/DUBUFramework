@@ -89,10 +89,10 @@ void DUBU::Client::Disconnect()
     Reset();
 }
 
-bool DUBU::Client::Dispatch()
+bool DUBU::Client::Dispatch(Uint32 timeout)
 {
 	LPOVERLAPPED ptr = nullptr;
-	Int32 size = rudpSocket_->Dispatch(&ptr);
+	Int32 size = rudpSocket_->Dispatch(&ptr, timeout);
 
     if (ptr == nullptr)
     {
