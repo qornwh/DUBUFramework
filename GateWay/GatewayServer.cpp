@@ -83,7 +83,7 @@ void GatewayServer::SendToResgister(Uint8* buffer, Uint8 code, Uint16 size)
 void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
 {
     DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
-    DUBU::Packet::PacketOpctions opt{ true, true, 0 };
+    DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(header);
 
     // 헤더 길이 제외한 버퍼 크기를 구함
     Uint16 offset = sizeof(DUBU::Packet::PacketHeader);
@@ -97,7 +97,7 @@ void GatewayServer::SendToEcho(Uint8* buffer, Uint8 code, Uint16 size)
     internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer + offset, code, size - offset, opt);
 }
 
-void GatewayServer::SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Uint16 size)
+void GatewayServer::SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Uint16 size, const DUBU::Packet::PacketOpctions& opt)
 {
     DUBU::ReadLockGuard rl(GetSessionLock());
     DUBU::Session* session = GetSessionManager().GetSession(sessionId);
@@ -107,8 +107,24 @@ void GatewayServer::SendToClient(Uint32 sessionId, Uint8* buffer, Uint8 code, Ui
         return;
     }
 
-    DUBU::Packet::PacketOpctions opt{ true, true, 0 };
     session->SendPacket(buffer, code, size, opt);
+}
+
+void GatewayServer::SendBotToEcho(Uint8* buffer, Uint16 size)
+{
+    DUBU::Packet::PacketHeader* header = reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer);
+    DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(header);
+
+    // 헤더 길이 제외한 버퍼 크기를 구함
+    Uint16 offset = sizeof(DUBU::Packet::PacketHeader);
+    Uint8 shType = header->packetCode_ >> 5;
+    if (shType > 0)
+    {
+        DUBU::Packet::SubheaderBase* sh = reinterpret_cast<DUBU::Packet::SubheaderBase*>(buffer + sizeof(DUBU::Packet::PacketHeader));
+        offset += sh->GetSize();
+    }
+
+    internalClientList_[header->sessionId_ % echoCount_]->SendPacket(buffer + offset, DUBU::Echo::PacketBody_Bot, size - offset, opt);
 }
 
 Bool GatewayServer::InnerDispatch()
@@ -135,9 +151,4 @@ void GatewayServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size)
         DUBU::Packet::PacketOpctions opt{true, true, 0};
         session->SendPacket(buffer, code, size, opt);
     }
-}
-
-Uint64 GatewayServer::GatewayKey(const SOCKADDR_IN& addr)
-{
-    return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
 }

@@ -68,7 +68,7 @@ void DUBU::Client::Connect()
 
 void DUBU::Client::ConnectTimes(const Uint32 count)
 {
-    int time = 0;
+    Uint32 time = 0;
     while (!isConnect_ && time < count)
     {
         Connect();
@@ -89,10 +89,10 @@ void DUBU::Client::Disconnect()
     Reset();
 }
 
-bool DUBU::Client::Dispatch()
+bool DUBU::Client::Dispatch(Uint32 timeout)
 {
 	LPOVERLAPPED ptr = nullptr;
-	Int32 size = rudpSocket_->Dispatch(&ptr);
+	Int32 size = rudpSocket_->Dispatch(&ptr, timeout);
 
     if (ptr == nullptr)
     {
@@ -613,7 +613,7 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
         header->checksum_ = checksum;
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 
-        spdlog::info("PONG SeqNo {}", lastPongSeq_);
+        spdlog::debug("PONG SeqNo {}", lastPongSeq_);
     }
 }
 

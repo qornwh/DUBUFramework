@@ -466,7 +466,7 @@ void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
 #ifdef _DEBUG
-    spdlog::info("Disconnect : result resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
+    spdlog::info("Disconnect : resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
 #endif
 }
 

@@ -8,7 +8,7 @@ public:
     EchoServer();
     virtual ~EchoServer();
 
-    void Broadcast(Uint8* buffer, Uint8 code, Uint16 size, Uint8 channelId);
+    void Broadcast(Uint8* buffer, Uint8 code, Uint16 size, const DUBU::Packet::PacketOpctions& opt);
 
     // 등록 메시지 수신시 클라 등록
     void AddConnection(Uint32 clientId, DUBU::Session* session);

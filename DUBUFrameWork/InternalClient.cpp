@@ -69,7 +69,7 @@ void DUBU::InternalClient::Connect()
 
 void DUBU::InternalClient::ConnectTimes(const Uint32 count)
 {
-    int time = 0;
+    Uint32 time = 0;
     while (!isConnect_ && time < count)
     {
         Connect();
@@ -696,7 +696,7 @@ void DUBU::InternalClient::RepeatPongMessage(Uint8* ptr, Uint16 size)
         header->checksum_ = checksum;
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 
-        spdlog::info("PONG SeqNo {}", lastPongSeq_);
+        spdlog::debug("PONG SeqNo {}", lastPongSeq_);
     }
 }
 

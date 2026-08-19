@@ -94,9 +94,53 @@ void GatewaySessionHandler::ChatHandler2(DUBU::Session* session, Uint8* buffer, 
                 {
                     // 에코 서버 -> 게이트 웨이
                     const Uint16 payloadSize = static_cast<Uint16>(size - offset);
+                    DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer));
                     spdlog::info("Echo to Gateway {} - {}", serverSessionID, GatewaySessionID);
-                    owner_->SendToClient(GatewaySessionID, buffer + offset, DUBU::Echo::PacketBody_Chatting, payloadSize);
+                    owner_->SendToClient(GatewaySessionID, buffer + offset, DUBU::Echo::PacketBody_Chatting, payloadSize, opt);
                 }
+            }
+        }
+    }
+}
+
+Bool GatewaySessionHandler::BotVerifier(flatbuffers::Verifier& verifier)
+{
+    return DUBU::Echo::VerifyPacketBuffer(verifier);
+}
+
+void GatewaySessionHandler::BotHandler(DUBU::Session* session, Uint8* buffer, Int32 size)
+{
+    const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + sizeof(DUBU::Packet::PacketHeader));
+
+    if (packet != nullptr && packet->body_type() == DUBU::Echo::PacketBody_Bot)
+    {
+        if (owner_ != nullptr && session != nullptr)
+        {
+            // 클라 -> 게이트웨이 -> 에코서버
+            owner_->SendBotToEcho(buffer, static_cast<Uint16>(size));
+        }
+    }
+}
+
+void GatewaySessionHandler::BotHandler2(DUBU::Session* session, Uint8* buffer, Int32 size, Uint8* subBuf, Uint8 type)
+{
+    Uint64 offset = sizeof(DUBU::Packet::PacketHeader);
+    GatewaySubHeader* sh = reinterpret_cast<GatewaySubHeader*>(buffer + offset);
+    if (sh->type_ == type)
+    {
+        offset += sh->GetSize();
+        Uint32 GatewaySessionID = sh->depthId1_;
+
+        const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + offset);
+
+        if (packet != nullptr && packet->body_type() == DUBU::Echo::PacketBody_Bot)
+        {
+            if (owner_ != nullptr)
+            {
+                // 에코 서버 -> 게이트웨이 -> 해당 클라
+                const Uint16 payloadSize = static_cast<Uint16>(size - offset);
+                DUBU::Packet::PacketOpctions opt = DUBU::Packet::PacketOpctions::HeaderToOptions(reinterpret_cast<DUBU::Packet::PacketHeader*>(buffer));
+                owner_->SendToClient(GatewaySessionID, buffer + offset, DUBU::Echo::PacketBody_Bot, payloadSize, opt);
             }
         }
     }

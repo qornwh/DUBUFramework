@@ -3,6 +3,9 @@
 
 namespace DUBU
 {
+    // cacheRepeatCount_가 Uint64 비트마스크(1비트=1패킷)라 64 초과 불가 — 키우려면 마스크 배열화 필요
+    static_assert(DEFAULT_WINDOW_COUNT <= 64, "DEFAULT_WINDOW_COUNT must be <= 64 (cacheRepeatCount_ is a single Uint64 bitmask)");
+
     struct PacketStateBase
     {
         Uint32 recvRepeatSeq_ = 0;      // 현재 수신된 가장 낮은 시퀀스 넘버

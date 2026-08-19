@@ -24,6 +24,11 @@ public:
     void ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
     void ChatHandler2(DUBU::Session* session, Uint8* buffer, Int32 size, Uint8* subBuf, Uint8 type);
 
+    // 부하 테스트 봇
+    Bool BotVerifier(flatbuffers::Verifier& verifier);
+    void BotHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
+    void BotHandler2(DUBU::Session* session, Uint8* buffer, Int32 size, Uint8* subBuf, Uint8 type);
+
     void SetOwner(GatewayServer* owner);
 
     void SetClientToGatway(Bool isClientToGatway);

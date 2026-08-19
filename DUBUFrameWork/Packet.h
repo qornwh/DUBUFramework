@@ -60,6 +60,8 @@ namespace DUBU
             bool isChunck_ = false;
             Uint16 chunckFlag_ = 0;
             Uint16 chunckTotal_ = 0;
+
+            static PacketOpctions HeaderToOptions(const PacketHeader* header);
         };
 #pragma pack(pop)
 
@@ -85,4 +87,3 @@ namespace DUBU
 		};
 	}
 }
-

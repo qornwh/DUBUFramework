@@ -26,8 +26,8 @@ void DUBU::SessionWorker::Process(Uint32 num)
     assert(server_ != nullptr);
 
     SessionJob job;
-    // 한번에 최대 64개까지만 소비 (주기작업 굶김 방지)
-    for (Int32 i = 0; i < 64 && queue_.try_pop(job); ++i)
+    // 한번에 최대 DEFAULT_WINDOW_COUNT개까지만 소비 (주기작업 굶김 방지)
+    for (Int32 i = 0; i < DEFAULT_WINDOW_COUNT && queue_.try_pop(job); ++i)
     {
         if (job.opb != nullptr)
         {
@@ -119,7 +119,7 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
             else if (flag == Packet::PacketHeaderFlag::PING)
             {
                 // 서버는 PING을 받지 않는 설계 — 무시
-                spdlog::info("Server received PING (ignored) from session {}", sessionId);
+                spdlog::debug("Server received PING (ignored) from session {}", sessionId);
             }
             else if (flag == Packet::PacketHeaderFlag::NONE)
             {
@@ -175,7 +175,7 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
     Uint32 now = GetRelativeTimeMs();
 
     // 끊을 세션 (이번 주기에 못 담은 것은 다음 주기에 처리)
-    Uint32 removeList[64];
+    Uint32 removeList[DEFAULT_WINDOW_COUNT];
     Uint32 removeCount = 0;
 
     {
@@ -202,7 +202,7 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
             Uint32 delayTime = now - session->GetTimestamp();
             if (delayTime > server_->SessionTimeout)
             {
-                if (removeCount < 64)
+                if (removeCount < DEFAULT_WINDOW_COUNT)
                 {
                     removeList[removeCount++] = id;
                 }
