@@ -613,7 +613,7 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
         header->checksum_ = checksum;
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 
-        spdlog::info("PONG SeqNo {}", lastPongSeq_);
+        spdlog::debug("PONG SeqNo {}", lastPongSeq_);
     }
 }
 
