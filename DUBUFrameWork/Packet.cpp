@@ -37,3 +37,15 @@ Uint32 DUBU::Packet::Packet::CRC32(const Uint8* ptr, Uint16 len)
 	// 최종 XOR 처리
 	return crc ^ 0xFFFFFFFF;
 }
+
+DUBU::Packet::PacketOpctions DUBU::Packet::PacketOpctions::HeaderToOptions(const PacketHeader* header)
+{
+	PacketOpctions opt{ false, false, 0 };
+	opt.reliable_ = (header->flags_ & PacketHeaderFlag::REPEAT) == PacketHeaderFlag::REPEAT;
+	if ((header->flags_ & PacketHeaderFlag::CHANNEL) == PacketHeaderFlag::CHANNEL)
+	{
+		opt.order_ = true;
+		opt.channelID_ = (header->flags_ & PacketHeaderFlag::CHANNELMASK) >> 3;
+	}
+	return opt;
+}
