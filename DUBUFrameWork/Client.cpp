@@ -68,7 +68,7 @@ void DUBU::Client::Connect()
 
 void DUBU::Client::ConnectTimes(const Uint32 count)
 {
-    int time = 0;
+    Uint32 time = 0;
     while (!isConnect_ && time < count)
     {
         Connect();
