@@ -67,12 +67,13 @@ void DUBU::Client::Connect()
 
 void DUBU::Client::ConnectTimes(const Uint32 count)
 {
-    // 기본값 5회 연결
-    while (!isConnect_)
+    int time = 0;
+    while (!isConnect_ && time < count)
     {
         Connect();
         Sleep(500);
         Dispatch();
+        ++time;
     }
 
     if (!isConnect_)
@@ -113,6 +114,8 @@ bool DUBU::Client::Dispatch()
 
 void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
+	WriteLockGuard wl(lock_);
+
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
 	auto buffer = opb->buffer_;
@@ -168,6 +171,9 @@ void DUBU::Client::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
         // ACK 수신 pendingpacket 지움
         RecvDispatchACK(buffer, size);
     }
+
+    // 기존 RUDPSocket에서 반환했지만, 직접 반환으로 변경
+    PacketManager::GetInstance().PushPacketBuffer(opb);
 }
 
 void DUBU::Client::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
@@ -611,6 +617,8 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
 
 void DUBU::Client::CheckPending()
 {
+    WriteLockGuard wl(lock_);
+
     // 시간체크
     Uint32 now = GetRelativeTimeMs();
 
@@ -637,17 +645,20 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
 {
     if (rudpSocket_ == nullptr) return;
 
-    // 패킷 메모리 할당
     Uint32 offset = sizeof(Packet::PacketHeader);
-    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 크기 초과면 청크로 분할
     if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
     {
-        // 이때는 청크로 나눠서 보내본다.
         SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
         return;
     }
+
+    WriteLockGuard wl(lock_);
+
+    // 패킷 메모리 할당
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
@@ -802,7 +813,11 @@ void DUBU::Client::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, const
         // 마지막 처리
         if (i == count - 1)
         {
-            sendSize = size % chunckSize;
+            Uint16 rest = size % chunckSize;
+            if (rest > 0)
+            {
+                sendSize = rest;
+            }
             opt.chunckFlag_ = lastBit;
         }
         else
@@ -823,7 +838,8 @@ void DUBU::Client::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, U
     while (current != rps.localSeqence_)
     {
         PendingPacket& p = rps.pendingPackets_[current % DEFAULT_WINDOW_COUNT];
-        if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
+        // SENDING이면 이전 송신이 아직 커널에 있음, 이번 주기 스킵
+        if (p.buffer != nullptr && (p.buffer->type_ & OverlappedObjType::SENDING) == 0 && now - p.timeStamp >= resendDelay)
         {
             rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
             p.timeStamp = now;

@@ -52,6 +52,9 @@
     <Filter Include="Service\Sub">
       <UniqueIdentifier>{642c3575-e104-4b3c-827f-94eceb10a752}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Thread">
+      <UniqueIdentifier>{fd7127ef-4ee5-4f77-a9bc-63ec320a6589}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Pool.h">
@@ -135,6 +138,12 @@
     <ClInclude Include="CrashDump.h">
       <Filter>Config</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadManager.h">
+      <Filter>Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionWorker.h">
+      <Filter>Service</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -205,6 +214,12 @@
     </ClCompile>
     <ClCompile Include="CrashDump.cpp">
       <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadManager.cpp">
+      <Filter>Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="SessionWorker.cpp">
+      <Filter>Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

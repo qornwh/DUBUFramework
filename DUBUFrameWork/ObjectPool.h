@@ -23,11 +23,12 @@ namespace DUBU
     template<typename T>
     inline void ObjectPool<T>::Initialize(Int32 count)
     {
-        // 초기 할당 개수. 단 파라미터는 없어야된다.
+        // 생성자 호출 없이 메모리만 확보해 둔다 (freeList 규약 : 소멸 완료된 빈 메모리)
         freeList_.reserve(count);
         for (int i = 0; i < count; ++i)
         {
-            freeList_[i] = new T();
+            void* vm = operator new(sizeof(T));
+            freeList_.push_back(static_cast<T*>(vm));
         }
     }
 
@@ -35,9 +36,9 @@ namespace DUBU
     template<typename... Args>
     inline T* ObjectPool<T>::Pop(Args&& ...args)
     {
+        WriteLockGuard wl(lk_);
         if (!freeList_.empty())
         {
-            WriteLockGuard wl(lk_);
             T* ptr = freeList_.back();
             freeList_.pop_back();
             return new(ptr) T(std::forward<Args>(args)...);
@@ -53,6 +54,7 @@ namespace DUBU
     inline void ObjectPool<T>::Push(T* ptr)
     {
         WriteLockGuard wl(lk_);
+        ptr->~T();
         freeList_.push_back(ptr);
     }
 }

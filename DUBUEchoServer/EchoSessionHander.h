@@ -15,6 +15,10 @@ public:
     EchoSessionHander();
     ~EchoSessionHander();
 
+    // register
+    Bool RegisterVerifier(flatbuffers::Verifier& verifier);
+    void RegisterHandler(DUBU::Session* session, Uint8* buffer, Int32 size);
+
     // chat
     Bool ChatVerifier(flatbuffers::Verifier& verifier);
     void ChatHandler(DUBU::Session* session, Uint8* buffer, Int32 size);

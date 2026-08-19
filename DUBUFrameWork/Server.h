@@ -4,6 +4,7 @@
 #include "RWLock.h"
 #include "RUDPSocket.h"
 #include "SessionManager.h"
+#include "SessionWorker.h"
 
 namespace DUBU 
 {
@@ -16,6 +17,9 @@ namespace DUBU
 
 	class Server : public ISocketHandler
 	{
+		// 패킷 처리/세션 체크가 SessionWorker로 이동하여 내부 접근 허용
+		friend class SessionWorker;
+
 	public:
 		Server();
 		virtual ~Server();
@@ -24,17 +28,18 @@ namespace DUBU
         // 계속실행
 		void Run();
         // 1회 실행
-        void Dispatch();
+		void Dispatch();
 		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 		void OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;
 
 		virtual Session* CreateSession(const SOCKADDR_IN& addr);
+		virtual void DestroySession(Session* session);
+		void RemoveSession(Uint32 sessionId);
 		void ConnectMessage(Session* session);
 		void DisconnectMessage(Session* session);
 		void SendPing(Session* session);
-		void CheckSession();
 
         void SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt);
 
@@ -57,17 +62,11 @@ namespace DUBU
         // Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;
 
-        // CheckSession 1스레드만 작동되도록 CAS연산
-		Atomic<Bool> sessionCAS_;
-
 		// Ping전달 시간 체크
 		const Uint32 PingTimeout = g_defaultPingTimeoutMs;
 
 		// 세션 타임아웃 설정
 		const Uint32 SessionTimeout = g_defaultDisconnectTimeoutMs;
-
-		// 끊을 세션 캐시로 저장
-		Uint32 removeListCache_[MAX_CLIENT_COUNT];
 
     protected:
 #ifdef _DEBUG
@@ -88,8 +87,7 @@ namespace DUBU
         
         // 10초
         const Uint32 logTimeOut_ = 10000;
-        // 이전시간
-        Uint32 preTime_ = 0;
+
         // 타임아웃된 세션 개수
         Atomic<Uint64> timeoutSessionCount_;
 
@@ -98,7 +96,11 @@ namespace DUBU
 
         // 마지막 로그 출력 시간
         Atomic<Uint32> lastStatsTickMs_;
+
+        // 세션 워커 추가
+        Vector<SessionWorker> sessionWorkers;
 #endif
 	};
 }
 
+extern DUBU::Server* g_server;

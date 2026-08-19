@@ -26,6 +26,7 @@ namespace DUBU
 		OverlappedPacketBuffer* PopPacketBuffer();
 		void PushPacketBuffer(OverlappedPacketBuffer* ptr);
 
+        // 모든 스레드 Join 후에만 호출할 것 (락 없이 내부 set 반환)
 		const Set<OverlappedPacketBuffer*>& GetUseList();
 
 	private:

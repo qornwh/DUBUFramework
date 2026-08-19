@@ -6,6 +6,7 @@
 #include "GatewayServer.h"
 #include "GatewaySessionHandler.h"
 #include "Session.h"
+#include "ThreadManager.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -51,11 +52,28 @@ int main(int argc, char** argv)
             }
         }
     );
+    handlers.emplace(
+        DUBU::Echo::PacketBody_Register,
+        DUBU::Packet::PacketHandler{
+            // verifier_
+            [](flatbuffers::Verifier& v) {
+                return GatewaySessionHandler::GetInstance().RegisterVerifier(v);
+            },
+            // handler_
+            [](DUBU::Session* session, Uint8* buf, Int32 len) {
+                GatewaySessionHandler::GetInstance().RegisterHandler(session, buf, len);
+            },
+            // handler2_
+            [](DUBU::Session* session, Uint8* buf, Int32 len, Uint8* subBuf, Uint8 type) {
+                GatewaySessionHandler::GetInstance().RegisterHandler2(session, buf, len, subBuf, type);
+            }
+        }
+    );
 
     {
         GatewayServer* server = new GatewayServer();
-        std::thread th([&server, &handlers]() {
-            server->Initialize(&handlers);
+        server->Initialize(&handlers);
+        DUBU::ThreadManager::GetInstance().SetRecvLoop([&server, &handlers]() {
             GatewaySessionHandler::GetInstance().SetOwner(server);
 
             Uint32 time = DUBU::GetRelativeTimeMs();
@@ -63,14 +81,21 @@ int main(int argc, char** argv)
             {
                 Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
-                server->InnerDispatch();
             }
             if (server != nullptr)
             {
                 delete server;
                 server = nullptr;
             }
-        });
+            });
+        DUBU::ThreadManager::GetInstance().SetSessionLoop(nullptr);
+        DUBU::ThreadManager::GetInstance().Start([&server]() {
+            while (server && server->IsRunning())
+            {
+                Uint32 cur = DUBU::GetRelativeTimeMs();
+                server->InnerDispatch();
+            }
+            });
 
         while (true)
         {
@@ -80,6 +105,6 @@ int main(int argc, char** argv)
                 break;
             }
         }
-        th.join();
+        DUBU::ThreadManager::GetInstance().Join();
     }
 }

@@ -16,9 +16,9 @@ int main()
 
 	{
 		DUBU::Server* server;
+        server = new DUBU::Server();
+        server->Initialize(nullptr);
 		std::thread th([&server]() {
-			server = new DUBU::Server();
-			server->Initialize(nullptr);
 
             Uint32 time = DUBU::GetRelativeTimeMs();
             while (true)

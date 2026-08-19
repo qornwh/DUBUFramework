@@ -15,7 +15,7 @@ void DUBU::PacketManager::Initialize()
 	{
 		OverlappedPacketBuffer* ptr = DUBU::Pop<OverlappedPacketBuffer>();
 		ptr->pos_ = ptr->buffer_;
-		ptr->size_ = sizeof(OverlappedPacketBuffer);
+		ptr->size_ = sizeof(ptr->buffer_);
 		OverlappedObj* ptr2 = static_cast<OverlappedObj*>(ptr);
 		ptr2->Initialize();
 		list_.push_back(ptr);
@@ -39,6 +39,8 @@ DUBU::OverlappedPacketBuffer* DUBU::PacketManager::PopPacketBuffer()
 	if (!list_.empty())
 	{
 		OverlappedPacketBuffer* ptr = list_.back();
+        ptr->pos_ = ptr->buffer_;
+        ptr->size_ = sizeof(ptr->buffer_);
 		list_.pop_back();
 		useList_.insert(ptr);
 		return ptr;
@@ -46,7 +48,7 @@ DUBU::OverlappedPacketBuffer* DUBU::PacketManager::PopPacketBuffer()
 
 	OverlappedPacketBuffer* ptr = DUBU::Pop<OverlappedPacketBuffer>();
 	ptr->pos_ = ptr->buffer_;
-	ptr->size_ = sizeof(OverlappedPacketBuffer);
+	ptr->size_ = sizeof(ptr->buffer_);
 	OverlappedObj* ptr2 = static_cast<OverlappedObj*>(ptr);
 	ptr2->Initialize();
     useList_.insert(ptr);

@@ -3,26 +3,42 @@
 #include "Packet.h"
 #include "BufferManager.h"
 #include "ConnectionType.h"
+#include "ThreadManager.h"
 
-DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{}), sessionCAS_(false)
+DUBU::Server* g_server = nullptr;
+
+DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
+    g_server = this;
 }
 
 DUBU::Server::~Server()
 {
+    Stop();
+
+    // 서버 종료전, 남은 세션 전부 반환
+    for (auto& [id, session] : sessionManager_.GetSessions())
+    {
+        if (session != nullptr)
+        {
+            DestroySession(session);
+        }
+    }
+
 	rudpSocket_->EndServer();
 }
 
 void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 {
     sessionManager_.SetHandlers(handlers);
-	rudpSocket_->StartServer();
+
+    rudpSocket_->StartServer();
 	isRunning_.store(true);
 
 #ifdef _DEBUG
-    preTime_ = GetRelativeTimeMs();
+    lastStatsTickMs_.store(GetRelativeTimeMs());
 #endif
 }
 
@@ -31,179 +47,107 @@ void DUBU::Server::Run()
 	while (isRunning_.load())
 	{
 		assert(rudpSocket_ != nullptr);
-		LPOVERLAPPED ptr = nullptr;
-		Int32 size = rudpSocket_->Dispatch(&ptr);
-
-        if (ptr == nullptr)
-        {
-            // 마지막 세션 체크
-            CheckSession();
-			continue;
-        }
-
-		OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
-		if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
-			rudpSocket_->RecvFromComplete(ptr, size);
-		else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
-			rudpSocket_->SendToComplete(ptr, size);
+        Dispatch();
 	}
 }
 
 void DUBU::Server::Dispatch()
 {
-    if (isRunning_)
+	LPOVERLAPPED ptr = nullptr;
+	Int32 size = rudpSocket_->Dispatch(&ptr, 1);
+
+	if (ptr != nullptr)
+	{
+		OverlappedObj* obj = reinterpret_cast<OverlappedObj*>(ptr);
+		if ((obj->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+		{
+			rudpSocket_->RecvFromComplete(ptr, size);
+#ifdef _DEBUG
+			recvPacketCount_.fetch_add(1);
+#endif
+		}
+		else if ((obj->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
+		{
+			rudpSocket_->SendToComplete(ptr, static_cast<Uint16>(size));
+#ifdef _DEBUG
+			sendPacketCount_.fetch_add(1);
+#endif
+		}
+	}
+
+#ifdef _DEBUG
+    Uint32 now = GetRelativeTimeMs();
+    Uint32 last = lastStatsTickMs_.load();
+    // 수신 스레드 여러 개 중 CAS 성공한 한 스레드만 통계 출력
+    if (now - last >= logTimeOut_ && lastStatsTickMs_.compare_exchange_strong(last, now))
     {
-        assert(rudpSocket_ != nullptr);
-        LPOVERLAPPED ptr = nullptr;
-        Int32 size = rudpSocket_->Dispatch(&ptr);
+        Uint32 activeCount = 0;
+        Uint32 rttSum = 0;
+        Uint32 rttMax = 0;
 
-        if (ptr == nullptr)
         {
-            // 마지막 세션 체크
-            CheckSession();
-            return;
+            ReadLockGuard rl(sessionLock_);
+            for (auto& [sessionId, session] : sessionManager_.GetSessions())
+            {
+                if (session != nullptr)
+                {
+                    Uint32 rtt = session->GetRttMillisec();
+                    if (rtt > rttMax)
+                    {
+                        rttMax = rtt;
+                    }
+                    rttSum += rtt;
+                    activeCount++;
+                }
+            }
         }
 
-        OverlappedObj* ptr2 = reinterpret_cast<OverlappedObj*>(ptr);
-        if ((ptr2->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
+        float rttAvg = 0.0f;
+        if (activeCount > 0)
         {
-            rudpSocket_->RecvFromComplete(ptr, size);
-#ifdef _DEBUG
-            recvPacketCount_.fetch_add(1);
-#endif
+            rttAvg = static_cast<float>(rttSum) / activeCount;
         }
-        else if ((ptr2->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
-        {
-            rudpSocket_->SendToComplete(ptr, size);
-#ifdef _DEBUG
-            sendPacketCount_.fetch_add(1);
-#endif
-        }
+        PrintStats(activeCount, rttAvg, rttMax);
     }
+#endif
 }
 
 void DUBU::Server::Stop()
 {
-	isRunning_.store(false);
+    if (!isRunning_.exchange(false))
+        return;
+
+    // 세션 워커 정지
+    for (auto& worker : g_sessionWorkers)
+    {
+        worker.Stop();
+    }
 }
 
 void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
+	// 현재 처리된곳에서 버퍼를 반환하는것으로 변경됨
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
 
-	auto buffer = opb->buffer_;
-	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(buffer);
-
-	auto sessionId = header->sessionId_;
-	auto flag = header->flags_;
-    auto seqNo = header->sequenceNo_;
-	Uint64 key = PeerKey(addr);
-	auto it = peerMap_.find(key);
-	Bool result = false;
-
-	if (flag == Packet::PacketHeaderFlag::SESSION)
+	if (g_sessionWorkers.empty())
 	{
-		if (it == peerMap_.end())
-		{
-			// 세션 추가
-			WriteLockGuard wl(sessionLock_);
-			Session* session = CreateSession(addr);
-			header->sessionId_ = session->GetSessionId();
-			// 세션 추가 완료 응답
-			ConnectMessage(session);
-			// Peer 생성
-			peerMap_.emplace(key, Peer{key, addr, session});
-
-            // 상시 연결 여부 확인 <= 일단 필요 없어보임.
-            /*Uint8 connectType = header->packetCode_;
-            if (static_cast<Client::ConnectionType>(connectType) == Client::ConnectionType::Internal)
-            {
-                session->SetAwaysConnect(true);
-            }*/
-		}
-		else
-		{
-			// 중복으로 오는경우 재전송
-			ReadLockGuard rl(sessionLock_);
-			Session* session = it->second.session_;
-			ConnectMessage(session);
-		}
-	}
-	else
-	{
-		/*
-		* 세션이 있을때
-		* - discconect ACK는 연결 해제를 확인.
-		*/ 
-		if (sessionId > 0)
-		{
-			ReadLockGuard rl(sessionLock_);
-			Session* session = sessionManager_.GetSession(sessionId);
-			if (session == nullptr)
-			{
-                if (flag == Packet::PacketHeaderFlag::DISCONNECT)
-                {
-                    // 이미 서버에서 연결 끊음
-                    spdlog::info("Already Disconnect Session");
-                    return;
-                }
-				spdlog::error("SessionId {} not found", sessionId);
-				return;
-			}
-
-            // 수신시 시간 갱신
-            session->SetTimestamp(DUBU::GetRelativeTimeMs());
-
-			// PING/PONG 비트는 ACK 비트를 포함하므로 equality로 먼저 분기해야 함
-			if (flag == Packet::PacketHeaderFlag::PONG)
-			{
-				result = session->RecvDispatchPong(buffer, size);
-			}
-			else if (flag == Packet::PacketHeaderFlag::PING)
-			{
-				// 서버는 PING을 받지 않는 설계 — 무시
-				spdlog::info("Server received PING (ignored) from session {}", sessionId);
-			}
-            else if (flag == Packet::PacketHeaderFlag::NONE)
-            {
-                // NONE 일때는 패킷을 정상 수신하여 처리 ACK 안보냄
-                result = session->RecvDispatch(buffer, size);
-            }
-            else if ((flag & Packet::PacketHeaderFlag::REPEAT) == Packet::PacketHeaderFlag::REPEAT)
-            {
-                // ACK 일때는 클라쪽에서 결과를 받고 다시 보내왔다는 뜻이다.
-                result = session->RecvDispatch(buffer, size);
-                if (result)
-                {
-                    // ACK 전달
-                    Packet::PacketOpctions opt{ true, false, 0 };
-                    if ((flag & Packet::PacketHeaderFlag::CHANNEL) == Packet::PacketHeaderFlag::CHANNEL)
-                    {
-                        opt.order_ = true;
-                        opt.channelID_ = (flag & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
-                    }
-                    SendAck(seqNo, session, opt);
-#ifdef _DEBUG
-                    sendAckCount_.fetch_add(1);
-#endif
-                }
-            }
-            else if ((flag & Packet::PacketHeaderFlag::ACK) == Packet::PacketHeaderFlag::ACK)
-            {
-                // ACK 수신 pendingpacket 지움
-                result = session->RecvDispatchACK(buffer, size);
-#ifdef _DEBUG
-                recvAckCount_.fetch_add(1);
-#endif
-            }
-
-#ifdef _DEBUG
-            recvByteCount_.fetch_add(header->totalSize_);
-#endif
-		}
+		spdlog::warn("OnRecvFrom: no session workers, packet dropped");
+		PacketManager::GetInstance().PushPacketBuffer(opb);
+		return;
 	}
 
-	// 일단 실패할때 코드 및 대시보드에 띄울 데이터 큐에 넣기?
+	Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
+	Uint32 sessionId = header->sessionId_;
+	const Uint32 workerCount = static_cast<Uint32>(g_sessionWorkers.size());
+
+	if (header->totalSize_ != size)
+	{
+		PacketManager::GetInstance().PushPacketBuffer(opb);
+		return;
+	}
+
+	Uint32 target = static_cast<Uint32>(PeerKey(addr) % workerCount);
+	g_sessionWorkers[target].Push(SessionJob{ sessionId, opb });
 }
 
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
@@ -226,6 +170,25 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 #endif // _DEBUG
 
 	return session;
+}
+
+void DUBU::Server::DestroySession(Session* session)
+{
+	session->Reset();
+	Push<Session>(session);
+}
+
+void DUBU::Server::RemoveSession(Uint32 sessionId)
+{
+	Session* session = sessionManager_.GetSession(sessionId);
+	if (session == nullptr)
+	{
+		return;
+	}
+
+	peerMap_.erase(PeerKey(session->GetSockAddr()));
+	sessionManager_.RemoveSession(sessionId);
+	DestroySession(session);
 }
 
 void DUBU::Server::ConnectMessage(Session* session)
@@ -298,113 +261,6 @@ void DUBU::Server::SendPing(Session* session)
 	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
     session->AddPingCount();
 	spdlog::info("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
-}
-
-void DUBU::Server::CheckSession()
-{
-	// 시간체크
-	Uint32 now = GetRelativeTimeMs();
-	// 끊을 세션
-	Uint8 idx = 0;
-
-	// 1스레드만 통과
-	Bool expected = sessionCAS_.load();
-	// false, 연산 실패시 통과
-	if (expected || !sessionCAS_.compare_exchange_weak(expected, true, std::memory_order_acquire, std::memory_order_relaxed))
-	{
-		return;
-	}
-
-	{
-		// 재전송로직 실행
-		ReadLockGuard rw(sessionLock_);
-		for (auto& [_, session] : sessionManager_.GetSessions())
-		{
-            if (session == nullptr || !session->IsConnection())
-            {
-                continue;
-            }
-
-            if (session->GetAwaysConnect())
-            {
-                continue;
-            }
-
-			Uint32 delayTime = now - session->GetTimestamp();
-			if (delayTime > SessionTimeout)
-			{
-				// 끊김 감지
-                removeListCache_[idx++] = session->GetSessionId();
-#ifdef _DEBUG
-                timeoutSessionCount_.fetch_add(1);
-#endif
-			}
-			else if (delayTime > PingTimeout)
-			{
-				// PingTimeout 간격으로 throttle — 3s 시점부터 3s마다 최대 ~3회
-				if (now - session->GetLastPingSentTime() >= (Uint32)PingTimeout)
-				{
-					SendPing(session);
-					session->SetLastPingSentTime(now);
-				}
-			}
-
-			// 재전송, 왕복시간은 * 2 + g_defaultRttMsDelay
-			session->RepeatMessageAll(rudpSocket_.get(), session->GetRttMillisec() * 2 + g_defaultRttMsDelay);
-		}
-	}
-
-	{
-		// 연결 해제 구간
-		WriteLockGuard rw(sessionLock_);
-		for (Int32 i = 0; i < idx; ++i)
-		{
-			Uint32 sessionId = removeListCache_[i];
-			Session* session = sessionManager_.GetSession(sessionId);
-			if (session != nullptr)
-			{
-				// 세션 연결 해제
-                DisconnectMessage(session);
-				session->Disconnect();
-			}
-            sessionManager_.RemoveSession(sessionId);
-		}
-	}
-
-#ifdef _DEBUG
-    if (now - preTime_ >= logTimeOut_)
-    {
-        preTime_ = now;
-        lastStatsTickMs_.store(now);
-        timeoutSessionCount_.fetch_add(1);
-
-        Uint32 activeCount = 0;
-        Uint32 rttSum = 0;
-        Uint32 rttMax = 0;
-
-        // 일단 디버그용이라 코드 보기 어려워 분리해서 로그 찍는다.
-        for (auto& [sessionId, session] : sessionManager_.GetSessions())
-        {
-            if (session != nullptr)
-            {
-                Uint32 rtt = session->GetRttMillisec();
-                if (rtt > rttMax)
-                {
-                    rttMax = rtt;
-                }
-                rttSum += rtt;
-                activeCount++;
-            }
-        }
-        float rttAvg = 0.0f;
-        if (activeCount > 0)
-        {
-            rttAvg = static_cast<float>(rttSum) / activeCount;
-        }
-        PrintStats(activeCount, rttAvg, rttMax);
-    }
-#endif
-	sessionCAS_.store(false);
 }
 
 void DUBU::Server::SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt)

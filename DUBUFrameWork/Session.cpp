@@ -13,10 +13,7 @@ DUBU::Session::Session(const Map<Uint8, Packet::PacketHandler>* handlers) :
 
 DUBU::Session::~Session()
 {
-    if (isConnect_)
-    {
-        Reset();
-    }
+    Reset();
     cacheAlreadyPackets_.clear();
 }
 
@@ -325,6 +322,9 @@ bool DUBU::Session::RecvDispatchACK(Uint8* buffer, Uint16 size)
         return false;
     }
 
+    // pending 슬롯 접근이라 송신(SendPacket)과 같은 lock
+    WriteLockGuard wl(sendLock_);
+
     if (ischannel)
     {
         Uint8 channel = (header->flags_ & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
@@ -478,17 +478,21 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
 {
     if (rudpSocket_ == nullptr) return;
 
-    // 패킷 메모리 할당
     Uint32 offset = sizeof(Packet::PacketHeader);
-    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
-    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
+    // 크기 초과면 청크로 분할
     if (size + subHeaderSize + offset > PACKET_MAX_SIZE)
     {
-        // 이때는 청크로 나눠서 보내본다.
         SendPacketChunk(buffer, code, size, subHeader, subHeaderSize);
         return;
     }
+
+    // 여러 스레드가 동시에 보낼 수 있어 SendPacket만 lock
+    WriteLockGuard wl(sendLock_);
+
+    // 패킷 메모리 할당
+    OverlappedPacketBuffer* opb = PacketManager::GetInstance().PopPacketBuffer();
+    Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
 
     // 패킷 헤더 옵션 설정
     header->flags_ = Packet::PacketHeaderFlag::NONE;
@@ -648,7 +652,11 @@ void DUBU::Session::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, cons
         // 마지막 처리
         if (i == count - 1)
         {
-            sendSize = size % chunckSize;
+            Uint16 last = size % chunckSize;
+            if (last > 0)
+            {
+                sendSize = last;
+            }
             opt.chunckFlag_ = lastBit;
         }
         else
@@ -665,11 +673,15 @@ void DUBU::Session::SendPacketChunk(Uint8* buffer, Uint8 code, Uint16 size, cons
 
 void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, ReliablePacketState& rps, Uint32 now)
 {
+    // pending 슬롯 접근이라 송신(SendPacket)과 같은 lock
+    WriteLockGuard wl(sendLock_);
+
     Uint32 current = rps.localWindowStart_;
     while (current != rps.localSeqence_)
     {
         PendingPacket& p = rps.pendingPackets_[current % DEFAULT_WINDOW_COUNT];
-        if (p.buffer != nullptr && now - p.timeStamp >= resendDelay)
+        // SENDING이면 이전 송신이 아직 커널에 있음, 이번 주기 스킵
+        if (p.buffer != nullptr && (p.buffer->type_ & OverlappedObjType::SENDING) == 0 && now - p.timeStamp >= resendDelay)
         {
             socket->SendToRepeat(addr_, p.buffer);
             p.timeStamp = now;

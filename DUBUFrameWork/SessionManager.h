@@ -48,7 +48,6 @@ namespace DUBU
         Uint32 sessionId = GenerateId();
         sessionCount_.fetch_add(1);
         T* session = Pop<T>(handlers_);
-        session->Reset();
         session->SetSessionId(sessionId);
         sessionMap_.insert({ sessionId, static_cast<Session*>(session) });
 

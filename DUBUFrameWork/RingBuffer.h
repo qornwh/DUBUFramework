@@ -1,7 +1,6 @@
 #pragma once
 #include "pch.h"
 #include "Types.h"
-#include "Singleton.h"
 
 namespace DUBU::DS
 {
@@ -11,7 +10,7 @@ namespace DUBU::DS
     *  - MPMC(Multiple Producer - Multiple Consumer) Ringbuffer 
 	*/
 	template<typename T>
-    class RingBuffer : public Singleton<RingBuffer<T>>
+    class RingBuffer
 	{
         struct Node {
             // seq_ : 멀티스레드 상에서 동시에 여러 push, pop 내 현재 노드 확인  
