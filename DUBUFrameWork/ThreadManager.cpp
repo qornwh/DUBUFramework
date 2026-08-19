@@ -14,7 +14,7 @@ void DUBU::ThreadManager::SetRecvLoop(Function<void()> loop)
         {
             assert(g_server != nullptr);
 
-            g_server->RecvLoop();
+            g_server->Dispatch();
         };
     }
 }

@@ -11,6 +11,7 @@ DUBU::Server::Server() : isRunning_(false), sessionManager_(SessionManager{})
 {
 	rudpSocket_ = std::make_shared<RUDPSocket>();
 	rudpSocket_->SetHandler(this);
+    g_server = this;
 }
 
 DUBU::Server::~Server()
@@ -35,7 +36,6 @@ void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
 
     rudpSocket_->StartServer();
 	isRunning_.store(true);
-    g_server = this;
 
 #ifdef _DEBUG
     preTime_ = GetRelativeTimeMs();
@@ -47,11 +47,11 @@ void DUBU::Server::Run()
 	while (isRunning_.load())
 	{
 		assert(rudpSocket_ != nullptr);
-        RecvLoop();
+        Dispatch();
 	}
 }
 
-void DUBU::Server::RecvLoop()
+void DUBU::Server::Dispatch()
 {
 	while (isRunning_.load())
 	{

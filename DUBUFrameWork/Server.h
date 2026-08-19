@@ -28,7 +28,7 @@ namespace DUBU
         // 계속실행
 		void Run();
         // 1회 실행
-		void RecvLoop();
+		void Dispatch();
 		void Stop();
 
 		void OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size) override;

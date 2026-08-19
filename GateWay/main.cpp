@@ -6,6 +6,7 @@
 #include "GatewayServer.h"
 #include "GatewaySessionHandler.h"
 #include "Session.h"
+#include "ThreadManager.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -54,8 +55,8 @@ int main(int argc, char** argv)
 
     {
         GatewayServer* server = new GatewayServer();
-        std::thread th([&server, &handlers]() {
-            server->Initialize(&handlers);
+        server->Initialize(&handlers);
+        DUBU::ThreadManager::GetInstance().SetRecvLoop([&server, &handlers]() {
             GatewaySessionHandler::GetInstance().SetOwner(server);
 
             Uint32 time = DUBU::GetRelativeTimeMs();
@@ -63,14 +64,21 @@ int main(int argc, char** argv)
             {
                 Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
-                server->InnerDispatch();
             }
             if (server != nullptr)
             {
                 delete server;
                 server = nullptr;
             }
-        });
+            });
+        DUBU::ThreadManager::GetInstance().SetSessionLoop(nullptr);
+        DUBU::ThreadManager::GetInstance().Start([&server]() {
+            while (server && server->IsRunning())
+            {
+                Uint32 cur = DUBU::GetRelativeTimeMs();
+                server->InnerDispatch();
+            }
+            });
 
         while (true)
         {
@@ -80,6 +88,6 @@ int main(int argc, char** argv)
                 break;
             }
         }
-        th.join();
+        DUBU::ThreadManager::GetInstance().Join();
     }
 }

@@ -5,6 +5,7 @@
 #include "BufferManager.h"
 #include "EchoServer.h"
 #include "EchoSessionHander.h"
+#include "ThreadManager.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -46,8 +47,8 @@ int main()
 
     {
         EchoServer* server = new EchoServer();
-        std::thread th([&server, &handlers]() {
-            server->Initialize(&handlers);
+        server->Initialize(&handlers);
+        DUBU::ThreadManager::GetInstance().SetRecvLoop([&server, &handlers]() {
             EchoSessionHander::GetInstance().SetOwner(server);
 
             Uint32 time = DUBU::GetRelativeTimeMs();
@@ -62,6 +63,9 @@ int main()
                 server = nullptr;
             }
         });
+        DUBU::ThreadManager::GetInstance().SetSessionLoop(nullptr);
+        DUBU::ThreadManager::GetInstance().Start([]() {
+            });
 
         while (true)
         {
@@ -71,6 +75,6 @@ int main()
                 break;
             }
         }
-        th.join();
+        DUBU::ThreadManager::GetInstance().Join();
     }
 }
