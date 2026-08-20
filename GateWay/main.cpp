@@ -30,6 +30,7 @@ BOOL WINAPI KeyBoarHandler(DWORD signal)
 int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCtrlHandler(KeyBoarHandler, TRUE);
 
     DUBU::InitFileLog("gateway");
     DUBU::LoadConfig("./Config.json");
