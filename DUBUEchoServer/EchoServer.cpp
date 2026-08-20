@@ -10,10 +10,17 @@ EchoServer::~EchoServer()
 {
 }
 
-void EchoServer::AddConnection(Uint32 clientId, DUBU::Session* session)
+bool EchoServer::AddConnection(Uint32 clientId, DUBU::Session* session)
 {
     DUBU::WriteLockGuard wl(connectionLock_);
-    connectionList_[clientId] = session;
+    if (connectionList_.size() < MAX_CLIENT_COUNT)
+    {
+        connectionList_[clientId] = session;
+        return true;
+    }
+    spdlog::warn("Current User Over {} / {}", connectionList_.size(), MAX_CLIENT_COUNT);
+    session->Disconnect();
+    return false;
 }
 
 void EchoServer::DestroySession(DUBU::Session* session)

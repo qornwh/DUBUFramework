@@ -11,7 +11,7 @@ public:
     void Broadcast(Uint8* buffer, Uint8 code, Uint16 size, const DUBU::Packet::PacketOpctions& opt);
 
     // 등록 메시지 수신시 클라 등록
-    void AddConnection(Uint32 clientId, DUBU::Session* session);
+    bool AddConnection(Uint32 clientId, DUBU::Session* session);
     // 내부 커넥션 종료시 등록 정리
     virtual void DestroySession(DUBU::Session* session) override;
 private:
