@@ -90,10 +90,10 @@ void DUBU::InternalClient::Disconnect()
     Reset();
 }
 
-bool DUBU::InternalClient::Dispatch()
+bool DUBU::InternalClient::Dispatch(Uint32 timeout)
 {
     LPOVERLAPPED ptr = nullptr;
-    Int32 size = rudpSocket_->Dispatch(&ptr);
+    Int32 size = rudpSocket_->Dispatch(&ptr, timeout);
 
     if (ptr == nullptr)
     {
