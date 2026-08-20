@@ -77,6 +77,11 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
             {
                 for (size_t i = 0; i < count; ++i)
                 {
+                    if (!clients[i]->IsConnect())
+                    {
+                        continue;
+                    }
+
                     // 수신 핸들러가 내 에코를 매칭할 수 있게 현재 클라 지정
                     EchoClient::SetCurrentBotClient(clients[i]);
 
@@ -110,10 +115,15 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
         Uint64 rttSum = 0;
         Uint64 rttSamples = 0;
         Uint32 rttMax = 0;
+        Uint32 alive = 0;
         for (auto& clients : botClients)
         {
             for (EchoClient* client : clients)
             {
+                if (client->IsConnect())
+                {
+                    ++alive;
+                }
                 recv += client->ExchangeBotRecvCount();
                 rttSum += client->ExchangeBotRttSumMs();
                 rttSamples += client->ExchangeBotRttSamples();
@@ -126,8 +136,8 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
         }
         Uint64 rttAvg = (rttSamples > 0) ? (rttSum / rttSamples) : 0;
 
-        spdlog::info("[BOT-STATS] connected={} sent={} recv={} rtt_avg={}ms rtt_max={}ms",
-            totalConnected.load(), totalSent.exchange(0), recv, rttAvg, rttMax);
+        spdlog::info("[BOT-STATS] connected={} alive={} sent={} recv={} rtt_avg={}ms rtt_max={}ms",
+            totalConnected.load(), alive, totalSent.exchange(0), recv, rttAvg, rttMax);
     }
 }
 
