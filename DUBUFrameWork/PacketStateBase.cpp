@@ -6,6 +6,17 @@ void DUBU::PacketStateBase::Reset()
     lastRepeatSeq_ = 0;
     cacheRepeatCount_ = 0;
     sendRepeatSeq_ = 0;
+#ifdef TEST_MODE
+    recvCount_ = 0;
+#endif
+}
+
+void DUBU::PacketStateBase::UpdateRecvSequenceNo(Uint32 sequenceNo)
+{
+    recvRepeatSeq_ = sequenceNo;
+#ifdef TEST_MODE
+    ++recvCount_;
+#endif
 }
 
 Uint32 DUBU::PacketStateBase::UpdateSendSequenceNo()

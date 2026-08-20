@@ -174,6 +174,11 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 
 void DUBU::Server::DestroySession(Session* session)
 {
+	if (session->IsConnection())
+	{
+		session->Disconnect();
+	}
+
 	session->Reset();
 	Push<Session>(session);
 }

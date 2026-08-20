@@ -183,7 +183,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                 // 현재꺼는 실행
                 PacketParse(buffer, size);
                 rps.cacheRepeatCount_ >>= 1;
-                rps.recvRepeatSeq_ = header->sequenceNo_;
+                rps.UpdateRecvSequenceNo(header->sequenceNo_);
 
                 // 미리 수신된 패킷 있으면 실행해 준다.
                 Uint32 idx = rps.recvRepeatSeq_;
@@ -266,7 +266,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
                     isLastUpdate = true;
                 }
 
-                rpsNo_.recvRepeatSeq_ = header->sequenceNo_;
+                rpsNo_.UpdateRecvSequenceNo(header->sequenceNo_);
                 rpsNo_.cacheRepeatCount_ >>= 1;
                 if (chunck == 0)
                 {
@@ -304,7 +304,7 @@ bool DUBU::Session::RecvDispatch(Uint8* buffer, Uint16 size)
 
         // 재전송 패킷이 아닌경우.
         PacketParse(buffer, size);
-        rNopsNo_.recvRepeatSeq_ = header->sequenceNo_;
+        rNopsNo_.UpdateRecvSequenceNo(header->sequenceNo_);
         return true;
     }
 
@@ -466,7 +466,11 @@ void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
 #ifdef TEST_MODE
-    spdlog::info("Disconnect : resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
+    // 비신뢰 체크
+    const Uint64 nopsSent = rNopsNo_.recvRepeatSeq_;
+    const Uint64 nopsLost = nopsSent - rNopsNo_.recvCount_;
+    const float nopsLostPct = nopsLost * 100.0 / nopsSent;
+    spdlog::info("Disconnect : resent {} -- ping {}/{} -- nops {}/{} lost {} ({:.2f}%)", resendCount_.load(), pongCount_, pingCount_, rNopsNo_.recvCount_, nopsSent, nopsLost, nopsLostPct);
 #endif
 }
 
