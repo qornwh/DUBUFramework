@@ -613,7 +613,9 @@ void DUBU::Client::RepeatPongMessage(Uint8* ptr, Uint16 size)
         header->checksum_ = checksum;
         rudpSocket_->SendTo(rudpSocket_->GetSockAddr(), opb);
 
+#ifdef _DEBUG
         spdlog::debug("PONG SeqNo {}", lastPongSeq_);
+#endif
     }
 }
 
@@ -845,6 +847,9 @@ void DUBU::Client::RepeatMessage(Uint32 resendDelay, ReliablePacketState& rps, U
         {
             rudpSocket_->SendToRepeat(rudpSocket_->GetSockAddr(), p.buffer);
             p.timeStamp = now;
+#ifdef _DEBUG
+            resendCount_.fetch_add(1);
+#endif
         }
         ++current;
     }

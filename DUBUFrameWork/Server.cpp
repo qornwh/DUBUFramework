@@ -260,7 +260,10 @@ void DUBU::Server::SendPing(Session* session)
 
 	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
     session->AddPingCount();
+
+#ifdef _DEBUG
 	spdlog::debug("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
+#endif
 }
 
 void DUBU::Server::SendAck(Uint32 seqNo, Session* session, const Packet::PacketOpctions& opt)

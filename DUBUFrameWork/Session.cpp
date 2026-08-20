@@ -465,7 +465,7 @@ void DUBU::Session::SetPeer(Peer& peer)
 void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
-#ifdef _DEBUG
+#if defined(_DEBUG)
     spdlog::info("Disconnect : resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
 #endif
 }

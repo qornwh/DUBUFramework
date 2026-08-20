@@ -113,15 +113,13 @@ void DUBU::PushBig(Uint8* ptr)
 {
     WriteLockGuard wl(PoolLock);
     size_t result = BigMemoryPtrs.erase(reinterpret_cast<Uint64>(&(*ptr)));
-#ifdef _DEBUG
     if (result <= 0 || ptr == nullptr) 
     {
         // 공간 할당된 적 없음.. 크리티컬
         fprintf(stderr, "공간 할당된 적 없음 or 이미 지워짐 .. 크리티컬 에러 !!!\n");
         exit(EXIT_FAILURE);
     }
-#endif
-        free(ptr);
+    free(ptr);
 }
 
 Uint8* DUBU::PopBig(Uint16 size)

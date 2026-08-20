@@ -119,7 +119,7 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
             else if (flag == Packet::PacketHeaderFlag::PING)
             {
                 // 서버는 PING을 받지 않는 설계 — 무시
-                spdlog::debug("Server received PING (ignored) from session {}", sessionId);
+                spdlog::warn("Server received PING (ignored) from session {}", sessionId);
             }
             else if (flag == Packet::PacketHeaderFlag::NONE)
             {
