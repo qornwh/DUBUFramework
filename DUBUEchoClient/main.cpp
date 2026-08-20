@@ -41,7 +41,7 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
         threads.emplace_back([&, t]() {
             Vector<EchoClient*>& clients = botClients[t];
             clients.reserve(countPerThread);
-            for (Uint32 i = 0; i < countPerThread; ++i)
+            for (Uint32 i = 0; i < countPerThread && !InterruptCtrlC; ++i)
             {
                 EchoClient* client = new EchoClient(ip, port, handlers);
                 client->ConnectTimes(5);
@@ -73,7 +73,7 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
                 lastSend[i] = now - static_cast<Uint32>((Uint64)intervalMs * i / count);
             }
 
-            while (true)
+            while (!InterruptCtrlC)
             {
                 for (size_t i = 0; i < count; ++i)
                 {
@@ -101,7 +101,7 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
     }
 
     // 10초마다 요약 출력 (전 클라 집계 합산)
-    while (true)
+    while (!InterruptCtrlC)
     {
         Sleep(10000);
 
@@ -134,17 +134,39 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
                 }
             }
         }
-        Uint64 rttAvg = (rttSamples > 0) ? (rttSum / rttSamples) : 0;
+        Uint64 rttAvg = 0;
+        if (rttSamples > 0) 
+        {
+            rttAvg = rttSum / rttSamples;
+        }
 
-        spdlog::info("[BOT-STATS] connected={} alive={} sent={} recv={} rtt_avg={}ms rtt_max={}ms",
-            totalConnected.load(), alive, totalSent.exchange(0), recv, rttAvg, rttMax);
+        spdlog::info("[BOT-STATS] connected={} alive={} sent={} recv={} rtt_avg={}ms rtt_max={}ms", totalConnected.load(), alive, totalSent.exchange(0), recv, rttAvg, rttMax);
     }
+
+    spdlog::info("[BOT] shutdown...");
+    for (auto& t : threads)
+    {
+        if (t.joinable()) t.join();
+    }
+
+    for (auto& clients : botClients)
+    {
+        for (EchoClient* client : clients)
+        {
+            if (client->IsConnect())
+            {
+                client->Disconnect();
+            }
+        }
+    }
+    spdlog::info("[BOT] shutdown done");
 }
 
 int main(int argc, char** argv)
 {
     DUBU::InitFileLog("client");
     SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCtrlHandler(KeyBoarHandler, TRUE);
 
     // 메시지 핸들러
     Map<Uint8, DUBU::Packet::PacketHandler> handlers;
