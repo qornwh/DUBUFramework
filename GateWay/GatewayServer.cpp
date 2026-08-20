@@ -131,7 +131,7 @@ Bool GatewayServer::InnerDispatch()
 {
     for (Int32 i = 0; i < echoCount_; ++i)
     {
-        internalClientList_[i]->Dispatch();
+        while (internalClientList_[i]->Dispatch(1)) {}
     }
 
     return true;

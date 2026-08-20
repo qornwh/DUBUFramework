@@ -83,7 +83,12 @@ void EchoSessionHander::BotHandler(DUBU::Session* session, Uint8* buffer, Int32 
     const DUBU::Echo::Packet* packet = DUBU::Echo::GetPacket(buffer + offset);
     if (packet->body_type() == DUBU::Echo::PacketBody_Bot && owner_ != nullptr)
     {
-        owner_->Broadcast(buffer + offset, DUBU::Echo::PacketBody_Bot, static_cast<Uint16>(size - offset), opt);
+        // 일단 자기자신 한테만 전송
+        // owner_->Broadcast(buffer + offset, DUBU::Echo::PacketBody_Bot, static_cast<Uint16>(size - offset), opt);
+        
+        const DUBU::Echo::Bot* bot = packet->body_as_Bot();
+        GatewaySubHeader sh{ bot->id(), session->GetSessionId() };
+        session->SendPacket(buffer + offset, DUBU::Echo::PacketBody_Bot, static_cast<Uint16>(size - offset), opt, reinterpret_cast<Uint8*>(&sh), sh.GetSize());
     }
 }
 
