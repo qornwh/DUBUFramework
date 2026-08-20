@@ -11,7 +11,7 @@
 
 #include <windows.h>
 
-static bool InterruptCtrlC = false;
+static volatile bool InterruptCtrlC = false;
 
 BOOL WINAPI KeyBoarHandler(DWORD signal)
 {
@@ -86,11 +86,6 @@ int main()
                 Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
             }
-            if (server != nullptr)
-            {
-                delete server;
-                server = nullptr;
-            }
         });
         DUBU::ThreadManager::GetInstance().SetSessionLoop(nullptr);
         DUBU::ThreadManager::GetInstance().Start([]() {
@@ -105,5 +100,11 @@ int main()
             }
         }
         DUBU::ThreadManager::GetInstance().Join();
+
+        if (server != nullptr)
+        {
+            delete server;
+            server = nullptr;
+        }
     }
 }

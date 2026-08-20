@@ -14,7 +14,7 @@
 
 // 게이트웨이 테스트용 코드
 
-static bool InterruptCtrlC = false;
+static volatile bool InterruptCtrlC = false;
 
 BOOL WINAPI KeyBoarHandler(DWORD signal)
 {
@@ -101,11 +101,6 @@ int main(int argc, char** argv)
                 Uint32 cur = DUBU::GetRelativeTimeMs();
                 server->Dispatch();
             }
-            if (server != nullptr)
-            {
-                delete server;
-                server = nullptr;
-            }
             });
         DUBU::ThreadManager::GetInstance().SetSessionLoop(nullptr);
         DUBU::ThreadManager::GetInstance().Start([&server]() {
@@ -124,6 +119,13 @@ int main(int argc, char** argv)
                 break;
             }
         }
+
         DUBU::ThreadManager::GetInstance().Join();
+
+        if (server != nullptr)
+        {
+            delete server;
+            server = nullptr;
+        }
     }
 }

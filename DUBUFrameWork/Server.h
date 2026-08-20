@@ -57,7 +57,7 @@ namespace DUBU
 
 		SessionManager sessionManager_;
 		Lock sessionLock_;
-		Atomic<Bool>  isRunning_ = false;
+		Atomic<Bool> isRunning_ = false;
 
         // Peer 리스트 관리
 		Map<Uint64, Peer> peerMap_;

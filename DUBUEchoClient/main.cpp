@@ -8,7 +8,7 @@
 #include <windows.h>
 #include <fstream>
 
-static bool InterruptCtrlC = false;
+static volatile bool InterruptCtrlC = false;
 
 BOOL WINAPI KeyBoarHandler(DWORD signal)
 {
@@ -209,6 +209,7 @@ int main(int argc, char** argv)
         {
             client->Dispatch();
         }
+
         if (client != nullptr)
         {
             delete client;

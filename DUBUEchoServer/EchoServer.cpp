@@ -73,8 +73,3 @@ void EchoServer::Broadcast(Uint8* buffer, Uint8 code, Uint16 size, const DUBU::P
         session->SendPacket(buffer, code, size, sendOpt, reinterpret_cast<Uint8*>(&sh), sh.GetSize());
     }
 }
-
-Uint64 EchoServer::GatewayKey(const SOCKADDR_IN& addr)
-{
-    return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
-}
