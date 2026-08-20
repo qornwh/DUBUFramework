@@ -53,8 +53,8 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
                 }
                 client->SendRegisterMessage();
                 clients.push_back(client);
+                totalConnected.fetch_add(1);
             }
-            totalConnected.fetch_add(static_cast<Uint32>(clients.size()));
             readyThreads.fetch_add(1);
             spdlog::info("BOT thread {} : {}/{} connected", t, clients.size(), countPerThread);
 
@@ -143,7 +143,7 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
 
 int main(int argc, char** argv)
 {
-    DUBU::InitFileLog("gateway");
+    DUBU::InitFileLog("client");
     SetConsoleOutputCP(CP_UTF8);
 
     // 메시지 핸들러
