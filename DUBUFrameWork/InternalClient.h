@@ -104,6 +104,11 @@ namespace DUBU
         const Uint32 ClientTimeout = g_defaultDisconnectTimeoutMs;
 
         Lock lock_;
+
+#ifdef _DEBUG
+        // 재전송 패킷 기록
+        Atomic<Uint64> resendCount_;
+#endif
     };
 }
 
