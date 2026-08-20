@@ -465,7 +465,7 @@ void DUBU::Session::SetPeer(Peer& peer)
 void DUBU::Session::Disconnect()
 {
     isConnect_ = false;
-#if defined(_DEBUG)
+#ifdef TEST_MODE
     spdlog::info("Disconnect : resent {} -- ping {} / {}", resendCount_.load(), pongCount_, pingCount_);
 #endif
 }
@@ -687,7 +687,7 @@ void DUBU::Session::RepeatMessage(RUDPSocket* socket, Uint32 resendDelay, Reliab
         {
             socket->SendToRepeat(addr_, p.buffer);
             p.timeStamp = now;
-#ifdef _DEBUG
+#ifdef TEST_MODE
             resendCount_.fetch_add(1);
 #endif
         }

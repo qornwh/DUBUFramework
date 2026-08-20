@@ -37,7 +37,7 @@ void DUBU::Server::Initialize(const Map<Uint8, Packet::PacketHandler>* handlers)
     rudpSocket_->StartServer();
 	isRunning_.store(true);
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
     lastStatsTickMs_.store(GetRelativeTimeMs());
 #endif
 }
@@ -62,20 +62,20 @@ void DUBU::Server::Dispatch()
 		if ((obj->type_ & OverlappedObjType::RECVEFROM) == OverlappedObjType::RECVEFROM)
 		{
 			rudpSocket_->RecvFromComplete(ptr, size);
-#ifdef _DEBUG
+#ifdef TEST_MODE
 			recvPacketCount_.fetch_add(1);
 #endif
 		}
 		else if ((obj->type_ & OverlappedObjType::SENDTO) == OverlappedObjType::SENDTO)
 		{
 			rudpSocket_->SendToComplete(ptr, static_cast<Uint16>(size));
-#ifdef _DEBUG
+#ifdef TEST_MODE
 			sendPacketCount_.fetch_add(1);
 #endif
 		}
 	}
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
     Uint32 now = GetRelativeTimeMs();
     Uint32 last = lastStatsTickMs_.load();
     // 수신 스레드 여러 개 중 CAS 성공한 한 스레드만 통계 출력
@@ -153,7 +153,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 void DUBU::Server::OnSendTo(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 {
 	OverlappedPacketBuffer* opb = reinterpret_cast<OverlappedPacketBuffer*>(ptr);
-#ifdef _DEBUG
+#ifdef TEST_MODE
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
     sendByteCount_.fetch_add(header->totalSize_);
 #endif
@@ -165,9 +165,9 @@ DUBU::Session* DUBU::Server::CreateSession(const SOCKADDR_IN& addr)
 	session->SetSockAddr(addr);
     session->SetSocket(rudpSocket_.get());
 	session->SetTimestamp(DUBU::GetRelativeTimeMs());
-#ifdef _DEBUG
+#ifdef TEST_MODE
     newSessionCount_.fetch_add(1);
-#endif // _DEBUG
+#endif
 
 	return session;
 }
@@ -261,7 +261,7 @@ void DUBU::Server::SendPing(Session* session)
 	// AddPendingPacket 호출하지 않음 — 재전송/ACK 추적 없음
     session->AddPingCount();
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
 	spdlog::debug("PING session {} : {}", session->GetSessionId(), header->sequenceNo_);
 #endif
 }
@@ -298,7 +298,7 @@ Uint64 DUBU::Server::PeerKey(const SOCKADDR_IN& addr)
 	return ((Uint64)addr.sin_addr.s_addr << 16) | (Uint64)ntohs(addr.sin_port);
 }
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
 void DUBU::Server::PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 rttMaxMillisec)
 {
     Uint64 recvPacket = recvPacketCount_.exchange(0);

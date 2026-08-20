@@ -69,7 +69,7 @@ namespace DUBU
 		const Uint32 SessionTimeout = g_defaultDisconnectTimeoutMs;
 
     protected:
-#ifdef _DEBUG
+#ifdef TEST_MODE
         // 디버그에서 통계낼때 사용
         void PrintStats(Uint32 activeCount, float rttAvgMillisec, Uint32 rttMaxMillisec);
         

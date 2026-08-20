@@ -140,7 +140,7 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
                         opt.channelID_ = (flag & Packet::PacketHeaderFlag::CHANNELMASK) >> 3;
                     }
                     server_->SendAck(seqNo, session, opt);
-#ifdef _DEBUG
+#ifdef TEST_MODE
                     server_->sendAckCount_.fetch_add(1);
 #endif
                 }
@@ -149,12 +149,12 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
             {
                 // ACK 수신 pendingpacket 지움
                 result = session->RecvDispatchACK(buffer, size);
-#ifdef _DEBUG
+#ifdef TEST_MODE
                 server_->recvAckCount_.fetch_add(1);
 #endif
             }
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
             server_->recvByteCount_.fetch_add(header->totalSize_);
 #endif
         }
@@ -206,7 +206,7 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
                 {
                     removeList[removeCount++] = id;
                 }
-#ifdef _DEBUG
+#ifdef TEST_MODE
                 server_->timeoutSessionCount_.fetch_add(1);
 #endif
             }

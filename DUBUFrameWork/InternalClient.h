@@ -105,7 +105,7 @@ namespace DUBU
 
         Lock lock_;
 
-#ifdef _DEBUG
+#ifdef TEST_MODE
         // 재전송 패킷 기록
         Atomic<Uint64> resendCount_;
 #endif
