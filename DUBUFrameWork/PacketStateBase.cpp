@@ -39,13 +39,14 @@ void DUBU::PacketStateBase::LogrNops()
 #ifdef TEST_MODE
     // 비신뢰 체크
     Uint64 rNopsSent = sendRepeatSeq_;
-    Uint64 rNopsLost = rNopsSent - recvCount_;
-    float rNopsLostPct = rNopsLost * 100.0 / rNopsSent;
-    if (recvCount_ > rNopsSent)
+    Uint64 rNopsLost = 0;
+    float rNopsLostPct = 0.0f;
+
+    // 받는 쪽이 먼저면 많을 수 있다.
+    if (rNopsSent > recvCount_)
     {
-        // 받은게 많은경우 있음
-        rNopsLost = 0;
-        rNopsLostPct = 0;
+        rNopsLost = rNopsSent - recvCount_;
+        rNopsLostPct = rNopsLost * 100.0f / rNopsSent;
     }
     spdlog::info("Not Reliable {}/{} lost {} ({:.2f}%)", recvCount_, rNopsSent, rNopsLost, rNopsLostPct);
 #endif
