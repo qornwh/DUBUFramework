@@ -7,6 +7,7 @@
 #include "GatewaySessionHandler.h"
 #include "Session.h"
 #include "ThreadManager.h"
+#include "Log.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -30,6 +31,7 @@ int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
 
+    DUBU::InitFileLog("gateway");
     DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
 

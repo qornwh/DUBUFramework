@@ -6,6 +6,7 @@
 #include "EchoServer.h"
 #include "EchoSessionHander.h"
 #include "ThreadManager.h"
+#include "Log.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -27,6 +28,7 @@ int main()
 {
     SetConsoleOutputCP(CP_UTF8);
 
+    DUBU::InitFileLog("server");
     DUBU::LoadConfig("./Config.json");
     DUBU::Initialize();
 

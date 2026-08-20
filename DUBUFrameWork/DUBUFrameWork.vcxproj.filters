@@ -144,6 +144,9 @@
     <ClInclude Include="SessionWorker.h">
       <Filter>Service</Filter>
     </ClInclude>
+    <ClInclude Include="Log.h">
+      <Filter>Config</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Pool.cpp">
@@ -220,6 +223,9 @@
     </ClCompile>
     <ClCompile Include="SessionWorker.cpp">
       <Filter>Service</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Config</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

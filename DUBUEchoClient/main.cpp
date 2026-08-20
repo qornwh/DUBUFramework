@@ -2,6 +2,7 @@
 #include "EchoClient.h"
 #include "EchoClientHander.h"
 #include "Session.h"
+#include "Log.h"
 #include "../extra/dubu_echo_packet_generated.h"
 
 #include <windows.h>
@@ -132,6 +133,7 @@ void RunBotMode(const String& ip, Uint16 port, Uint32 intervalMs, Uint32 countPe
 
 int main(int argc, char** argv)
 {
+    DUBU::InitFileLog("gateway");
     SetConsoleOutputCP(CP_UTF8);
 
     // 메시지 핸들러
