@@ -464,14 +464,10 @@ void DUBU::Session::SetPeer(Peer& peer)
 
 void DUBU::Session::Disconnect()
 {
-    isConnect_ = false;
 #ifdef TEST_MODE
-    // 비신뢰 체크
-    const Uint64 nopsSent = rNopsNo_.recvRepeatSeq_;
-    const Uint64 nopsLost = nopsSent - rNopsNo_.recvCount_;
-    const float nopsLostPct = nopsLost * 100.0 / nopsSent;
-    spdlog::info("Disconnect : resent {} -- ping {}/{} -- nops {}/{} lost {} ({:.2f}%)", resendCount_.load(), pongCount_, pingCount_, rNopsNo_.recvCount_, nopsSent, nopsLost, nopsLostPct);
+    rNopsNo_.LogrNops();
 #endif
+    isConnect_ = false;
 }
 
 void DUBU::Session::SendEchoMessage(Uint8* buffer, Uint16 size)

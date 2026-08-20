@@ -87,11 +87,7 @@ void DUBU::InternalClient::ConnectTimes(const Uint32 count)
 void DUBU::InternalClient::Disconnect()
 {
 #ifdef TEST_MODE
-    // 비신뢰 체크
-    const Uint64 nopsSent = rNopsNo_.recvRepeatSeq_;
-    const Uint64 nopsLost = nopsSent - rNopsNo_.recvCount_;
-    const float nopsLostPct = nopsLost * 100.0 / nopsSent;
-    spdlog::info("Disconnect(Inner) : resent {} -- nops {}/{} lost {} ({:.2f}%)", resendCount_.load(), rNopsNo_.recvCount_, nopsSent, nopsLost, nopsLostPct);
+    //rNopsNo_.LogrNops();
 #endif
     DisconnectMessage();
     Reset();

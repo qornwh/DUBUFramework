@@ -33,3 +33,14 @@ Uint32 DUBU::PacketStateBase::GetSendSequenceNo() const
 {
     return sendRepeatSeq_;
 }
+
+void DUBU::PacketStateBase::LogrNops()
+{
+#ifdef TEST_MODE
+    // 비신뢰 체크
+    const Uint64 rNopsSent = sendRepeatSeq_;
+    const Uint64 rNopsLost = rNopsSent - recvCount_;
+    const float rNopsLostPct = rNopsLost * 100.0 / rNopsSent;
+    spdlog::info("Not Reliable {}/{} lost {} ({:.2f}%)", recvCount_, rNopsSent, rNopsLost, rNopsLostPct);
+#endif
+}

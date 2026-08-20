@@ -21,5 +21,6 @@ namespace DUBU
         Uint32 UpdateSendSequenceNo();
         Uint32 GetRecvSequenceNo() const;
         Uint32 GetSendSequenceNo() const;
+        void LogrNops();
     };
 }
