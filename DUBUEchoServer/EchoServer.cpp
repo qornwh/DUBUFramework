@@ -13,12 +13,12 @@ EchoServer::~EchoServer()
 bool EchoServer::AddConnection(Uint32 clientId, DUBU::Session* session)
 {
     DUBU::WriteLockGuard wl(connectionLock_);
-    if (connectionList_.size() < MAX_CLIENT_COUNT)
+    if (connectionList_.size() < DUBU::g_maxclientcount)
     {
         connectionList_[clientId] = session;
         return true;
     }
-    spdlog::warn("Current User Over {} / {}", connectionList_.size(), MAX_CLIENT_COUNT);
+    spdlog::warn("Current User Over {} / {}", connectionList_.size(), DUBU::g_maxclientcount);
     session->Disconnect();
     return false;
 }
