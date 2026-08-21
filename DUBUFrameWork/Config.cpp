@@ -5,7 +5,8 @@
 
 namespace DUBU
 {
-	Int32 g_firstClientCount = FIRST_CLIENT_COUNT;
+    Uint32 g_maxclientcount = MAX_CLIENT_COUNT;
+    Uint32 g_firstClientCount = FIRST_CLIENT_COUNT;
     Uint16 g_servicePort = SERVICE_PORT;
     Uint32 g_defaultRttMs = DEFAULT_RTT_MS;
     Uint32 g_defaultRttMsDelay = DEFAULT_RTT_MS_DELAY;
@@ -32,6 +33,7 @@ namespace DUBU
 
 	Bool LoadConfig(const String& path)
 	{
+        g_maxclientcount = MAX_CLIENT_COUNT;
 		g_firstClientCount = FIRST_CLIENT_COUNT;
 		g_servicePort = SERVICE_PORT;
 		g_defaultRttMs = DEFAULT_RTT_MS;
@@ -49,6 +51,7 @@ namespace DUBU
 		json config;
 		file >> config;
 
+        SetNumberConfig(config, "MAX_CLIENT_COUNT", g_maxclientcount);
 		SetNumberConfig(config, "FIRST_CLIENT_COUNT", g_firstClientCount);
 		SetNumberConfig(config, "SERVICE_PORT", g_servicePort);
 		SetNumberConfig(config, "DEFAULT_RTT_MS", g_defaultRttMs);

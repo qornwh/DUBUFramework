@@ -30,7 +30,7 @@ namespace DUBU
 		const Set<OverlappedPacketBuffer*>& GetUseList();
 
 	private:
-		const Int32 baseSize_ = MAX_CLIENT_COUNT;
+		const Int32 baseSize_ = g_maxclientcount;
 		Vector<OverlappedPacketBuffer*> list_;
 		Set<OverlappedPacketBuffer*> useList_;
 		Lock lk_;

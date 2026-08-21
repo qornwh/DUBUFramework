@@ -183,13 +183,15 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
         ReadLockGuard rl(server_->sessionLock_);
         for (auto& [id, session] : server_->sessionManager_.GetSessions())
         {
+            if (session == nullptr) return;
+
             // 담당 판별도 라우팅과 같은 기준 : 주소 해시 % 워커수
             if (session == nullptr || server_->PeerKey(session->GetSockAddr()) % workerCount != num)
             {
                 continue;
             }
 
-            if (session == nullptr || !session->IsConnection())
+            if (!session->IsConnection())
             {
                 continue;
             }

@@ -13,7 +13,7 @@
 #pragma comment(lib, "ws2_32")
 
 // 상수 모아둔다.
-#define MAX_CLIENT_COUNT 500
+#define MAX_CLIENT_COUNT 1000
 #define FIRST_CLIENT_COUNT 50
 #define SERVICE_PORT 12345
 #define PACKET_MAX_SIZE 1024
