@@ -67,6 +67,9 @@ namespace DUBU
         
         void SetAwaysConnect(Bool awaysConnect);
         Bool GetAwaysConnect() const { return awaysConnect_; };
+        
+        void SetReadyDisconnect(Bool readyDisconnect);
+        Bool GetReadyDisconnect() const { return readyDisconnect_; };
 
     protected:
         // 일단 멤버변수로 청크 패킷관리를 한다.
@@ -131,5 +134,8 @@ namespace DUBU
 
         // 상시 세션
         Bool awaysConnect_ = false;
+
+        // 재전송 오버플로우 끊기용.
+        Bool readyDisconnect_ = false;
 	};
 }

@@ -723,17 +723,30 @@ void DUBU::Client::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pack
 
     if (opt.reliable_)
     {
-        rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
-
         // pending 전송될 때까지 대기
         if (opt.order_)
         {
-            cacheAlreadyPackets_[opt.channelID_].reliablePacketState.AddPendingPacket(opb, opb->size_);
+            if (!cacheAlreadyPackets_[opt.channelID_].reliablePacketState.AddPendingPacket(opb, opb->size_))
+            {
+                // TODO : 넘처버린 재전송 패킷 고민이 필요. 클라는 끊음
+                spdlog::error("Overflow Repeat Channel:{} Packet", opt.channelID_);
+                PacketManager::GetInstance().PushPacketBuffer(opb);
+                Disconnect();
+                return;
+            }
         }
         else
         {
-            rpsNo_.AddPendingPacket(opb, opb->size_);
+            if (!rpsNo_.AddPendingPacket(opb, opb->size_)) 
+            {
+                // TODO : 넘처버린 재전송 패킷 고민이 필요. 클라는 끊음
+                spdlog::error("Overflow Repeat Packet");
+                PacketManager::GetInstance().PushPacketBuffer(opb);
+                Disconnect();
+                return;
+            }
         }
+        rudpSocket_->SendToReliable(rudpSocket_->GetSockAddr(), opb);
     }
     else
     {

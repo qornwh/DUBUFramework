@@ -18,12 +18,19 @@ void DUBU::ReliablePacketState::Reset()
     }
 }
 
-void DUBU::ReliablePacketState::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
+bool DUBU::ReliablePacketState::AddPendingPacket(OverlappedPacketBuffer* opb, Uint16 size)
 {
     Packet::PacketHeader* header = reinterpret_cast<Packet::PacketHeader*>(opb->buffer_);
     Uint32 timeStamp = header->timestamp_;
     Uint32 sequenceNo = header->sequenceNo_;
     bool isSent = false;
+
+    Uint32 del = sequenceNo - localWindowStart_;
+    if (del >= DEFAULT_WINDOW_COUNT)
+    {
+        // DEFAULT_WINDOW_COUNT 즉 캐싱가능한 크기 넘어가면 연결 끊음
+        return false;
+    }
 
     // ACK가져올때 까지 킵
     pendingPackets_[sequenceNo % DEFAULT_WINDOW_COUNT] = { opb, timeStamp, sequenceNo, isSent };
@@ -33,6 +40,7 @@ void DUBU::ReliablePacketState::AddPendingPacket(OverlappedPacketBuffer* opb, Ui
     {
         localSeqence_ = sequenceNo + 1;
     }
+    return true;
 }
 
 void DUBU::ReliablePacketState::AckProcess(Uint32 ackSeq, Uint32& rttMillisec_)

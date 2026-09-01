@@ -82,6 +82,7 @@ void DUBU::Session::Reset()
 	lastPingSentTime_ = 0;
 	rttMillisec_ = g_defaultRttMs;
     rudpSocket_ = nullptr;
+    readyDisconnect_ = false;
 
     rNopsNo_.Reset();
     rpsNo_.Reset();
@@ -552,17 +553,30 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
 
     if (opt.reliable_)
     {
-        rudpSocket_->SendToReliable(GetSockAddr(), opb);
-
         // pending 전송될 때까지 대기
         if (opt.order_)
         {
-            cacheAlreadyPackets_[opt.channelID_].reliablePacketState.AddPendingPacket(opb, opb->size_);
+            if (!cacheAlreadyPackets_[opt.channelID_].reliablePacketState.AddPendingPacket(opb, opb->size_))
+            {
+                spdlog::error("Overflow Repeat Channel:{} Packet", opt.channelID_);
+                PacketManager::GetInstance().PushPacketBuffer(opb);
+                // TODO : 넘처버린 재전송 패킷 고민이 필요. 일단 스킵 
+                //readyDisconnect_ = true;
+                return;
+            }
         }
         else
         {
-            rpsNo_.AddPendingPacket(opb, opb->size_);
+            if (!rpsNo_.AddPendingPacket(opb, opb->size_))
+            {
+                spdlog::error("Overflow Repeat Packet");
+                PacketManager::GetInstance().PushPacketBuffer(opb);
+                // TODO : 넘처버린 재전송 패킷 고민이 필요. 일단 스킵 
+                //readyDisconnect_ = true;
+                return;
+            }
         }
+        rudpSocket_->SendToReliable(GetSockAddr(), opb);
     }
     else
     {
@@ -573,6 +587,12 @@ void DUBU::Session::SendPacket(Uint8* buffer, Uint8 code, Uint16 size, const Pac
 void DUBU::Session::SetAwaysConnect(Bool awaysConnect)
 {
     awaysConnect_ = awaysConnect;
+}
+
+void DUBU::Session::SetReadyDisconnect(Bool readyDisconnect)
+{
+    // 서버만 접근하게 만들기.
+    readyDisconnect_ = readyDisconnect;
 }
 
 void DUBU::Session::RecvChunckPacket(Uint8* buffer, Uint16 size)
