@@ -202,7 +202,7 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
             }
 
             Uint32 delayTime = now - session->GetTimestamp();
-            if (delayTime > server_->SessionTimeout)
+            if (delayTime > server_->SessionTimeout || session->GetReadyDisconnect())
             {
                 if (removeCount < DEFAULT_WINDOW_COUNT)
                 {
