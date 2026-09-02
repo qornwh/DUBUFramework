@@ -146,7 +146,7 @@ void DUBU::Server::OnRecvFrom(const SOCKADDR_IN& addr, Uint8* ptr, Uint16 size)
 
     Uint32 sessionId = header->sessionId_;
     const Uint32 workerCount = static_cast<Uint32>(g_sessionWorkers.size());
-	Uint32 target = static_cast<Uint32>(PeerKey(addr) % workerCount);
+	Uint32 target = static_cast<Uint32>(sessionId % workerCount);
 	g_sessionWorkers[target].Push(SessionJob{ sessionId, opb });
 }
 

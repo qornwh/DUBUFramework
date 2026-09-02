@@ -68,7 +68,7 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
         auto it = server_->peerMap_.find(key);
         if (it == server_->peerMap_.end())
         {
-            // 새 세션 생성. 라우팅이 주소 기준이라 이 주소의 모든 패킷은 계속 이 워커로 온다.
+            // 새 세션 생성
             Session* session = server_->CreateSession(addr);
             header->sessionId_ = session->GetSessionId();
             // 세션 추가 완료 응답
@@ -79,7 +79,6 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
         else
         {
             // 이미 연결된 상태에서 SESSION이 또 옴 (접속 재시도 or 재접속) -> 연결 응답만 다시 보낸다
-            // 라우팅이 주소 기준이라 여기도 이 세션의 담당 스레드다
             Session* session = it->second.session_;
             server_->ConnectMessage(session);
         }
@@ -92,6 +91,42 @@ void DUBU::SessionWorker::ProcessPacket(Uint8* buffer, Uint16 size, const SOCKAD
         */
         if (sessionId > 0)
         {
+            // TODO : 일단 IPV6지원해야한다. 즉 포트까지 합치면 18바이트 키가 필요함-아직은 지원 x
+            {
+                // 일단 
+                std::optional<ReadLockGuard> rl;
+                rl.emplace(server_->sessionLock_);
+                Session* session = server_->sessionManager_.GetSession(sessionId);
+                if (session != nullptr)
+                {
+                    if (server_->peerMap_.find(key) == server_->peerMap_.end())
+                    {
+                        rl.reset(); // 강제로 readlock 소멸 시킨다
+                        WriteLockGuard wl(server_->sessionLock_);
+                        // 다시한번 가져옴(readlock 푸는 순간에 erase되면 방지)
+                        session = server_->sessionManager_.GetSession(sessionId);
+                        if (session != nullptr)
+                        {
+                            Uint64 preKey = server_->PeerKey(session->GetSockAddr());
+                            auto it = server_->peerMap_.find(preKey);
+                            if (it == server_->peerMap_.end())
+                            {
+                                // 원래 연결이 안됬었음 문제 있음.. 연결 바로 끊는다.
+                                spdlog::error("Not Present Connected Session, Change Net {} - {}", preKey, key);
+                                session->Disconnect();
+                                server_->RemoveSession(session->GetSessionId());
+                                return;
+                            }
+                            session->SetSockAddr(addr);
+                            it->second.addr_ = addr;
+                            it->second.key_ = key;
+                            server_->peerMap_.emplace(key, it->second);
+                            server_->peerMap_.erase(it);
+                        }
+                    }
+                }
+            }
+
             ReadLockGuard rl(server_->sessionLock_);
             Session* session = server_->sessionManager_.GetSession(sessionId);
             if (session == nullptr)
@@ -185,8 +220,8 @@ void DUBU::SessionWorker::CheckSessions(Uint32 num)
         {
             if (session == nullptr) return;
 
-            // 담당 판별도 라우팅과 같은 기준 : 주소 해시 % 워커수
-            if (session == nullptr || server_->PeerKey(session->GetSockAddr()) % workerCount != num)
+            // 담당 판별도 라우팅과 같은 기준 : 세션 id % 워커수
+            if (session == nullptr || session->GetSessionId() % workerCount != num)
             {
                 continue;
             }
