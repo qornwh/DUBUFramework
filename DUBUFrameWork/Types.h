@@ -45,11 +45,11 @@ template <typename T>
 using Set = std::set<T>;
 
 template <typename T, typename K>
-using Tuple = std::pair<T, K>;
+using Pair = std::pair<T, K>;
 
 template <typename T, typename K>
-struct TupleHash {
-    std::size_t operator()(const Tuple<T, K>& p) const {
+struct PairHash {
+    std::size_t operator()(const Pair<T, K>& p) const {
         return std::hash<T>()(p.first) ^ std::hash<K>()(p.second); // 비트 연산을 사용하여 두 해시를 결합
     }
 };
