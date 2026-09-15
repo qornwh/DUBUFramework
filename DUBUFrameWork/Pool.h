@@ -106,6 +106,7 @@ namespace DUBU
 		DubuByteDataSPtr pool_ptr = FindBlock(ptr);
 		pool_ptr->useCnt_.fetch_add(1);
 
+        new (ptr) T(std::forward<Args>(args)...);
 		return reinterpret_cast<T*>(ptr);
 	}
 
