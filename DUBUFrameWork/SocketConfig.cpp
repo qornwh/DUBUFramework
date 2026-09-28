@@ -17,7 +17,7 @@ void DUBU::SocketConfig::SetIoCompletionPort(SOCKET socket, HANDLE iocpHd)
     {
         closesocket(socket);
         WSACleanup();
-        assert(-1);
+        assert(0);
     }
 }
 
@@ -32,7 +32,7 @@ void DUBU::SocketConfig::SocketBind(SOCKET ServerSocket, Int32 port)
     {
         closesocket(ServerSocket);
         WSACleanup();
-        assert(-1);
+        assert(0);
     }
 }
 

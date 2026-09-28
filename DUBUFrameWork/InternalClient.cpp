@@ -63,7 +63,7 @@ void DUBU::InternalClient::Connect()
     else
     {
         spdlog::error("Not Connect RUDPSocket !!!");
-        assert(-1);
+        assert(0);
     }
 }
 
